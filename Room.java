@@ -1,18 +1,29 @@
-public class Room {
+public class Room extends Manager{
+
     private String RoomID;
     private double RoomPrice;
+    private String RoomType;
     private int oldWaterCounter;
     private int oldElectricCounter;
-    private int usedWater;
-    private int usedElectric;
-    private int newWaterCounter;
-    private int newElectricCounter;
     private double electricPrice;
     private double waterPrice;
 
+    public Room(String roomID, String roomType, double roomPrice, int oldWaterCounter, int oldElectricCounter) {
+        this.RoomID = roomID;
+        this.RoomType = roomType;
+        this.RoomPrice = roomPrice;
+        this.oldWaterCounter = oldWaterCounter;
+        this.oldElectricCounter = oldElectricCounter;
 
+    }
 
     public double CalculateWaterPrice () {
-        return waterPrice = (newWaterCounter - oldWaterCounter) * 2500;
+        return waterPrice = (super.newWaterCounter - oldWaterCounter) * 2500;
     }
+
+    public double CalculateElectricPrice () {
+        return electricPrice = (super.newElectricCounter - oldElectricCounter) * 1200;
+    };
+
+
 }
