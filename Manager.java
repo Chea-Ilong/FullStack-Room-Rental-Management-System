@@ -2,19 +2,22 @@ public class Manager {
 
     private int[][] floors = new int[5][5];
     private double bill;
-    private int floor;
 
-    protected int newWaterCounter;
-    protected int newElectricCounter;
+    private int newWaterCounter;
+    private int newElectricCounter;
 
+    public Manager(int[][] floors, double bill, int floor, int newWaterCounter, int newElectricCounter) {
+        this.floors = floors;
+        this.bill = bill;
+        this.newWaterCounter = newWaterCounter;
+        this.newElectricCounter = newElectricCounter;
+    }
+
+    public void InsertToRoom() {};
     public void displayReportByMonth(){};
     public void displayAllReport(){};
+    public void UpdateRoom(){};
     public void searchRoom(String RoomID){};
 
-
-    //
-//    public void room_by_floor(int floor,int room)   {
-//                floors[floor][room] = value;
-//    }
 
 }
