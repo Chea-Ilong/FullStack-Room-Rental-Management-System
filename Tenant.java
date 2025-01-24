@@ -10,7 +10,7 @@ public class Tenant {
         this.tenantName = tenantName;
         this.phoneNumber = phoneNumber;
         this.idCard = idCard;
-        this.tenantsPerRoom = 1; //Default value
+        this.tenantsPerRoom = tenantsPerRoom; //Default value
         this.rentPayment = rentPayment;
     }
 
