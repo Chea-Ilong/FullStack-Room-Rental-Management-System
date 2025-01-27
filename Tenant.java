@@ -1,20 +1,20 @@
 public class Tenant {
 
     private String tenantName; //Customer name
-    private int phoneNumber; //Customer phone number
-    private int idCard; //Customer ID card
-    private int tenantsPerRoom; //Number of people in one room
-    private boolean rentPayment;
-    double billAmount;
-    public Tenant(String tenantName, int phoneNumber, int idCard, int tenantsPerRoom, boolean rentPayment) {
+    private String phoneNumber; //Customer phone number
+    private int tenantIDCard; //Customer ID card
+    private String userPassword;
+//    double depositAmount;
+    private boolean isBillPaid; // isPaid or Not
+    public Tenant(String tenantName, String phoneNumber, int idCard, String userPassword, boolean isBillPaid) {
         this.tenantName = tenantName;
         this.phoneNumber = phoneNumber;
         this.idCard = idCard;
-        this.tenantsPerRoom = 1; //Default value
-        this.rentPayment = rentPayment;
+        this.userPassword = userPassword;
+        this.isBillPaid = isBillPaid;
     }
 
-    public void tenantBill(){};
+
     public void setRentPayment(){};
-    
+
 }
