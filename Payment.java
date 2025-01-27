@@ -9,6 +9,7 @@ public class Payment {
     private String paymentMethod;
     private String paymentStatus;
 
+
     public Payment(int tenantId, int leaseId, double amount, String paymentMethod) {
         this.tenantId = tenantId;
         this.leaseId = leaseId;

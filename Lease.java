@@ -9,6 +9,7 @@ public class Lease {
     private double monthlyRent;
     private String leaseStatus;
 
+
     public Lease(int tenantId, int roomID, LocalDate startDate, LocalDate endDate, double monthlyRent) {
         this.tenantId = tenantId;
         this.roomID = roomID;
