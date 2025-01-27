@@ -1,4 +1,4 @@
-public class Manager {
+public class Landlord {
 
     private int[][] floors = new int[5][5];
     private double bill;
@@ -6,7 +6,7 @@ public class Manager {
     private int newWaterCounter;
     private int newElectricCounter;
 
-    public Manager(int[][] floors, double bill, int floor, int newWaterCounter, int newElectricCounter) {
+    public Landlord(int[][] floors, double bill, int floor, int newWaterCounter, int newElectricCounter) {
         this.floors = floors;
         this.bill = bill;
         this.newWaterCounter = newWaterCounter;
