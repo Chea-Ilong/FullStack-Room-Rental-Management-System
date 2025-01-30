@@ -15,6 +15,7 @@ public class Room {
 
 
 
+
     public Room(String roomID, double roomPrice, String roomType, boolean status, int waterCounterUsage, int electricCounterUsage) {
         this.roomID = roomID;
         this.roomPrice = roomPrice;
