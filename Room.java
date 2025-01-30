@@ -10,8 +10,6 @@ public class Room {
     private double electricPrice;
     private double waterPrice;
 
-
-
     public double CalculateWaterPrice () {
         return waterPrice = (newWaterCounter - oldWaterCounter) * 2500;
     }
