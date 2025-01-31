@@ -1,31 +1,30 @@
 public class Room {
 
     private String roomID;
-    private double roomPrice;
     private String roomType;
     private boolean status;
     private int waterCounterUsage;
     private int electricCounterUsage;
     private int currentElectricCounter;
     private int currentWaterCounter;
-    private final int electricRate = 620;       //cubicmeter
-    private final int waterRate = 2500;         //cublicmeter
+    private final double electricRate = 620.00;       //cubicmeter
+    private final double waterRate = 2500.00;         //cublicmeter
 
 
-    public Room(String roomID, double roomPrice, String roomType, boolean status) {
+    public Room(String roomID, String roomType, boolean status) {
 
         this.roomID = roomID;
-        this.roomPrice = roomPrice;
         this.roomType = roomType;
         this.status = status;
 
     }
 
-    public double calculateElectricPrice(int currentElectricCounter,int electricRate,int electricCounterUsage) {
+    public double calculateElectricPrice(int currentElectricCounter,double electricRate,int electricCounterUsage) {
         return (currentElectricCounter - electricCounterUsage) * electricRate;
     };
-    public double calculateWaterPrice(int currentWaterCounter,int waterRate,int waterCounterUsage) {
+    public double calculateWaterPrice(int currentWaterCounter,double waterRate,int waterCounterUsage) {
         return (currentWaterCounter - waterCounterUsage) * waterRate;
     };
-
+    public double calculateRoomPrice() {};          //base on the roomtype like small,medium and large
+    public String roomSummary() {};
 }

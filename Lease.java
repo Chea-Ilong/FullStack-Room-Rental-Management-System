@@ -8,11 +8,10 @@ public class Lease {
     private LocalDate startDate;
     private LocalDate endDate;
     private double monthlyRent;
-    private String leaseStatus;
+    private boolean leaseStatus;
 
 
-
-    public Lease(int tenantId, int roomID, LocalDate startDate, LocalDate endDate, double monthlyRent) {
+    public Lease(int tenantId, int roomID, LocalDate startDate, LocalDate endDate, double monthlyRent, boolean leaseStatus) {
 
         this.leaseId = ++leaseCounter;
         this.tenantId = tenantId;
@@ -20,6 +19,9 @@ public class Lease {
         this.startDate = startDate;
         this.endDate = endDate;
         this.monthlyRent = monthlyRent;
-        this.leaseStatus = "Active";
+        this.leaseStatus = leaseStatus ;
     }
+    public long calculateLeaseDurationInMonths() {};
+    public void terminateLease(LocalDate terminationDate){};
+    public String leaseSummary() {};
 }
