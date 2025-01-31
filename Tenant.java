@@ -3,18 +3,25 @@ public class Tenant {
     private String tenantName; //Customer name
     private String phoneNumber; //Customer phone number
     private int tenantIDCard; //Customer ID card
-    private String userPassword;
-//    double depositAmount;
     private boolean isBillPaid; // isPaid or Not
-    public Tenant(String tenantName, String phoneNumber, int idCard, String userPassword, boolean isBillPaid) {
+
+    //for register
+    public Tenant(String tenantName, String phoneNumber, int tenantIDCard, boolean isBillPaid) {
         this.tenantName = tenantName;
         this.phoneNumber = phoneNumber;
-        this.idCard = idCard;
-        this.userPassword = userPassword;
+        this.tenantIDCard = tenantIDCard;
         this.isBillPaid = isBillPaid;
     }
-
+    //for login
+    public Tenant(String tenantName,int tenantIDCard, String phoneNumber) {
+        this.tenantName = tenantName;
+        this.tenantIDCard = tenantIDCard;
+        this.phoneNumber = phoneNumber;
+    };
 
     public void setRentPayment(){};
+    public String checkPaymentStatus() {
+        return isBillPaid ? "The bill has been paid." : "The bill is not paid.";
+    }
 
 }

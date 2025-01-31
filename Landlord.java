@@ -11,6 +11,7 @@ public class Landlord {
     private int newWaterCounter;
     private int newElectricCounter;
 
+
     public Landlord(String landlordName, String landlordId, long landlordPhoneNumber, double bill, int newWaterCounter, int newElectricCounter) {
         this.landlordName = landlordName;
         this.landlordId = landlordId;

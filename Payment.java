@@ -16,4 +16,9 @@ public class Payment {
         this.amount = amount;
         this.paymentMethod = paymentMethod;
     }
-}
+
+    public void updatePaymentStatus(String status) {};
+
+
+
+    }
