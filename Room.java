@@ -4,12 +4,13 @@ public class Room {
     private double roomPrice;
     private String roomType;
     private boolean status;
-    private int waterCounterUsage ;
-    private int electricCounterUsage ;
-    private int currentElectricCounter ;
-    private int currentWaterCounter ;
-    private final int electricPrice = 620;
-    private final int waterPrice = 2500;
+    private int waterCounterUsage;
+    private int electricCounterUsage;
+    private int currentElectricCounter;
+    private int currentWaterCounter;
+    private final int electricRate = 620;       //cubicmeter
+    private final int waterRate = 2500;         //cublicmeter
+
 
     public Room(String roomID, double roomPrice, String roomType, boolean status) {
 
@@ -20,5 +21,11 @@ public class Room {
 
     }
 
+    public double calculateElectricPrice(int currentElectricCounter,int electricRate,int electricCounterUsage) {
+        return (currentElectricCounter - electricCounterUsage) * electricRate;
+    };
+    public double calculateWaterPrice(int currentWaterCounter,int waterRate,int waterCounterUsage) {
+        return (currentWaterCounter - waterCounterUsage) * waterRate;
+    };
 
 }
