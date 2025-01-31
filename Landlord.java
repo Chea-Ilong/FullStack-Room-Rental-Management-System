@@ -20,6 +20,7 @@ public class Landlord {
         this.newElectricCounter = newElectricCounter;
         this.floors = new ArrayList<>();
     }
+    
 
     public void addFloor(int floorNumber) {}; //How many floor?
     public void InsertToRoomToFloor(int floorNumber, Room room) {}; //Add how many rooms per floor
