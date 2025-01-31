@@ -8,20 +8,21 @@ public class Landlord {
     private String landlordName;
     private String landlordId; //Uses for reset password
     private long landlordPhoneNumber; // Uses for password
-    private int newWaterCounter;
-    private int newElectricCounter;
+    private int UpdateWaterCounter;
+    private int UpdateElectricCounter;
 
 
-    public Landlord(String landlordName, String landlordId, long landlordPhoneNumber, double bill, int newWaterCounter, int newElectricCounter) {
+    public Landlord(String landlordName, String landlordId, long landlordPhoneNumber, double bill, int UpdateWaterCounter, int UpdateElectricCounter) {
         this.landlordName = landlordName;
         this.landlordId = landlordId;
         this.landlordPhoneNumber = landlordPhoneNumber;
         this.bill = bill;
-        this.newWaterCounter = newWaterCounter;
-        this.newElectricCounter = newElectricCounter;
+        this.UpdateWaterCounter = UpdateWaterCounter;
+        this.UpdateElectricCounter = UpdateElectricCounter;
         this.floors = new ArrayList<>();
     }
-    
+
+
 
     public void addFloor(int floorNumber) {}; //How many floor?
     public void InsertToRoomToFloor(int floorNumber, Room room) {}; //Add how many rooms per floor
