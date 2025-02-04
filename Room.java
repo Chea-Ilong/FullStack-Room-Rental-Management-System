@@ -1,6 +1,7 @@
 public class Room {
 
     private String roomID;
+    private double roomPrice;
     private String roomType;
     private boolean status;
     private int waterCounterUsage;
@@ -11,24 +12,20 @@ public class Room {
     private final int waterRate = 2500;         //cublicmeter
 
 
-
-
-
-    public Room(String roomID, String roomType) {
+    public Room(String roomID, double roomPrice, String roomType, boolean status) {
 
         this.roomID = roomID;
+        this.roomPrice = roomPrice;
         this.roomType = roomType;
+        this.status = status;
 
     }
 
-    public String checkRoomStatus() {
-        return status ? "Room is Occupied" : "Room is Available";
-    }
     public double calculateElectricPrice(int currentElectricCounter,int electricRate,int electricCounterUsage) {
-        return (electricCounterUsage - currentElectricCounter) * electricRate;
+        return (currentElectricCounter - electricCounterUsage) * electricRate;
     };
     public double calculateWaterPrice(int currentWaterCounter,int waterRate,int waterCounterUsage) {
-        return (waterCounterUsage - currentWaterCounter) * waterRate;
+        return (currentWaterCounter - waterCounterUsage) * waterRate;
     };
-    public double calculateRoomPrice(){};
+
 }
