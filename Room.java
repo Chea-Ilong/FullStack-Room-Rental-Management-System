@@ -12,9 +12,6 @@ public class Room {
     private final int waterRate = 2500;         //cublicmeter
 
 
-
-
-
     public Room(String roomID, double roomPrice, String roomType, boolean status) {
 
         this.roomID = roomID;
