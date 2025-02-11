@@ -2,10 +2,10 @@ import java.util.Scanner;
 public class Room {
 
     public enum RoomType { SMALL, MEDIUM, LARGE };
+    private RoomType roomType;
 
     private String roomID;
     private double roomPrice;
-    private RoomType roomType;
     private boolean isOccupied;
     private int waterCounterUsage;
     private int electricCounterUsage;
@@ -22,6 +22,7 @@ public class Room {
         this.isOccupied = isOccupied;
         this.roomPrice = setPriceBasedOnSize(this.roomType);  // Automatically set price based on size
     }
+
     private RoomType getValidRoomSize(String roomSizeInput) {
         Scanner scanner = new Scanner(System.in);
         while (true) {
