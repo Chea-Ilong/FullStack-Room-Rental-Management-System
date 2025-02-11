@@ -1,7 +1,7 @@
 import java.time.LocalDate;
 
 public class Lease {
-    private static int leaseCounter = 0;
+    private static int totalLease = 0;
     private int leaseId;
     private int tenantId;
     private int roomID;
@@ -13,7 +13,7 @@ public class Lease {
 
     public Lease(int tenantId, int roomID, LocalDate startDate, LocalDate endDate, double monthlyRent, boolean leaseStatus) {
 
-        this.leaseId = ++leaseCounter;
+        this.leaseId = ++totalLease;
         this.tenantId = tenantId;
         this.roomID = roomID;
         this.startDate = startDate;
@@ -21,7 +21,8 @@ public class Lease {
         this.monthlyRent = monthlyRent;
         this.leaseStatus = leaseStatus ;
     }
-    public long calculateLeaseDurationInMonths() {};
-    public void terminateLease(LocalDate terminationDate){};
-    public String leaseSummary() {};
+//
+//    public long calculateLeaseDurationInMonths() {};
+//    public void terminateLease(LocalDate terminationDate){};
+//    public String leaseSummary() {};
 }
