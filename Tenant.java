@@ -1,9 +1,10 @@
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+
 public class Tenant implements Authentication {
 
-    private ReportIssue reportIssue;
+    private List<ReportIssue> reportedIssues;
     private String tenantName; // Customer name
     private String phoneNumber; // Customer phone number
     private int tenantIDCard; // Customer ID card
@@ -37,6 +38,7 @@ public class Tenant implements Authentication {
     }
     @Override
     public boolean login(String tenantName,int tenantIDCard) {
+
         for (Tenant tenant : tenantList) {
             if (tenant.tenantName.equalsIgnoreCase(tenantName) && tenant.tenantIDCard == tenantIDCard) {
                 System.out.println("Login successful for " + tenant.tenantName);
@@ -62,7 +64,6 @@ public class Tenant implements Authentication {
         System.out.println(tenantName + " has been successfully registered with ID Card: " + tenantIDCard);
         System.out.println("Phone number: " + phoneNumber);
     }
-
 
  public void payRent() {
         this.isBillPaid = true;
