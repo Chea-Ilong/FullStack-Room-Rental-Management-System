@@ -4,7 +4,7 @@ public class App {
 //        Room room = new Room("A101", "SMAsLL", false);
 //        Room room3 = new Room("A102", "sMaLL", false);
 //        Room room43 = new Room("A103", "medium", false);
-//// Display room info
+// Display room info
 //        room.displayRoomInfo();   // No need to wrap in System.out.println()
 //        room3.displayRoomInfo();
 //        room43.displayRoomInfo();

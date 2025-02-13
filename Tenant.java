@@ -26,7 +26,7 @@ public class Tenant implements Authentication {
         this.tenantIDCard = tenantIDCard;
 
     }
-    
+
     // Check Payment, History...
         public Tenant(String tenantName, String phoneNumber, int tenantIDCard) {
         this.tenantName = tenantName;
