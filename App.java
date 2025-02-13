@@ -37,17 +37,18 @@ public class App {
 //        issue1.displayIssue();
 
         Room room = new Room("A101", "Medium", true, 100, 100);
-        room.updateUsage(100, 100); // This should trigger the error for electric counter
+        room.displayRoomInfo();
+
+        room.updateUsage(120, 120); // This should trigger the error for electric counter
 
 
-
-//        // Display Room Info
-//        room1.displayRoomInfo();
-//
-//        room1.updateUsage(190, 160);
-//
 
         // Display Room Info
+        room.displayRoomInfo();
+
+        room.updateUsage(200, 200);
+
+
         room.displayRoomInfo();
     }
 }
