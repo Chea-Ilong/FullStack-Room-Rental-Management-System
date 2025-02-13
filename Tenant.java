@@ -3,6 +3,7 @@ import java.util.List;
 
 public class Tenant implements Authentication {
 
+    private ReportIssue reportIssue;
     private String tenantName; // Customer name
     private String phoneNumber; // Customer phone number
     private int tenantIDCard; // Customer ID card
@@ -23,39 +24,41 @@ public class Tenant implements Authentication {
     public Tenant(String tenantName, int tenantIDCard) {
         this.tenantName = tenantName;
         this.tenantIDCard = tenantIDCard;
-        this.isBillPaid = false; // Default value for bill payment (could be updated later)
-    }
 
+    }
     @Override
-    public boolean login() {
-        // Simulating a login by matching tenant name and ID card
+    public boolean login(String tenantName,int tenantIDCard) {
         for (Tenant tenant : tenantList) {
-            if (tenant.getTenantName().equals(this.tenantName) && tenant.getTenantIDCard() == this.tenantIDCard) {
-                System.out.println("Login successful for " + tenant.getTenantName());
-                return true; // Found the tenant, login successful
+            if (tenant.tenantName.equalsIgnoreCase(tenantName) && tenant.tenantIDCard == tenantIDCard) {
+                System.out.println("Login successful for " + tenant.tenantName);
+                return true;
             }
         }
         System.out.println("Login failed: Invalid tenant name or ID card.");
-        return false; // Tenant not found, login failed
+        return false;
     }
 
     @Override
     public void signUp() {
-        // Adding new tenant to the list (simulating registration)
+        // Prevent duplicate signups
+        for (Tenant tenant : tenantList) {
+            if (tenant.tenantName.equalsIgnoreCase(this.tenantName) && tenant.tenantIDCard == this.tenantIDCard) {
+                System.out.println("Sign-up failed: Tenant already exists.");
+                return;
+            }
+        }
+
+        // Add tenant to list
         tenantList.add(this);
         System.out.println(tenantName + " has been successfully registered with ID Card: " + tenantIDCard);
+        System.out.println("Phone number: " + phoneNumber);
     }
+
 
     public void setRentPayment(){};
     public String checkPaymentStatus() {
         return isBillPaid ? "The bill has been paid." : "The bill is not paid.";
     }
 
-    public String getTenantName() {
-        return tenantName;
-    }
 
-    public int getTenantIDCard() {
-        return tenantIDCard;
-    }
 }

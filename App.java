@@ -1,41 +1,39 @@
 public class App {
     public static void main(String[] args) {
 //
-//        Room room = new Room("A101", "large", false);
-//        Room room3 = new Room("A102", "small", false);
+//        Room room = new Room("A101", "SMAsLL", false);
+//        Room room3 = new Room("A102", "sMaLL", false);
 //        Room room43 = new Room("A103", "medium", false);
-//
 //// Display room info
 //        room.displayRoomInfo();   // No need to wrap in System.out.println()
 //        room3.displayRoomInfo();
 //        room43.displayRoomInfo();
-
-
-//        Tenant tenant1 = new Tenant("John Doe", "555-1234", 101, true);
-//        tenant1.signUp();
 //
-//        // Attempt to log in with correct credentials
-//        Tenant tenant2 = new Tenant("John Doe", 101);  // Same name and ID card as tenant1
-//        tenant2.login();  // Login successful
+        Tenant tenant2 = new Tenant("long", "555-1234", 111, true);
+        Tenant tenant1 = new Tenant("John Doe", "555-1234", 101, true);
+        tenant1.signUp();
+        tenant2.signUp();
+        tenant2.login("John Doe",101);
+        tenant1.login("long",111);
 //
-//        // Attempt to log in with incorrect credentials
-//        Tenant tenant3 = new Tenant("Jane Smith", 102);  // Different name and ID card
-//        tenant3.login();  // Login failed
+//        Tenant tenant4 = new Tenant("io right", "5555-1234", 1011, true);
+//        tenant4.signUp();
+//        tenant4.login();
 
 
-
-        // Creating issue reports
-        ReportIssue issue1 = new ReportIssue("A101", "John Doe", "T12345", "Water leakage in bathroom.");
-        ReportIssue issue2 = new ReportIssue( "B202", "Jane Smith", "T67890", "Air conditioning not working.");
-
-        // Display issues
-        issue1.displayIssue();
-        issue2.displayIssue();
-
-        // Resolve an issue
-        issue1.resolveIssue();
-
-        // Display the issue again after resolving
-        issue1.displayIssue();
+//
+//        // Creating issue reports
+//        ReportIssue issue1 = new ReportIssue("A101", "John Doe", "T12345", "Water leakage in bathroom.");
+//        ReportIssue issue2 = new ReportIssue( "B202", "Jane Smith", "T67890", "Air conditioning not working.");
+//
+//        // Display issues
+//        issue1.displayIssue();
+//        issue2.displayIssue();
+//
+//        // Resolve an issue
+//        issue1.resolveIssue();
+//
+//        // Display the issue again after resolving
+//        issue1.displayIssue();
     }
 }

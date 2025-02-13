@@ -1,4 +1,6 @@
 public interface Authentication {
-    boolean login();
-    void signUp();
+
+     boolean login(String username, int password);
+     void signUp();
+
 }

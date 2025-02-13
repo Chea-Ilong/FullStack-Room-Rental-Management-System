@@ -1,7 +1,7 @@
 import java.util.List;
 import java.util.ArrayList;
 
-public class Landlord implements Authentication{
+public class Landlord {
 
     private List<Floor> floors;
     private double bill;
@@ -30,15 +30,15 @@ public class Landlord implements Authentication{
     public void displayAllReport(){}; //Display all report
     public void UpdateRoom(String roomId, Room updatedRoom){}; //Update room
     public void searchRoom(String RoomID){};
-
-    @Override
-    public boolean login() {
-        return false;
-    }
-
-    @Override
-    public void signUp() {
-
-    } // Search customer details or room details by using room number
+//
+//    @Override
+//    public boolean login() {
+//        return false;
+//    }
+//
+//    @Override
+//    public void signUp() {
+//
+//    } // Search customer details or room details by using room number
 
 }
