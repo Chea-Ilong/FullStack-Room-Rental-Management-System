@@ -1,6 +1,6 @@
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
-
 public class Tenant implements Authentication {
 
     private ReportIssue reportIssue;
@@ -8,7 +8,7 @@ public class Tenant implements Authentication {
     private String phoneNumber; // Customer phone number
     private int tenantIDCard; // Customer ID card
     private boolean isBillPaid; // Is the bill paid?
-
+    private Date lastPaymentDate;
     // List to store tenants for simplicity
     private static List<Tenant> tenantList = new ArrayList<>();
 
@@ -25,6 +25,15 @@ public class Tenant implements Authentication {
         this.tenantName = tenantName;
         this.tenantIDCard = tenantIDCard;
 
+    }
+
+    // Check Payment, History...
+        public Tenant(String tenantName, String phoneNumber, int tenantIDCard) {
+        this.tenantName = tenantName;
+        this.phoneNumber = phoneNumber;
+        this.tenantIDCard = tenantIDCard;
+        this.isBillPaid = false; // Default: unpaid
+        this.lastPaymentDate = null;
     }
     @Override
     public boolean login(String tenantName,int tenantIDCard) {
@@ -55,10 +64,23 @@ public class Tenant implements Authentication {
     }
 
 
-    public void setRentPayment(){};
-    public String checkPaymentStatus() {
-        return isBillPaid ? "The bill has been paid." : "The bill is not paid.";
+ public void payRent() {
+        this.isBillPaid = true;
+        this.lastPaymentDate = new Date(); // Save the date of payment
+        System.out.println(tenantName + " has paid rent on " + lastPaymentDate);
     }
+
+    // Method to check payment status
+    public String checkPaymentStatus() {
+        if (!isBillPaid || lastPaymentDate == null) {
+            return "Rent is NOT paid.";
+        }
+        return "Rent is paid. Last payment: " + lastPaymentDate;
+    }
+public String getTenantName() {
+    return tenantName;
+}
+
 
 
 }
