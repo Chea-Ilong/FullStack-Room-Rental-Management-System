@@ -12,21 +12,6 @@ public class Tenant implements Authentication {
     // List to store tenants for simplicity
     private static List<Tenant> tenantList = new ArrayList<>();
 
-    // For registration
-    public Tenant(String tenantName, String phoneNumber, String tenantIDCard, boolean isBillPaid) {
-        this.tenantName = tenantName;
-        this.phoneNumber = phoneNumber;
-        this.tenantIDCard = tenantIDCard;
-        this.isBillPaid = isBillPaid;
-    }
-
-    // For login (without payment status as it's not needed)
-    public Tenant(String tenantName, String tenantIDCard) {
-        this.tenantName = tenantName;
-        this.tenantIDCard = tenantIDCard;
-
-    }
-
     // Check Payment, History...
         public Tenant(String tenantName, String phoneNumber, String tenantIDCard) {
         this.tenantName = tenantName;
@@ -38,7 +23,7 @@ public class Tenant implements Authentication {
     @Override
     public boolean login(String tenantName,String tenantIDCard) {
         for (Tenant tenant : tenantList) {
-            if (tenant.tenantName.equalsIgnoreCase(tenantName) && tenant.tenantIDCard == tenantIDCard) {
+            if (tenant.tenantName.equalsIgnoreCase(tenantName) && tenant.tenantIDCard.equalsIgnoreCase(tenantIDCard) ) {
                 System.out.println("Login successful for " + tenant.tenantName);
                 return true;
             }
@@ -51,7 +36,7 @@ public class Tenant implements Authentication {
     public void signUp() {
         // Prevent duplicate signups
         for (Tenant tenant : tenantList) {
-            if (tenant.tenantName.equalsIgnoreCase(this.tenantName) && tenant.tenantIDCard == this.tenantIDCard) {
+            if (tenant.tenantName.equalsIgnoreCase(this.tenantName) && tenant.tenantIDCard.equalsIgnoreCase(this.tenantIDCard) ) {
                 System.out.println("Sign-up failed: Tenant already exists.");
                 return;
             }

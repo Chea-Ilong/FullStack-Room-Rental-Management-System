@@ -2,7 +2,6 @@ import java.util.ArrayList;
 import java.text.NumberFormat;
 import java.util.Locale;
 
-
 public class Room {
 
     private String roomType;

@@ -36,17 +36,21 @@ public class App {
         // Display the issue again after resolving
 
 
-        Room room = new Room("A101", "Medium", true, 100, 100);
-        System.out.println(room.toString());
+        // Create 3 issues with different reported dates
+        new ReportIssue("Room101", "John Doe", "T001", "Leaky faucet");
+        new ReportIssue("Room102", "Alice", "T002", "No hot water");
+        new ReportIssue("Room103", "Bob", "T003", "Broken window");
 
-        room.updateUsage(120, 120); // This should trigger the error for electric counter
-        room.displayRoomBilling();
+        // Resolve an issue
+        ReportIssue issue4 = new ReportIssue("Room104", "John", "T004", "Electrical outage");
+        issue4.resolveIssue();
 
-        room.markAsVacant();
+        // Display pending issues
+        ReportIssue.displayPendingIssues();
 
-        System.out.println(room.toString());
-
-        room.displayRoomBilling();        // Display Room Info
+        // Display resolved issues
+        ReportIssue.displayResolvedIssues();
+        // Display Room Info
 //        room.displayRoomInfo();
 //        room.displayRoomBilling();
 //
