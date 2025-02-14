@@ -1,7 +1,7 @@
 import java.util.ArrayList;
 import java.util.List;
 
-public class Landlord {
+public class Landlord implements Authentication {
 
     private List<Floor> floors; // Use ArrayList for floors
     private double bill;
@@ -10,6 +10,7 @@ public class Landlord {
     private long landlordPhoneNumber;
     private int updateWaterCounter;
     private int updateElectricCounter;
+    private static List<Landlord> landlordlist = new ArrayList<>();
 
     public Landlord(String landlordName, String landlordId, long landlordPhoneNumber, double bill, int updateWaterCounter, int updateElectricCounter) {
         this.landlordName = landlordName;
@@ -19,9 +20,8 @@ public class Landlord {
         this.updateWaterCounter = updateWaterCounter;
         this.updateElectricCounter = updateElectricCounter;
         this.floors = new ArrayList<>(); // Initialize empty ArrayList
+
     }
-
-
 
     public void addFloor(int floorNumber) {}; //How many floor?
     public void insertToRoomToFloor(int floorNumber, Room room) {}; //Add how many rooms per floor
@@ -29,15 +29,33 @@ public class Landlord {
     public void displayAllReport(){}; //Display all report
     public void updateRoom(String roomId, Room updatedRoom){}; //Update room
     public void searchRoom(String RoomID){};
-//
-//    @Override
-//    public boolean login() {
-//        return false;
-//    }
-//
-//    @Override
-//    public void signUp() {
-//
-//    } // Search customer details or room details by using room number
 
-}
+    @Override
+    public boolean login(String landlordName, String landlordId) {
+        for (Landlord landlord : landlordlist) {
+            if (landlord.landlordName.equalsIgnoreCase(landlordName) && landlord.landlordId == landlordId) {
+                System.out.println("Login successful for " + landlord.landlordName);
+                return true;
+            }
+        }
+        System.out.println("Login failed: Invalid Landlord name or ID card.");
+        return false;
+    }
+
+    @Override
+    public void signUp() {
+            // Prevent duplicate signups
+            for (Landlord landlord : landlordlist) {
+                if (landlord.landlordName.equalsIgnoreCase(this.landlordName) && landlord.landlordId == this.landlordId) {
+                    System.out.println("Sign-up failed: Tenant already exists.");
+                    return;
+                }
+            }
+
+            // Add tenant to list
+            landlordlist.add(this);
+            System.out.println(landlordName + " has been successfully registered with ID Card: " + landlordId);
+            System.out.println("Phone number: " + landlordPhoneNumber);
+        }
+    } // Search customer details or room details by using room number
+

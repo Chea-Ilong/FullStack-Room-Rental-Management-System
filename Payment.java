@@ -19,6 +19,4 @@ public class Payment {
 
     public void updatePaymentStatus(String status) {};
 
-
-
     }
