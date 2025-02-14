@@ -107,17 +107,6 @@ public class Room {
         return usdFormat.format(amount);
     }
 
-    public void displayRoomInfo() {
-        System.out.println("Room ID: " + roomID);
-        System.out.println("Room Size: " + roomType);
-        System.out.println("Price: " + formatKHR(roomPrice) + " (" + formatUSD(convertToUSD(roomPrice)) + ")");
-        System.out.println("Status: " + (isOccupied ? "Occupied" : "Vacant"));
-        System.out.println("Current Water Counter: " + currentWaterCounter + " m³");
-        System.out.println("Current Electric Counter: " + currentElectricCounter + " kWh");
-        System.out.println();
-    }
-
-
     public void displayRoomBilling() {
         if (!isOccupied) {
             System.out.println("Room " + roomID + " is vacant. No billing required.");
@@ -132,6 +121,8 @@ public class Room {
         System.out.println("Room ID: " + roomID);
         System.out.println("Room Size: " + roomType);
         System.out.println("Room Price: " + formatKHR(roomPrice) + " (" + formatUSD(convertToUSD(roomPrice)) + ")");
+        System.out.println("Water counter: " + (currentWaterCounter - waterCounterUsage) + " -> " + currentWaterCounter);
+        System.out.println("Electric counter: " + (currentElectricCounter - electricCounterUsage) + " -> " + currentElectricCounter);
         System.out.println("Water Usage: " + waterCounterUsage + " m³");
         System.out.println("Electric Usage: " + electricCounterUsage + " kWh");
         System.out.println("Water Price: " + formatKHR(waterPrice) + " (" + formatUSD(convertToUSD(waterPrice)) + ")");
@@ -140,5 +131,13 @@ public class Room {
         System.out.println();
     }
 
-
+    @Override
+    public String toString() {
+        return "Room ID: " + roomID + "\n" +
+                "Room Size: " + roomType + "\n" +
+                "Price: " + formatKHR(roomPrice) + " (" + formatUSD(convertToUSD(roomPrice)) + ")\n" +
+                "Status: " + (isOccupied ? "Occupied" : "Vacant") + "\n" +
+                "Current Water Counter: " + currentWaterCounter + " m³\n" +
+                "Current Electric Counter: " + currentElectricCounter + " kWh\n";
+    }
 }

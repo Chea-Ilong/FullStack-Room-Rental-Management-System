@@ -8,8 +8,6 @@ public class Landlord implements Authentication {
     private String landlordName;
     private String landlordId;
     private long landlordPhoneNumber;
-    private int updateWaterCounter;
-    private int updateElectricCounter;
     private static List<Landlord> landlordlist = new ArrayList<>();
 
     public Landlord(String landlordName, String landlordId, long landlordPhoneNumber, double bill, int updateWaterCounter, int updateElectricCounter) {
@@ -17,8 +15,6 @@ public class Landlord implements Authentication {
         this.landlordId = landlordId;
         this.landlordPhoneNumber = landlordPhoneNumber;
         this.bill = bill;
-        this.updateWaterCounter = updateWaterCounter;
-        this.updateElectricCounter = updateElectricCounter;
         this.floors = new ArrayList<>(); // Initialize empty ArrayList
 
     }
@@ -57,5 +53,7 @@ public class Landlord implements Authentication {
             System.out.println(landlordName + " has been successfully registered with ID Card: " + landlordId);
             System.out.println("Phone number: " + landlordPhoneNumber);
         }
+
+
     } // Search customer details or room details by using room number
 

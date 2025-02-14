@@ -37,16 +37,16 @@ public class App {
 
 
         Room room = new Room("A101", "Medium", true, 100, 100);
-        room.displayRoomInfo();
+        System.out.println(room.toString());
 
         room.updateUsage(120, 120); // This should trigger the error for electric counter
         room.displayRoomBilling();
 
         room.markAsVacant();
 
-        room.displayRoomInfo();
-        room.displayRoomBilling();
-        // Display Room Info
+        System.out.println(room.toString());
+
+        room.displayRoomBilling();        // Display Room Info
 //        room.displayRoomInfo();
 //        room.displayRoomBilling();
 //

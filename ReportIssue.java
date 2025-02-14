@@ -26,8 +26,6 @@ public class ReportIssue {
 
     // Method to display issue details
     public void displayIssue() {
-
-
         System.out.println("Issue ID: " + issueID);
         System.out.println("Room ID: " + roomID);
         System.out.println("Reporter Name: " + reporterName);

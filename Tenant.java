@@ -81,6 +81,15 @@ public String getTenantName() {
     return tenantName;
 }
 
-
-
+    @Override
+    public String toString() {
+        return "Tenant{" +
+                "isBillPaid=" + isBillPaid +
+                ", reportIssue=" + reportIssue +
+                ", tenantName='" + tenantName + '\'' +
+                ", phoneNumber='" + phoneNumber + '\'' +
+                ", tenantIDCard='" + tenantIDCard + '\'' +
+                ", lastPaymentDate=" + lastPaymentDate +
+                '}';
+    }
 }
