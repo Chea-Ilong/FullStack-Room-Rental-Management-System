@@ -15,7 +15,7 @@ public class ReportIssue {
     private LocalDate reportedDate;
 
     // List to store all issues
-    private static final List<ReportIssue> issues = new ArrayList<>();
+    private static final ArrayList<ReportIssue> issues = new ArrayList<>();
 
     // Constructor (Automatically adds the issue to the list)
     public ReportIssue(String roomID, String reporterName, String tenantID, String description) {

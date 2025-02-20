@@ -12,9 +12,9 @@ public class Room {
     private int electricCounterUsage = 0;
     private  int currentElectricCounter;
     private  int currentWaterCounter;
-    private final double electricRate = 620; // per kWh
-    private final double waterRate = 2500;   // per cubic meter
-    private final double KHR_TO_USD_RATE = 4100;
+    private final double electricRate = 620.00; // per kWh
+    private final double waterRate = 2500.00;   // per cubic meter
+    private final double KHR_TO_USD_RATE = 4100.00;
         
 
     public Room(String roomID, String roomTypeInput , boolean isOccupied, int currentElectricCounter, int currentWaterCounter) {
@@ -89,11 +89,11 @@ public class Room {
         this.currentWaterCounter = newWaterCounter;
     }
 
-    public double calculateElectricPrice() {
+    private double calculateElectricPrice() {
         return isOccupied ? electricCounterUsage * electricRate : 0;
     }
 
-    public double calculateWaterPrice() {
+    private double calculateWaterPrice() {
         return isOccupied ? waterCounterUsage * waterRate : 0;
     }
 

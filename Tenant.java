@@ -1,80 +1,51 @@
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
-public class Tenant implements Authentication {
 
-    private ReportIssue reportIssue;
-    private String tenantName; // Customer name
-    private String phoneNumber; // Customer phone number
-    private String tenantIDCard; // Customer ID card
-    private boolean isBillPaid; // Is the bill paid?
+public class Tenant extends User {
+    private String tenantIDCard;
+    private boolean isBillPaid;
     private Date lastPaymentDate;
-    // List to store tenants for simplicity
-    private static List<Tenant> tenantList = new ArrayList<>();
+    private Date leaseStartDate;
+    private Date leaseEndDate;
 
-    // Check Payment, History...
-        public Tenant(String tenantName, String phoneNumber, String tenantIDCard) {
-        this.tenantName = tenantName;
-        this.phoneNumber = phoneNumber;
-        this.tenantIDCard = tenantIDCard;
-        this.isBillPaid = false; // Default: unpaid
+    public Tenant(String username, String phoneNumber, String tenantIDCard, Date leaseStartDate, Date leaseEndDate) {
+        super(username, tenantIDCard, phoneNumber, "Tenant");
+        this.isBillPaid = false;
         this.lastPaymentDate = null;
-    }
-    @Override
-    public boolean login(String tenantName,String tenantIDCard) {
-        for (Tenant tenant : tenantList) {
-            if (tenant.tenantName.equalsIgnoreCase(tenantName) && tenant.tenantIDCard.equalsIgnoreCase(tenantIDCard) ) {
-                System.out.println("Login successful for " + tenant.tenantName);
-                return true;
-            }
-        }
-        System.out.println("Login failed: Invalid tenant name or ID card.");
-        return false;
+        this.leaseStartDate = leaseStartDate;
+        this.leaseEndDate = leaseEndDate;
     }
 
-    @Override
-    public void signUp() {
-        // Prevent duplicate signups
-        for (Tenant tenant : tenantList) {
-            if (tenant.tenantName.equalsIgnoreCase(this.tenantName) && tenant.tenantIDCard.equalsIgnoreCase(this.tenantIDCard) ) {
-                System.out.println("Sign-up failed: Tenant already exists.");
-                return;
-            }
-        }
-
-        // Add tenant to list
-        tenantList.add(this);
-        System.out.println(tenantName + " has been successfully registered with ID Card: " + tenantIDCard);
-        System.out.println("Phone number: " + phoneNumber);
-    }
-
-
- public void payRent() {
+    public void payRent() {
         this.isBillPaid = true;
-        this.lastPaymentDate = new Date(); // Save the date of payment
-        System.out.println(tenantName + " has paid rent on " + lastPaymentDate);
+        this.lastPaymentDate = new Date();
+        System.out.println(username + " has paid rent on " + lastPaymentDate);
     }
 
-    // Method to check payment status
     public String checkPaymentStatus() {
         if (!isBillPaid || lastPaymentDate == null) {
             return "Rent is NOT paid.";
         }
         return "Rent is paid. Last payment: " + lastPaymentDate;
     }
-public String getTenantName() {
-    return tenantName;
-}
+
+    public String getTenantIDCard() {
+        return tenantIDCard;
+    }
+
+    public Date getLeaseEndDate() {
+        return leaseEndDate;
+    }
 
     @Override
     public String toString() {
         return "Tenant{" +
-                "isBillPaid=" + isBillPaid +
-                ", reportIssue=" + reportIssue +
-                ", tenantName='" + tenantName + '\'' +
+                "username='" + username + '\'' +
                 ", phoneNumber='" + phoneNumber + '\'' +
                 ", tenantIDCard='" + tenantIDCard + '\'' +
+                ", isBillPaid=" + isBillPaid +
                 ", lastPaymentDate=" + lastPaymentDate +
+                ", leaseStartDate=" + leaseStartDate +
+                ", leaseEndDate=" + leaseEndDate +
                 '}';
     }
 }
