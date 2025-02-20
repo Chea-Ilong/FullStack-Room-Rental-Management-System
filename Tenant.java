@@ -6,7 +6,8 @@ public class Tenant extends User {
     private Date lastPaymentDate;
     private Date leaseStartDate;
     private Date leaseEndDate;
-
+    private Lease lease;
+    
     public Tenant(String username, String phoneNumber, String tenantIDCard, Date leaseStartDate, Date leaseEndDate) {
         super(username, tenantIDCard, phoneNumber, "Tenant");
         this.isBillPaid = false;
@@ -32,8 +33,8 @@ public class Tenant extends User {
         return tenantIDCard;
     }
 
-    public Date getLeaseEndDate() {
-        return leaseEndDate;
+    public Lease getLease() {
+        return lease;
     }
 
     @Override
