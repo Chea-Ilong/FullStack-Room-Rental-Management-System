@@ -1,21 +1,65 @@
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Collections;
+
 
 public class Landlord extends User {
 
-    private List<Floor> floors; // Use ArrayList for floors
+    private List<Floor> floors;
     private String landlordName;
     private String landlordId;
     private long landlordPhoneNumber;
+    private double revenue;
 
-    private static List<Landlord> landlordlist = new ArrayList<>();
+    private static List<Landlord> landlordList = new ArrayList<>();
 
     public Landlord(String landlordName, String landlordId, long landlordPhoneNumber) {
         super(landlordName, landlordId, String.valueOf(landlordPhoneNumber), "Landlord");
         this.landlordName = landlordName;
         this.landlordId = landlordId;
         this.landlordPhoneNumber = landlordPhoneNumber;
-        this.floors = new ArrayList<>(); // Initialize empty ArrayList
+        this.floors = new ArrayList<>();
+        this.revenue = 0.0;
+    }
+
+    public void setPassword(String newPassword) {
+        this.password = newPassword;
+    }
+
+    public static List<Landlord> getLandlordList() {
+        return Collections.unmodifiableList(landlordList);
+    }
+
+    public String getLandlordName() {
+        return landlordName;
+    }
+
+    public void setLandlordName(String landlordName) {
+        this.landlordName = landlordName;
+    }
+
+    public String getLandlordId() {
+        return landlordId;
+    }
+
+    public void setLandlordId(String landlordId) {
+        this.landlordId = landlordId;
+    }
+
+    public long getLandlordPhoneNumber() {
+        return landlordPhoneNumber;
+    }
+
+    public void setLandlordPhoneNumber(long landlordPhoneNumber) {
+        this.landlordPhoneNumber = landlordPhoneNumber;
+    }
+
+//    public static List<Landlord> getLandlordList() {
+//        return landlordList;
+//    }
+
+    public static void setLandlordList(List<Landlord> landlordList) {
+        Landlord.landlordList = landlordList;
     }
 
     public void addFloor(int floorNumber) {

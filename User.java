@@ -14,6 +14,7 @@ public abstract class User implements Authentication {
         this.password = password;
         this.phoneNumber = phoneNumber;
         this.role = role;
+        signUp();
     }
 
     @Override
