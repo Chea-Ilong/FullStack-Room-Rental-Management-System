@@ -22,6 +22,8 @@ public class Landlord extends User {
         this.revenue = 0.0;
     }
 
+    //Getter and Setter
+
     public void setPassword(String newPassword) {
         this.password = newPassword;
     }
@@ -62,12 +64,31 @@ public class Landlord extends User {
         Landlord.landlordList = landlordList;
     }
 
+    //Function
+
+    public void addRevenue(double amount) {
+        this.revenue += amount;
+    }
+
+    public double getRevenue() {
+        return this.revenue;
+    }
+
+
     public void addFloor(int floorNumber) {
+        floors.add(new Floor(floorNumber));
     }
 
     ; //How many floor?
 
     public void insertToRoomToFloor(int floorNumber, Room room) {
+        for (Floor floor : floors) {
+            if (floor.getFloorNumber() == floorNumber) {
+                floor.addRoom(room);
+                return;
+            }
+        }
+        System.out.println("Floor " + floorNumber + " not found.");
     }
 
     ; //Add how many rooms per floor

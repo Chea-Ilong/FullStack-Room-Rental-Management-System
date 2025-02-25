@@ -1,4 +1,10 @@
+import java.util.ArrayList;
+import java.util.List;
+
 public class Admin extends User {
+
+    private static List<Landlord> landlordList = new ArrayList<>();
+
     private static final String ADMIN_USERNAME = "admin";
     private static final String ADMIN_PASSWORD = "admin123";
 
@@ -19,12 +25,14 @@ public class Admin extends User {
     public void resetLandlordPassword(String landlordId, String newPassword) {
         for (Landlord landlord : Landlord.getLandlordList()) {
             if (landlord.getLandlordId().equals(landlordId)) {
-                landlord.setPassword(newPassword); // `setPassword` method missing!
+                landlord.setPassword(newPassword);
                 System.out.println("Password reset for landlord: " + landlordId);
                 return;
             }
         }
         System.out.println("Landlord not found.");
     }
+
+
 }
 

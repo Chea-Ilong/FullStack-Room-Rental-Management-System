@@ -17,6 +17,30 @@ public abstract class User implements Authentication {
         signUp();
     }
 
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
     @Override
     public boolean login(String username, String password) {
         for (User user : userList) {
@@ -25,7 +49,7 @@ public abstract class User implements Authentication {
                 return true;
             }
         }
-        System.out.println("Login failed: Invalid username or password.");
+        System.out.println("Login failed!");
         return false;
     }
 
