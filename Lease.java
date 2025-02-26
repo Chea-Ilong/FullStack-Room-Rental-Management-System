@@ -1,4 +1,5 @@
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 
 public class Lease {
     private static int totalLease = 0;
@@ -19,17 +20,31 @@ public class Lease {
         this.monthlyRent = monthlyRent;
         this.leaseStatus = leaseStatus;
     }
-//
-//    public void calculateLeaseDurationInMonths(){
-//        // Method to calculate lease duration in months - Placeholder method
-//
-//    };
-//
-//    public void terminateLease(LocalDate terminationDate){
-//        // Method to terminate the lease by setting the end date and changing lease status - Placeholder method
-//
-//    };
-//
-//    // Method to return a summary of the lease - Placeholder method
-//    public String toString() {};
+
+    public long calculateLeaseDurationInMonths() {
+        return ChronoUnit.MONTHS.between(startDate, endDate);
+    }
+
+    public void terminateLease(LocalDate terminationDate) {
+        this.endDate = terminationDate;
+        this.leaseStatus = false;
+    }
+
+    public Invoice generateInvoice() {
+        LocalDate invoiceDate = LocalDate.now();
+        return new Invoice(leaseId, invoiceDate, monthlyRent);
+    }
+
+    @Override
+    public String toString() {
+        return "Lease{" +
+                "leaseId=" + leaseId +
+                ", tenantId=" + tenantId +
+                ", roomID=" + roomID +
+                ", startDate=" + startDate +
+                ", endDate=" + endDate +
+                ", monthlyRent=" + monthlyRent +
+                ", leaseStatus=" + leaseStatus +
+                '}';
+    }
 }

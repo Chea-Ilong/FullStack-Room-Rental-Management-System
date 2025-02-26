@@ -1,3 +1,4 @@
+import java.time.LocalDate;
 import java.util.Date;
 
 public class Tenant extends User {
@@ -6,35 +7,20 @@ public class Tenant extends User {
     private Date lastPaymentDate;
     private Date leaseStartDate;
     private Date leaseEndDate;
-    private Lease lease;
-    
-    public Tenant(String username, String phoneNumber, String tenantIDCard, Date leaseStartDate, Date leaseEndDate) {
+    private Payment payment; // Add Payment object
+
+    public Tenant(String username, String phoneNumber, String tenantIDCard) {
         super(username, tenantIDCard, phoneNumber, "Tenant");
-        this.isBillPaid = false;
-        this.lastPaymentDate = null;
-        this.leaseStartDate = leaseStartDate;
-        this.leaseEndDate = leaseEndDate;
+//        this.isBillPaid = false;
+//        this.lastPaymentDate = null;
     }
 
-    public void payRent() {
+    public void payRent(double amount) {
+        this.payment = new Payment(1, LocalDate.now(), amount); // Create Payment object
+        this.payment.markAsPaid(); // Mark payment as paid
         this.isBillPaid = true;
         this.lastPaymentDate = new Date();
         System.out.println(username + " has paid rent on " + lastPaymentDate);
-    }
-
-    public String checkPaymentStatus() {
-        if (!isBillPaid || lastPaymentDate == null) {
-            return "Rent is NOT paid.";
-        }
-        return "Rent is paid. Last payment: " + lastPaymentDate;
-    }
-
-    public String getTenantIDCard() {
-        return tenantIDCard;
-    }
-
-    public Lease getLease() {
-        return lease;
     }
 
     @Override
@@ -47,6 +33,7 @@ public class Tenant extends User {
                 ", lastPaymentDate=" + lastPaymentDate +
                 ", leaseStartDate=" + leaseStartDate +
                 ", leaseEndDate=" + leaseEndDate +
+                ", payment=" + (payment != null ? payment.toString() : "No payment") +
                 '}';
     }
 }
