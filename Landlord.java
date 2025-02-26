@@ -56,10 +56,6 @@ public class Landlord extends User {
         this.landlordPhoneNumber = landlordPhoneNumber;
     }
 
-//    public static List<Landlord> getLandlordList() {
-//        return landlordList;
-//    }
-
     public static void setLandlordList(List<Landlord> landlordList) {
         Landlord.landlordList = landlordList;
     }

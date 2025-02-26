@@ -11,6 +11,7 @@ public class Floor {
     }
 
     public int getFloorNumber() {
+
         return floorNumber;
     }
 
@@ -29,7 +30,7 @@ public class Floor {
         rooms.removeIf(room -> room.getRoomID().equals(roomId));
         System.out.println("Room " + roomId + " removed from floor " + floorNumber);
     }
-//
+
 //     Update a room on the floor
     public void updateRoom(String roomId, Room updatedRoom) {
         for (int i = 0; i < rooms.size(); i++) {
@@ -41,7 +42,7 @@ public class Floor {
         }
         System.out.println("Room " + roomId + " not found.");
     }
-//
+
 //     Search for a room by ID
     public Room searchRoom(String roomId) {
         for (Room room : rooms) {
