@@ -2,16 +2,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Floor {
+
     private int floorNumber;
-    private List<Room> rooms; // Use ArrayList for rooms
+    private List<Room> rooms;
 
     public Floor(int floorNumber) {
         this.floorNumber = floorNumber;
-        this.rooms = new ArrayList<>(); // Initialize empty ArrayList
+        this.rooms = new ArrayList<>();
     }
 
     public int getFloorNumber() {
-
         return floorNumber;
     }
 
@@ -19,19 +19,19 @@ public class Floor {
         this.floorNumber = floorNumber;
     }
 
-    //     Add a room to the floor
+    // Add a room to the floor
     public void addRoom(Room room) {
         rooms.add(room);
         System.out.println("Room " + room.getRoomID() + " added to floor " + floorNumber);
     }
-//
-//     Remove a room from the floor
+
+    // Remove a room from the floor
     public void removeRoom(String roomId) {
         rooms.removeIf(room -> room.getRoomID().equals(roomId));
         System.out.println("Room " + roomId + " removed from floor " + floorNumber);
     }
 
-//     Update a room on the floor
+    // Update a room on the floor
     public void updateRoom(String roomId, Room updatedRoom) {
         for (int i = 0; i < rooms.size(); i++) {
             if (rooms.get(i).getRoomID().equals(roomId)) {
@@ -40,10 +40,10 @@ public class Floor {
                 return;
             }
         }
-        System.out.println("Room " + roomId + " not found.");
+        System.out.println("Room " + roomId + " not found on floor " + floorNumber);
     }
 
-//     Search for a room by ID
+    // Search for a room by ID
     public Room searchRoom(String roomId) {
         for (Room room : rooms) {
             if (room.getRoomID().equals(roomId)) {
@@ -52,11 +52,33 @@ public class Floor {
         }
         return null;
     }
-//
-//     Display all rooms on the floor
+
+    // Display all rooms on the floor
     public void displayFloorDetails() {
+        System.out.println("Floor Number: " + floorNumber);
         for (Room room : rooms) {
             room.displayRoomInfo();
         }
+    }
+
+    // Get all rooms on the floor
+    public List<Room> getRooms() {
+        return rooms;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder floorDetails = new StringBuilder();
+        floorDetails.append("Floor Number: ").append(floorNumber).append("\n");
+
+        if (rooms.isEmpty()) {
+            floorDetails.append("No rooms available on this floor.\n");
+        } else {
+            floorDetails.append("Rooms on this floor:\n");
+            for (Room room : rooms) {
+                floorDetails.append(room.toString()).append("\n");
+            }
+        }
+        return floorDetails.toString();
     }
 }

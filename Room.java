@@ -27,74 +27,6 @@ public class Room {
         // Automatically set price based on size
     }
 
-    //Getter / Setter
-
-    public String getRoomType() {
-        return roomType;
-    }
-
-    public void setRoomType(String roomType) {
-        this.roomType = roomType;
-    }
-
-    public String getRoomID() {
-        return roomID;
-    }
-
-    public void setRoomID(String roomID) {
-        this.roomID = roomID;
-    }
-
-    public double getRoomPrice() {
-        return roomPrice;
-    }
-
-    public void setRoomPrice(double roomPrice) {
-        this.roomPrice = roomPrice;
-    }
-
-    public boolean isOccupied() {
-        return isOccupied;
-    }
-
-    public void setOccupied(boolean occupied) {
-        isOccupied = occupied;
-    }
-
-    public int getWaterCounterUsage() {
-        return waterCounterUsage;
-    }
-
-    public void setWaterCounterUsage(int waterCounterUsage) {
-        this.waterCounterUsage = waterCounterUsage;
-    }
-
-    public int getElectricCounterUsage() {
-        return electricCounterUsage;
-    }
-
-    public void setElectricCounterUsage(int electricCounterUsage) {
-        this.electricCounterUsage = electricCounterUsage;
-    }
-
-    public int getCurrentElectricCounter() {
-        return currentElectricCounter;
-    }
-
-    public void setCurrentElectricCounter(int currentElectricCounter) {
-        this.currentElectricCounter = currentElectricCounter;
-    }
-
-    public int getCurrentWaterCounter() {
-        return currentWaterCounter;
-    }
-
-    public void setCurrentWaterCounter(int currentWaterCounter) {
-        this.currentWaterCounter = currentWaterCounter;
-    }
-
-
-
     private double convertToUSD(double khrPrice) {
         return Math.round(khrPrice / KHR_TO_USD_RATE * 100.0) / 100.0;  // Rounds to two decimal places
     }
@@ -214,4 +146,24 @@ public class Room {
                 "Current Water Counter: " + currentWaterCounter + " m³\n" +
                 "Current Electric Counter: " + currentElectricCounter + " kWh\n";
     }
+
+
+    public String getRoomID() {
+
+        return roomID;
+    }
+
+    // Method to check if the room is occupied
+    public boolean isOccupied() {
+        return isOccupied;
+    }
+
+    public double getRoomBilling() {
+        return roomPrice;
+    }
+
+    public double getRent() {
+        return this.roomPrice;
+    }
+
 }

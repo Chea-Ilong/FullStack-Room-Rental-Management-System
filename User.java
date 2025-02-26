@@ -14,31 +14,8 @@ public abstract class User implements Authentication {
         this.password = password;
         this.phoneNumber = phoneNumber;
         this.role = role;
-        signUp();
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public String getPhoneNumber() {
-        return phoneNumber;
-    }
-
-    public void setPhoneNumber(String phoneNumber) {
-        this.phoneNumber = phoneNumber;
+        userList.add(this);
+//        signUp();
     }
 
     @Override
@@ -52,20 +29,20 @@ public abstract class User implements Authentication {
         System.out.println("Login failed!");
         return false;
     }
-
-    @Override
-    public void signUp() {
-        // Check if username already exists
-        for (User user : userList) {
-            if (user.username.equals(this.username)) {
-                System.out.println("Sign-up failed: Username already exists.");
-                return;
-            }
-        }
-        // Add new user to list
-        userList.add(this);
-        System.out.println(username + " has been successfully registered as " + role);
-    }
+//
+//    @Override
+//    public void signUp() {
+//        // Check if username already exists
+//        for (User user : userList) {
+//            if (user.username.equals(this.username)) {
+//                System.out.println("Sign-up failed: Username already exists.");
+//                return;
+//            }
+//        }
+//        // Add new user to list
+//        userList.add(this);
+//        System.out.println(username + " has been successfully registered as " + role);
+//    }
 
     // Display all registered users
     public static void displayAllUsers() {
@@ -74,4 +51,13 @@ public abstract class User implements Authentication {
             System.out.println(user.username + " (" + user.role + ")");
         }
     }
+    @Override
+    public String toString() {
+        return "User{" +
+                "username='" + username + '\'' +
+                ", phoneNumber='" + phoneNumber + '\'' +
+                ", role='" + role + '\'' +
+                '}';
+    }
+
 }
