@@ -1,4 +1,5 @@
-import java.util.ArrayList;
+package Properties;
+
 import java.text.NumberFormat;
 import java.util.Locale;
 
@@ -43,21 +44,21 @@ public class Room {
 
     public void markAsOccupied() {
         if (isOccupied) {
-            System.out.println("Room " + roomID + " is already occupied.");
+            System.out.println("Properties.Room " + roomID + " is already occupied.");
         } else {
             isOccupied = true;
-            System.out.println("Room " + roomID + " is now occupied.");
+            System.out.println("Properties.Room " + roomID + " is now occupied.");
         }
     }
 
     public void markAsVacant() {
         if (!isOccupied) {
-            System.out.println("Room " + roomID + " is already vacant.");
+            System.out.println("Properties.Room " + roomID + " is already vacant.");
         } else {
             isOccupied = false;
             electricCounterUsage = 0;
             waterCounterUsage = 0;
-            System.out.println("Room " + roomID + " is now vacant. Utility usage has been reset.");
+            System.out.println("Properties.Room " + roomID + " is now vacant. Utility usage has been reset.");
         }
     }
 
@@ -108,7 +109,7 @@ public class Room {
 
     public void displayRoomBilling() {
         if (!isOccupied) {
-            System.out.println("Room " + roomID + " is vacant. No billing required.");
+            System.out.println("Properties.Room " + roomID + " is vacant. No billing required.");
             return;
         }
 
@@ -117,9 +118,9 @@ public class Room {
         double totalPrice = roomPrice + electricPrice + waterPrice;
         double totalPriceUSD = convertToUSD(totalPrice);
 
-        System.out.println("Room ID: " + roomID);
-        System.out.println("Room Size: " + roomType);
-        System.out.println("Room Price: " + formatKHR(roomPrice) + " (" + formatUSD(convertToUSD(roomPrice)) + ")");
+        System.out.println("Properties.Room ID: " + roomID);
+        System.out.println("Properties.Room Size: " + roomType);
+        System.out.println("Properties.Room Price: " + formatKHR(roomPrice) + " (" + formatUSD(convertToUSD(roomPrice)) + ")");
         System.out.println("Water counter: " + (currentWaterCounter - waterCounterUsage) + " -> " + currentWaterCounter);
         System.out.println("Electric counter: " + (currentElectricCounter - electricCounterUsage) + " -> " + currentElectricCounter);
         System.out.println("Water Usage: " + waterCounterUsage + " m³");
@@ -131,16 +132,16 @@ public class Room {
     }
 
     public void displayRoomInfo() {
-        System.out.println("Room ID: " + roomID);
-        System.out.println("Room Price: " + roomPrice);
-        System.out.println("Room Status: " + (isOccupied ? "Occupied" : "Available"));
+        System.out.println("Properties.Room ID: " + roomID);
+        System.out.println("Properties.Room Price: " + roomPrice);
+        System.out.println("Properties.Room Status: " + (isOccupied ? "Occupied" : "Available"));
     }
 
 
     @Override
     public String toString() {
-        return "Room ID: " + roomID + "\n" +
-                "Room Size: " + roomType + "\n" +
+        return "Properties.Room ID: " + roomID + "\n" +
+                "Properties.Room Size: " + roomType + "\n" +
                 "Price: " + formatKHR(roomPrice) + " (" + formatUSD(convertToUSD(roomPrice)) + ")\n" +
                 "Status: " + (isOccupied ? "Occupied" : "Vacant") + "\n" +
                 "Current Water Counter: " + currentWaterCounter + " m³\n" +
@@ -149,7 +150,6 @@ public class Room {
 
 
     public String getRoomID() {
-
         return roomID;
     }
 

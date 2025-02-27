@@ -1,3 +1,5 @@
+package Properties;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,7 +13,6 @@ public class Floor {
     }
 
     public int getFloorNumber() {
-
         return floorNumber;
     }
 
@@ -22,13 +23,13 @@ public class Floor {
     //     Add a room to the floor
     public void addRoom(Room room) {
         rooms.add(room);
-        System.out.println("Room " + room.getRoomID() + " added to floor " + floorNumber);
+        System.out.println("Properties.Room " + room.getRoomID() + " added to floor " + floorNumber);
     }
 //
 //     Remove a room from the floor
     public void removeRoom(String roomId) {
         rooms.removeIf(room -> room.getRoomID().equals(roomId));
-        System.out.println("Room " + roomId + " removed from floor " + floorNumber);
+        System.out.println("Properties.Room " + roomId + " removed from floor " + floorNumber);
     }
 
 //     Update a room on the floor
@@ -36,11 +37,11 @@ public class Floor {
         for (int i = 0; i < rooms.size(); i++) {
             if (rooms.get(i).getRoomID().equals(roomId)) {
                 rooms.set(i, updatedRoom);
-                System.out.println("Room " + roomId + " updated on floor " + floorNumber);
+                System.out.println("Properties.Room " + roomId + " updated on floor " + floorNumber);
                 return;
             }
         }
-        System.out.println("Room " + roomId + " not found.");
+        System.out.println("Properties.Room " + roomId + " not found.");
     }
 
 //     Search for a room by ID

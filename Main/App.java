@@ -1,3 +1,10 @@
+package Main;
+
+import Properties.Floor;
+import Properties.Room;
+import Users.Landlord;
+import Users.Tenant;
+
 import java.util.Scanner;
 
 public class App {
@@ -19,13 +26,13 @@ public class App {
 
             if (username.equals(landlord.getUsername()) && password.equals(landlord.getPassword())) {
                 loggedIn = true;
-                System.out.println("\nLogin successful as Landlord!\n");
+                System.out.println("\nLogin successful as Users.Landlord!\n");
 
                 while (true) {
                     System.out.println("===== Main Menu =====");
-                    System.out.println("1. Tenant Operations");
-                    System.out.println("2. Floor Operations");
-                    System.out.println("3. Room Operations");
+                    System.out.println("1. Users.Tenant Operations");
+                    System.out.println("2. Properties.Floor Operations");
+                    System.out.println("3. Properties.Room Operations");
                     System.out.println("4. View All Tenants");
                     System.out.println("5. View All Floors");
                     System.out.println("6. Exit");
@@ -36,10 +43,10 @@ public class App {
 
                     if (choice == 1) {
                         while (true) {
-                            System.out.println("\n===== Tenant Operations =====");
-                            System.out.println("1. Add Tenant");
-                            System.out.println("2. Remove Tenant");
-                            System.out.println("3. View Tenant Details");
+                            System.out.println("\n===== Users.Tenant Operations =====");
+                            System.out.println("1. Add Users.Tenant");
+                            System.out.println("2. Remove Users.Tenant");
+                            System.out.println("3. View Users.Tenant Details");
                             System.out.println("4. Go Back");
                             System.out.print("\nChoose an option: ");
                             int tenantChoice = scanner.nextInt();
@@ -56,12 +63,12 @@ public class App {
                                 System.out.print("Enter room ID to assign tenant to: ");
                                 String roomId = scanner.nextLine();
                                 landlord.addTenantToRoom(roomId, newTenant);
-                                System.out.println("\nTenant added successfully!\n");
+                                System.out.println("\nUsers.Tenant added successfully!\n");
                             } else if (tenantChoice == 2) {
                                 System.out.print("\nEnter room ID to remove tenant from: ");
                                 String roomId = scanner.nextLine();
                                 landlord.removeTenantFromRoom(roomId);
-                                System.out.println("\nTenant removed successfully!\n");
+                                System.out.println("\nUsers.Tenant removed successfully!\n");
                             } else if (tenantChoice == 3) {
                                 System.out.print("\nEnter tenant username to view details: ");
                                 String tenantUsername = scanner.nextLine();
@@ -69,7 +76,7 @@ public class App {
                                 if (tenant != null) {
                                     tenant.viewDetails();
                                 } else {
-                                    System.out.println("\nTenant not found.\n");
+                                    System.out.println("\nUsers.Tenant not found.\n");
                                 }
                             } else if (tenantChoice == 4) {
                                 break;
@@ -79,10 +86,10 @@ public class App {
                         }
                     } else if (choice == 2) {
                         while (true) {
-                            System.out.println("\n===== Floor Operations =====");
-                            System.out.println("1. Add Floor");
-                            System.out.println("2. Remove Floor");
-                            System.out.println("3. View Floor Details");
+                            System.out.println("\n===== Properties.Floor Operations =====");
+                            System.out.println("1. Add Properties.Floor");
+                            System.out.println("2. Remove Properties.Floor");
+                            System.out.println("3. View Properties.Floor Details");
                             System.out.println("4. Go Back");
                             System.out.print("\nChoose an option: ");
                             int floorChoice = scanner.nextInt();
@@ -92,22 +99,22 @@ public class App {
                                 System.out.print("\nEnter floor number to add: ");
                                 int floorNumber = scanner.nextInt();
                                 landlord.addFloor(floorNumber);
-                                System.out.println("\nFloor added successfully!\n");
+                                System.out.println("\nProperties.Floor added successfully!\n");
                             } else if (floorChoice == 2) {
                                 System.out.print("\nEnter floor number to remove: ");
                                 int floorNumber = scanner.nextInt();
                                 landlord.removeFloor(floorNumber);
-                                System.out.println("\nFloor removed successfully!\n");
+                                System.out.println("\nProperties.Floor removed successfully!\n");
                             } else if (floorChoice == 3) {
                                 System.out.print("\nEnter floor number to view details: ");
                                 int floorNumber = scanner.nextInt();
                                 Floor floor = landlord.getFloor(floorNumber);
                                 if (floor != null) {
-                                    System.out.println("\nFloor " + floorNumber + " Details:");
-                                    floor.getRooms().forEach(room -> System.out.println("  - Room: " + room.getRoomID()));
+                                    System.out.println("\nProperties.Floor " + floorNumber + " Details:");
+                                    floor.getRooms().forEach(room -> System.out.println("  - Properties.Room: " + room.getRoomID()));
                                     System.out.println();
                                 } else {
-                                    System.out.println("\nFloor not found.\n");
+                                    System.out.println("\nProperties.Floor not found.\n");
                                 }
                             } else if (floorChoice == 4) {
                                 break;
@@ -117,10 +124,10 @@ public class App {
                         }
                     } else if (choice == 3) {
                         while (true) {
-                            System.out.println("\n===== Room Operations =====");
-                            System.out.println("1. Add Room to Floor");
-                            System.out.println("2. Remove Room from Floor");
-                            System.out.println("3. View Room Details");
+                            System.out.println("\n===== Properties.Room Operations =====");
+                            System.out.println("1. Add Properties.Room to Properties.Floor");
+                            System.out.println("2. Remove Properties.Room from Properties.Floor");
+                            System.out.println("3. View Properties.Room Details");
                             System.out.println("4. Go Back");
                             System.out.print("\nChoose an option: ");
                             int roomChoice = scanner.nextInt();
@@ -135,14 +142,14 @@ public class App {
                                 System.out.print("Enter floor number to add the room to: ");
                                 int floorNumber = scanner.nextInt();
                                 landlord.addRoomToFloor(floorNumber, newRoom);
-                                System.out.println("\nRoom added successfully!\n");
+                                System.out.println("\nProperties.Room added successfully!\n");
                             } else if (roomChoice == 2) {
                                 System.out.print("\nEnter room ID to remove: ");
                                 String roomId = scanner.nextLine();
                                 System.out.print("Enter floor number: ");
                                 int floorNumber = scanner.nextInt();
                                 landlord.removeRoomFromFloor(floorNumber, roomId);
-                                System.out.println("\nRoom removed successfully!\n");
+                                System.out.println("\nProperties.Room removed successfully!\n");
                             } else if (roomChoice == 3) {
                                 System.out.print("\nEnter room ID to view details: ");
                                 String roomId = scanner.nextLine();
@@ -150,7 +157,7 @@ public class App {
                                 if (room != null) {
                                     room.displayRoomBilling();
                                 } else {
-                                    System.out.println("\nRoom not found.\n");
+                                    System.out.println("\nProperties.Room not found.\n");
                                 }
                             } else if (roomChoice == 4) {
                                 break;
@@ -166,9 +173,9 @@ public class App {
                     } else if (choice == 5) {
                         System.out.println("\n===== All Floors =====");
                         for (Floor floor : landlord.getFloors()) {
-                            System.out.println("\nFloor " + floor.getFloorNumber());
+                            System.out.println("\nProperties.Floor " + floor.getFloorNumber());
                             for (Room room : floor.getRooms()) {
-                                System.out.println("  - Room: " + room.getRoomID());
+                                System.out.println("  - Properties.Room: " + room.getRoomID());
                             }
                         }
                     } else if (choice == 6) {

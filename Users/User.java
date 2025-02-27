@@ -1,10 +1,13 @@
+package Users;
+
+import Interface.Authentication;
 import java.util.ArrayList;
 
 public abstract class User implements Authentication {
     protected String username;
     protected String password;
     protected String phoneNumber;
-    protected String role; // "Tenant" or "Landlord"
+    protected String role; // "Users.Tenant" or "Users.Landlord"
 
     // ArrayList to store all users
     private static ArrayList<User> userList = new ArrayList<>();
@@ -18,7 +21,6 @@ public abstract class User implements Authentication {
 //        signUp();
     }
 
-    @Override
     public boolean login(String username, String password) {
         for (User user : userList) {
             if (user.username.equals(username) && user.password.equals(password)) {
@@ -29,35 +31,16 @@ public abstract class User implements Authentication {
         System.out.println("Login failed!");
         return false;
     }
-//
-//    @Override
-//    public void signUp() {
-//        // Check if username already exists
-//        for (User user : userList) {
-//            if (user.username.equals(this.username)) {
-//                System.out.println("Sign-up failed: Username already exists.");
-//                return;
-//            }
-//        }
-//        // Add new user to list
-//        userList.add(this);
-//        System.out.println(username + " has been successfully registered as " + role);
-//    }
 
-    // Display all registered users
     public static void displayAllUsers() {
         System.out.println("Registered Users:");
         for (User user : userList) {
             System.out.println(user.username + " (" + user.role + ")");
         }
     }
-    @Override
-    public String toString() {
-        return "User{" +
-                "username='" + username + '\'' +
-                ", phoneNumber='" + phoneNumber + '\'' +
-                ", role='" + role + '\'' +
-                '}';
+
+    public void setPassword(String newPassword) {
+        this.password = newPassword;
     }
 
 }

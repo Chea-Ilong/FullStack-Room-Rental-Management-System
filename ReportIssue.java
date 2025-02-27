@@ -84,9 +84,9 @@
 //    @Override
 //    public String toString() {
 //        return "Issue ID: " + issueID + "\n" +
-//                "Room ID: " + roomID + "\n" +
+//                "Properties.Room ID: " + roomID + "\n" +
 //                "Reporter Name: " + reporterName + "\n" +
-//                "Tenant ID: " + tenantID + "\n" +
+//                "Users.Tenant ID: " + tenantID + "\n" +
 //                "Description: " + description + "\n" +
 //                "Reported Date: " + reportedDate + "\n" +
 //                "Status: " + (isResolved ? "Resolved" : "Pending") + "\n" +
