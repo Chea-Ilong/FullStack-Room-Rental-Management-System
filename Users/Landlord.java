@@ -1,41 +1,57 @@
 package Users;
+
 import Payment.UtilityUsage;
+import Properties.Building;
+import Properties.Floor;
 import Properties.Room;
+
 import java.time.LocalDate;
 import java.util.*;
 
 public class Landlord extends User {
-    // Fields
+    // ============================ Fields ==========================================
     private List<Tenant> tenants;
-    private List<Room> rooms;
-    private static Landlord instance;
+    private List<Building> buildings; // Manage multiple buildings
     private Map<LocalDate, UtilityUsage> utilityRecords;
     private static final int LANDLORD_PIN = 1234;
 
-    // Constructor
-    public Landlord(String name, String contact, String IDcard, List<Tenant> tenants, List<Room> rooms) {
-        super(name, contact, IDcard, "Landlord");
-        this.name = name;
-        this.contact = contact;
-        this.IdCard = IDcard;
+    // ============================ Constructor ====================================
+    public Landlord(String name, String contact, String IDcard, List<Tenant> tenants, List<Building> buildings) {
+        super(name, IDcard,contact, "Landlord");
         this.tenants = tenants != null ? tenants : new ArrayList<>();
-        this.rooms = rooms != null ? rooms : new ArrayList<>();
+        this.buildings = buildings != null ? buildings : new ArrayList<>();
         this.utilityRecords = new HashMap<>();
     }
 
-    // Login method override
-    @Override
-    public boolean login(String username, String password) {
-        // Just check username and password (PIN verification handled in App)
-        return super.login(username, password);
+    // ============================ Login & Authentication =========================
+
+
+    public boolean login(Scanner scanner, String username, String password) {
+        username = username.trim();
+        password = password.trim();
+
+        if (this.name.equals(username) && this.IdCard.equals(password)) {
+            System.out.println("Login successful for " + this.name);
+
+            // Prompt for PIN
+            System.out.print("Enter your 4-digit PIN: ");
+            int pin = scanner.nextInt();
+            scanner.nextLine(); // Consume the newline left-over
+
+            if (pin == LANDLORD_PIN) {
+                System.out.println("PIN verified. Login successful as Landlord!");
+                return true;
+            } else {
+                System.out.println("Incorrect PIN. Login failed for " + username);
+                return false;
+            }
+        } else {
+            System.out.println("Login failed for " + username);
+            return false;
+        }
     }
 
-    // PIN verification method
-    public boolean verifyPin(int enteredPin) {
-        return enteredPin == LANDLORD_PIN;
-    }
-
-    // Utility methods
+    // ============================ Utility Methods =================================
     public UtilityUsage getUtilityUsageForRoom(Room room, LocalDate date) {
         if (room.getUtilityUsage() != null && room.getUtilityUsage().getDate().equals(date)) {
             return room.getUtilityUsage();
@@ -67,8 +83,8 @@ public class Landlord extends User {
         }
     }
 
-    // Room-Tenant assignment
-    public void updateTenantRoom(String tenantID, String newRoomNumber) {
+    // ============================ Room-Tenant Assignment =========================
+    public void assignedTenantRoom(String tenantID, String newRoomNumber) {
         // Find the tenant by ID
         Tenant tenant = getTenantByID(tenantID);
         if (tenant != null) {
@@ -82,7 +98,7 @@ public class Landlord extends User {
             }
 
             // Find the new room by room number
-            Room newRoom = getRoomByNumber(newRoomNumber);
+            Room newRoom = getRoomAcrossAllBuildings(newRoomNumber);
             if (newRoom != null) {
                 // Assign the tenant to the new room
                 tenant.assignRoom(newRoom);
@@ -96,36 +112,82 @@ public class Landlord extends User {
         }
     }
 
-    // CRUD Operations for Room
-    public void addRoom(Room room) {
-        if (room != null && !rooms.contains(room)) {
-            rooms.add(room);
-            System.out.println("Room added: " + room.getRoomNumber());
-        } else {
-            System.out.println("Room already exists or is invalid.");
-        }
-    }
 
-    public void removeRoom(String roomNumber) {
-        Room room = getRoomByNumber(roomNumber);
-        if (room != null) {
-            rooms.remove(room);
-            System.out.println("Room removed: " + roomNumber);
-        } else {
-            System.out.println("Room not found.");
-        }
-    }
-
-    public Room getRoomByNumber(String roomNumber) {
-        for (Room room : rooms) {
-            if (room.getRoomNumber().equals(roomNumber)) {
-                return room;
+    // ============================ CRUD Operations for Room ========================
+    // Find room by room number across all buildings and floors
+    public Room getRoomAcrossAllBuildings(String roomNumber) {
+        for (Building building : buildings) {
+            for (Floor floor : building.getFloors()) {
+                for (Room room : floor.getRooms()) {
+                    if (room.getRoomNumber().equals(roomNumber)) {
+                        return room; // Room found
+                    }
+                }
             }
         }
         return null; // Room not found
     }
 
-    // CRUD Operations for Tenant
+    // ============================ CRUD Operations for Floor ========================
+    public void addFloorToBuilding(String buildingName, Floor floor) {
+        Building building = getBuildingByName(buildingName);
+        if (building != null) {
+            building.addFloor(floor);
+            System.out.println("Floor " + floor.getFloorNumber() + " added to Building " + buildingName);
+        } else {
+            System.out.println("Building " + buildingName + " not found.");
+        }
+    }
+
+    public void removeFloorFromBuilding(String buildingName, String floorNumber) {
+        Building building = getBuildingByName(buildingName);
+        if (building != null) {
+            building.removeFloor(floorNumber);
+        } else {
+            System.out.println("Building " + buildingName + " not found.");
+        }
+    }
+
+    // ============================ CRUD Operations for Building =====================
+    public void addBuilding(Building building) {
+        if (building != null && !buildings.contains(building)) {
+            buildings.add(building);
+            System.out.println("Building " + building.getBuildingName() + " has been added.");
+        } else {
+            System.out.println("Building already exists or is invalid.");
+        }
+    }
+
+    public void removeBuilding(String buildingName) {
+        Building building = getBuildingByName(buildingName);
+        if (building != null) {
+            buildings.remove(building);
+            System.out.println("Building " + buildingName + " has been removed.");
+        } else {
+            System.out.println("Building not found.");
+        }
+    }
+
+    public void updateBuildingName(String oldBuildingName, String newBuildingName) {
+        Building building = getBuildingByName(oldBuildingName);
+        if (building != null) {
+            building.setBuildingName(newBuildingName);
+            System.out.println("Building " + oldBuildingName + " has been renamed to " + newBuildingName);
+        } else {
+            System.out.println("Building not found.");
+        }
+    }
+
+    public Building getBuildingByName(String buildingName) {
+        for (Building building : buildings) {
+            if (building.getBuildingName().equals(buildingName)) {
+                return building;
+            }
+        }
+        return null; // Building not found
+    }
+
+    // ============================ CRUD Operations for Tenant =======================
     public void addTenant(Tenant tenant) {
         if (tenant != null && !tenants.contains(tenant)) {
             tenants.add(tenant);
@@ -161,29 +223,26 @@ public class Landlord extends User {
         return null; // Tenant not found
     }
 
-    // Getter methods
+    // ============================ Getter Methods ===================================
     public List<Tenant> getTenants() {
         return tenants;
     }
 
-    public List<Room> getRooms() {
-        return rooms;
+    public List<Building> getBuildings() {
+        return buildings;
     }
 
-    // Display information methods
-    public void displayAllRooms() {
-        System.out.println("\n===== All Rooms =====");
-        if (rooms.isEmpty()) {
-            System.out.println("No rooms available.");
+    // ============================ Display Information Methods ======================
+    public void displayAllBuildings() {
+        System.out.println("\n===== All Buildings =====");
+        if (buildings.isEmpty()) {
+            System.out.println("No buildings available.");
             return;
         }
 
-        for (Room room : rooms) {
-            System.out.println("Room Number: " + room.getRoomNumber());
-            System.out.println("Status: " + (room.getTenant() != null ? "Occupied" : "Vacant"));
-            if (room.getTenant() != null) {
-                System.out.println("Tenant: " + room.getTenant().getName());
-            }
+        for (Building building : buildings) {
+            System.out.println("Building Name: " + building.getBuildingName());
+            building.displayAllFloors();
             System.out.println("---------------------");
         }
     }
@@ -203,5 +262,15 @@ public class Landlord extends User {
             System.out.println("Room: " + (room != null ? room.getRoomNumber() : "None"));
             System.out.println("---------------------");
         }
+    }
+
+    // ============================ toString Method =================================
+    @Override
+    public String toString() {
+        return super.toString() +
+                "Landlord{" +
+                "tenants=" + tenants +
+                ", buildings=" + buildings +
+                '}';
     }
 }

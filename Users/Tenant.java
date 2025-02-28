@@ -1,4 +1,5 @@
 package Users;
+
 import Payment.UtilityUsage;
 import Properties.Room;
 import Payment.RentPayment;
@@ -9,7 +10,10 @@ import java.util.List;
 
 public class Tenant extends User {
 
+    // ============================ Constants =================================
     private static final double KHR_TO_USD_RATE = 4100.0; // Example exchange rate
+
+    // ============================ Fields ====================================
     private LocalDate rentStartDate;
     private LocalDate rentEndDate;
     private Room assignedRoom;
@@ -17,6 +21,7 @@ public class Tenant extends User {
     private boolean rentPaid;
     private double balanceDue;
 
+    // ============================ Constructor =================================
     public Tenant(String name, String IdCard, String contact) {
         super(name, IdCard, contact, "Tenant");
         this.rentPaymentHistory = new ArrayList<>();
@@ -24,7 +29,7 @@ public class Tenant extends User {
         this.balanceDue = 0.0;
     }
 
-
+    // ============================ Methods for Utility Usage =====================
 
     // Method to view utility usage for a specific date
     public void viewUtilityUsage(Landlord landlord, LocalDate date) {
@@ -35,6 +40,8 @@ public class Tenant extends User {
             System.out.println("No utility data available for " + date);
         }
     }
+
+    // ============================ Room Assignment =============================
     // Assign a room to the tenant
     public void assignRoom(Room room) {
         if (this.assignedRoom != null) {
@@ -50,9 +57,7 @@ public class Tenant extends User {
                 " with rent: " + formatKHR(room.getRent()) + " (" + formatUSD(convertToUSD(room.getRent())) + ")");
     }
 
-
-
-
+    // ============================ Rent Payment ================================
     // Pay Rent
     public void payRent(double amount) {
         if (assignedRoom == null) {
@@ -82,6 +87,7 @@ public class Tenant extends User {
         }
     }
 
+    // ============================ Utility Payment ============================
     // Pay Utilities
     public void payUtilities(double amount) {
         if (assignedRoom == null) {
@@ -101,7 +107,7 @@ public class Tenant extends User {
         System.out.println(name + " has paid utilities: " + formatKHR(amount) + " (" + formatUSD(convertToUSD(amount)) + ")");
     }
 
-
+    // ============================ Payment History ============================
     // Display Payment History
     public void displayPaymentHistory() {
         System.out.println(name + "'s Payment History:");
@@ -110,16 +116,7 @@ public class Tenant extends User {
         }
     }
 
-    // Display Tenant Information
-    public void displayTenantInfo() {
-        System.out.println("Tenant Name: " + name);
-        System.out.println("ID Card: " + IdCard);
-        System.out.println("Contact: " + contact);
-        System.out.println("Assigned Room: " + (assignedRoom != null ? assignedRoom.getRoomNumber() : "None"));
-        System.out.println("Rent Due: " + formatKHR(balanceDue) + " (" + formatUSD(convertToUSD(balanceDue)) + ")");
-        System.out.println("Rent Paid: " + (rentPaid ? "Yes" : "No"));
-    }
-
+    // ============================ Vacating Room =============================
     // Vacate Room
     public void vacateRoom() {
         if (assignedRoom != null) {
@@ -133,6 +130,7 @@ public class Tenant extends User {
         }
     }
 
+    // ============================ Getter and Helper Methods =================
     public Room getAssignedRoom() {
         return assignedRoom;
     }
@@ -150,5 +148,16 @@ public class Tenant extends User {
     // Format amount in USD
     private String formatUSD(double amount) {
         return String.format("%.2f USD", amount);
+    }
+
+    // ============================ Override toString ==========================
+    @Override
+    public String toString() {
+        return super.toString() +
+                "Tenant{" +
+                "assignedRoom=" + (assignedRoom != null ? assignedRoom.getRoomNumber() : "None") +
+                ", balanceDue=" + formatKHR(balanceDue) +
+                ", rentPaid=" + rentPaid +
+                '}';
     }
 }

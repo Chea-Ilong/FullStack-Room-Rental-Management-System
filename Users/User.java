@@ -1,14 +1,17 @@
 package Users;
-
 import java.util.ArrayList;
 
 public abstract class User {
+
+    // ============================ User Information ============================
     protected String name;
     protected String IdCard;
     protected String contact;
     protected String role;
 
     private static final ArrayList<User> userList = new ArrayList<>();
+
+    // ============================ Constructor ============================
     public User(String username, String password, String phoneNumber, String role) {
         this.name = username;
         this.IdCard = password;
@@ -17,7 +20,7 @@ public abstract class User {
         userList.add(this);
     }
 
-    // Getters for user details
+    // ============================ Getters ============================
     public String getName() {
         return name;
     }
@@ -29,7 +32,10 @@ public abstract class User {
     public String getContact() {
         return contact;
     }
+
+    // ============================ Login Method ============================
     public boolean login(String username, String password) {
+
         if (this.name.equals(username) && this.IdCard.equals(password)) {
             System.out.println("Login successful for " + this.name);
             return true;
@@ -39,6 +45,7 @@ public abstract class User {
         }
     }
 
+    // ============================ String Representation ============================
     @Override
     public String toString() {
         return "User{" +

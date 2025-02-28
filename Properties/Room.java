@@ -7,24 +7,25 @@ import java.time.LocalDate;
 
 public class Room {
 
-    // Room Information
+    // ============================ Room Information ============================
     private String roomNumber;
     private double rent;
     private boolean isOccupied;
     private Tenant tenant; // Assigned tenant (if any)
     private UtilityUsage utilityUsage;
-    // Utility Tracking
+
+    // ============================ Utility Tracking ============================
     private int waterCounterUsage = 0;
     private int electricCounterUsage = 0;
     private int currentElectricCounter;
     private int currentWaterCounter;
 
-    // Utility Rates (Constants)
+    // ============================ Utility Rates (Constants) ============================
     private static final double ELECTRIC_RATE = 620.00; // per kWh
     private static final double WATER_RATE = 2500.00;   // per cubic meter
     private static final double KHR_TO_USD_RATE = 4100.00;
 
-    // Constructor
+    // ============================ Constructor ============================
     public Room(String roomNumber, int currentElectricCounter, int currentWaterCounter) {
         this.roomNumber = roomNumber;
         this.rent = 300000; // Default rent in khmer
@@ -34,8 +35,7 @@ public class Room {
         this.currentWaterCounter = Math.max(currentWaterCounter, 0);
     }
 
-
-
+    // ============================ Utility Usage Management ============================
     public void setUtilityUsage(int electricUsage, int waterUsage, LocalDate date) {
         this.utilityUsage = new UtilityUsage(electricUsage, waterUsage, date);
 
@@ -44,12 +44,11 @@ public class Room {
         currentWaterCounter += waterUsage;
     }
 
-
-
     public UtilityUsage getUtilityUsage() {
         return this.utilityUsage;
     }
-    // Tenant Management
+
+    // ============================ Tenant Management ============================
     public void assignTenant(Tenant tenant) {
         this.tenant = tenant;
         this.isOccupied = (tenant != null);
@@ -60,7 +59,7 @@ public class Room {
         this.isOccupied = false;
     }
 
-    // Room Status Management
+    // ============================ Room Status Management ============================
     public void markAsOccupied() {
         if (isOccupied) {
             System.out.println("Room " + roomNumber + " is already occupied.");
@@ -80,7 +79,7 @@ public class Room {
         }
     }
 
-    // Utility Usage Management
+    // ============================ Utility Usage Update ============================
     public void updateUsage(int newElectricCounter, int newWaterCounter) {
         if (!isOccupied) {
             System.out.println("Error: Cannot update usage for a vacant room.");
@@ -108,12 +107,12 @@ public class Room {
         currentWaterCounter = newWaterCounter;
     }
 
-    private void resetUtilityUsage() {
+    void resetUtilityUsage() {
         electricCounterUsage = 0;
         waterCounterUsage = 0;
     }
 
-    // Billing Methods
+    // ============================ Billing Methods ============================
     public void displayRoomBilling() {
         if (!isOccupied) {
             System.out.println("Room " + roomNumber + " is vacant. No billing required.");
@@ -143,8 +142,7 @@ public class Room {
         System.out.println();
     }
 
-
-    // Display Methods
+    // ============================ Display Methods ============================
     public void displayRoomInfo() {
         System.out.println("Room Number: " + roomNumber);
         System.out.println("Rent: " + rent);
@@ -166,7 +164,7 @@ public class Room {
                 "  Current Electric Counter: " + currentElectricCounter + " kWh\n";
     }
 
-    // Private Helper Methods
+    // ============================ Private Helper Methods ============================
     private double calculateElectricPrice() {
         return isOccupied ? electricCounterUsage * ELECTRIC_RATE : 0;
     }
@@ -187,7 +185,7 @@ public class Room {
         return String.format("%.2fUSD", amount);
     }
 
-    // Getters
+    // ============================ Getters ============================
     public String getRoomNumber() {
         return roomNumber;
     }
@@ -198,5 +196,13 @@ public class Room {
 
     public Tenant getTenant() {
         return tenant;
+    }
+
+    public void setRoomNumber(String roomNumber) {
+        this.roomNumber = roomNumber;
+    }
+
+    public boolean isOccupied() {
+        return isOccupied;
     }
 }
