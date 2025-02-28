@@ -28,15 +28,21 @@ public class Building {
 
     // Remove a floor from the building
     public void removeFloor(int floorNumber) {
-        floors.removeIf(floor -> floor.getFloorNumber() == floorNumber);
-        System.out.println("Floor " + floorNumber + " removed from building " + buildingName);
+        Floor floor = searchFloor(floorNumber);
+        if (floor != null && floor.getRooms().isEmpty()) {
+            floors.remove(floor);
+            System.out.println("Floor " + floorNumber + " removed from building " + buildingName);
+        } else {
+            System.out.println("Cannot remove Floor " + floorNumber + " because it contains rooms.");
+        }
     }
+
 
     // Update a floor in the building
     public void updateFloor(int floorNumber, Floor updatedFloor) {
-        for (int i = 0; i < floors.size(); i++) {
-            if (floors.get(i).getFloorNumber() == floorNumber) {
-                floors.set(i, updatedFloor);
+        for (Floor floor : floors) {
+            if (floor.getFloorNumber() == floorNumber) {
+                floor.setFloorNumber(updatedFloor.getFloorNumber()); // Update floor number if necessary
                 System.out.println("Floor " + floorNumber + " updated in building " + buildingName);
                 return;
             }
@@ -57,10 +63,15 @@ public class Building {
     // Display all floors in the building
     public void displayBuildingDetails() {
         System.out.println("Building: " + buildingName);
-        for (Floor floor : floors) {
-            System.out.println("Floor " + floor.getFloorNumber() + ":");
-            floor.displayFloorDetails();
+        if (floors.isEmpty()) {
+            System.out.println("No floors available.");
+        } else {
+            for (Floor floor : floors) {
+                System.out.println("Floor " + floor.getFloorNumber() + ":");
+                floor.displayFloorDetails();
+            }
         }
     }
+
 }
 

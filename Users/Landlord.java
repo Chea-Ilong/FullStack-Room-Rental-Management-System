@@ -102,29 +102,29 @@ public class Landlord extends User {
         System.out.println("All reports:");
         // Add logic to generate all reports
     }
-
-    public void updateRoom(String roomId, Room updatedRoom) {
-        for (Floor floor : floors) {
-            Room room = floor.findRoomById(roomId);
-            if (room != null) {
-                floor.updateRoom(roomId, updatedRoom);
-                System.out.println("Room " + roomId + " updated successfully.");
-                return;
-            }
-        }
-        System.out.println("Room " + roomId + " not found.");
-    }
-
-    public void searchRoom(String roomId) {
-        for (Floor floor : floors) {
-            Room room = floor.findRoomById(roomId);
-            if (room != null) {
-                System.out.println("Room found: " + room);
-                return;
-            }
-        }
-        System.out.println("Room " + roomId + " not found.");
-    }
+//
+//    public void updateRoom(String roomId, Room updatedRoom) {
+//        for (Floor floor : floors) {
+//            Room room = floor.findRoomById(roomId);
+//            if (room != null) {
+//                floor.updateRoom(roomId, updatedRoom);
+//                System.out.println("Room " + roomId + " updated successfully.");
+//                return;
+//            }
+//        }
+//        System.out.println("Room " + roomId + " not found.");
+//    }
+//
+//    public void searchRoom(String roomId) {
+//        for (Floor floor : floors) {
+//            Room room = floor.findRoomById(roomId);
+//            if (room != null) {
+//                System.out.println("Room found: " + room);
+//                return;
+//            }
+//        }
+//        System.out.println("Room " + roomId + " not found.");
+//    }
 
     // Helper Function
 

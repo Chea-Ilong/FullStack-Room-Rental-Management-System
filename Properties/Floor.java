@@ -12,6 +12,10 @@ public class Floor {
         this.rooms = new ArrayList<>(); // Initialize empty ArrayList
     }
 
+    public List<Room> getRooms() {
+        return rooms;
+    }
+
     public int getFloorNumber() {
         return floorNumber;
     }
@@ -27,12 +31,22 @@ public class Floor {
     }
 //
 //     Remove a room from the floor
-    public void removeRoom(String roomId) {
-        rooms.removeIf(room -> room.getRoomID().equals(roomId));
-        System.out.println("Properties.Room " + roomId + " removed from floor " + floorNumber);
+public void removeRoom(String roomId) {
+    Room room = searchRoom(roomId);
+    if (room != null) {
+        if (!room.isOccupied()) {
+            rooms.remove(room);
+            System.out.println("Room " + roomId + " removed from floor " + floorNumber);
+        } else {
+            System.out.println("Cannot remove occupied room " + roomId);
+        }
+    } else {
+        System.out.println("Room " + roomId + " not found.");
     }
+}
 
-//     Update a room on the floor
+
+    //     Update a room on the floor
     public void updateRoom(String roomId, Room updatedRoom) {
         for (int i = 0; i < rooms.size(); i++) {
             if (rooms.get(i).getRoomID().equals(roomId)) {

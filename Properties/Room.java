@@ -123,7 +123,7 @@ public class Room {
         System.out.println("Properties.Room Price: " + formatKHR(roomPrice) + " (" + formatUSD(convertToUSD(roomPrice)) + ")");
         System.out.println("Water counter: " + (currentWaterCounter - waterCounterUsage) + " -> " + currentWaterCounter);
         System.out.println("Electric counter: " + (currentElectricCounter - electricCounterUsage) + " -> " + currentElectricCounter);
-        System.out.println("Water Usage: " + waterCounterUsage + " m³");
+        System.out.println("Water Usage: " + waterCounterUsage + " dm³");
         System.out.println("Electric Usage: " + electricCounterUsage + " kWh");
         System.out.println("Water Price: " + formatKHR(waterPrice) + " (" + formatUSD(convertToUSD(waterPrice)) + ")");
         System.out.println("Electric Price: " + formatKHR(electricPrice) + " (" + formatUSD(convertToUSD(electricPrice)) + ")");

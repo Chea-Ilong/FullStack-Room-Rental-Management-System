@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
-public class Admin extends User {
+public class Admin extends Landlord {
     private static final String ADMIN_USERNAME = "admin";
     private static final String ADMIN_PASSWORD = "admin123";
     private static final int ADMIN_PIN = 1234;  // 4-digit security PIN
@@ -16,7 +16,8 @@ public class Admin extends User {
     private boolean isLocked = false; // Track if admin is locked out
 
     private Admin() {
-        super(ADMIN_USERNAME, ADMIN_PASSWORD, "N/A", "Users.Admin");
+        super(ADMIN_USERNAME, "ADMIN_ID", "N/A");
+        setPassword(ADMIN_PASSWORD); // Admin has a predefined password
     }
 
     // Singleton Pattern - Ensure only one Admin exists
@@ -99,14 +100,14 @@ public class Admin extends User {
         System.out.println("Landlord " + landlordId + " updated successfully.");
     }
 
-    public void deleteLandlord(String landlordId) {
-        Landlord landlord = findLandlordById(landlordId);
+    public void deleteLandlord(String id) {
+        Landlord landlord = findLandlordById(id);
         if (landlord == null) {
-            System.out.println("Error: Landlord with ID " + landlordId + " not found.");
+            System.out.println("Landlord not found.");
             return;
         }
         landlordList.remove(landlord);
-        System.out.println("Landlord " + landlordId + " deleted successfully.");
+        System.out.println("Landlord " + id + " deleted.");
     }
 
     public void resetLandlordPassword(String landlordId, String newPassword) {
@@ -140,11 +141,9 @@ public class Admin extends User {
 
     // ======================= HELPER FUNCTION =======================
 
-    private Landlord findLandlordById(String landlordId) {
-        for (Landlord landlord : landlordList) {
-            if (landlord.getLandlordId().equals(landlordId)) {
-                return landlord;
-            }
+    private Landlord findLandlordById(String id) {
+        for (Landlord l : landlordList) {
+            if (l.getLandlordId().equals(id)) return l;
         }
         return null;
     }
