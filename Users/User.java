@@ -1,46 +1,51 @@
 package Users;
 
-import Interface.Authentication;
 import java.util.ArrayList;
 
-public abstract class User implements Authentication {
-    protected String username;
-    protected String password;
-    protected String phoneNumber;
-    protected String role; // "Users.Tenant" or "Users.Landlord"
+public abstract class User {
+    protected String name;
+    protected String IdCard;
+    protected String contact;
+    protected String role;
 
-    // ArrayList to store all users
-    private static ArrayList<User> userList = new ArrayList<>();
-
+    private static final ArrayList<User> userList = new ArrayList<>();
     public User(String username, String password, String phoneNumber, String role) {
-        this.username = username;
-        this.password = password;
-        this.phoneNumber = phoneNumber;
+        this.name = username;
+        this.IdCard = password;
+        this.contact = phoneNumber;
         this.role = role;
         userList.add(this);
-//        signUp();
     }
 
+    // Getters for user details
+    public String getName() {
+        return name;
+    }
+
+    public String getIdCard() {
+        return IdCard;
+    }
+
+    public String getContact() {
+        return contact;
+    }
     public boolean login(String username, String password) {
-        for (User user : userList) {
-            if (user.username.equals(username) && user.password.equals(password)) {
-                System.out.println("Login successful for " + user.username);
-                return true;
-            }
-        }
-        System.out.println("Login failed!");
-        return false;
-    }
-
-    public static void displayAllUsers() {
-        System.out.println("Registered Users:");
-        for (User user : userList) {
-            System.out.println(user.username + " (" + user.role + ")");
+        if (this.name.equals(username) && this.IdCard.equals(password)) {
+            System.out.println("Login successful for " + this.name);
+            return true;
+        } else {
+            System.out.println("Login failed for " + username);
+            return false;
         }
     }
 
-    public void setPassword(String newPassword) {
-        this.password = newPassword;
+    @Override
+    public String toString() {
+        return "User{" +
+                "name='" + name + '\'' +
+                ", IdCard='" + IdCard + '\'' +
+                ", contact='" + contact + '\'' +
+                ", role='" + role + '\'' +
+                '}';
     }
-
 }
