@@ -1,5 +1,6 @@
 package Main;
 
+import Payment.UtilityUsage;
 import Properties.Room;
 import Users.Landlord;
 import Users.Tenant;
@@ -10,6 +11,8 @@ import java.util.Scanner;
 public class Menu {
 
     // Tenant Menu
+
+
     public static void tenantMenu(Scanner scanner, Tenant tenant, Landlord landlord) {
         boolean inMenu = true;
         while (inMenu) {
@@ -46,10 +49,14 @@ public class Menu {
                     tenant.payRent(rentAmount);
                     break;
                 case 4:
-                    System.out.print("Enter the amount to pay for utilities: ");
-                    double utilityAmount = scanner.nextDouble();
-                    scanner.nextLine(); // Consume newline
-                    tenant.payUtilities(utilityAmount);
+                    if (tenant.getAssignedRoom() != null && tenant.getAssignedRoom().getUtilityUsage() != null) {
+                        System.out.print("Enter the amount to pay for utilities: ");
+                        double utilityAmount = scanner.nextDouble();
+                        scanner.nextLine(); // Consume newline
+                        tenant.payUtilities(utilityAmount);
+                    } else {
+                        System.out.println("Utility usage data is not available. Please contact the landlord to set the utility usage.");
+                    }
                     break;
                 case 5:
                     tenant.displayPaymentHistory();
@@ -62,6 +69,8 @@ public class Menu {
             }
         }
     }
+
+
     // Landlord Menu
     public static void landlordMenu(Scanner scanner, Landlord landlord) {
         while (true) {
@@ -73,7 +82,7 @@ public class Menu {
                 System.out.println("4. Tenant Management");
                 System.out.println("5. Utility Management");
                 System.out.println("6. View Reports");
-                System.out.println("7. Exit Landlord Menu");
+                System.out.println("7. Logout");
                 System.out.print("Choose an option: ");
                 int choice = scanner.nextInt();
                 scanner.nextLine(); // Consume newline
@@ -116,7 +125,7 @@ public class Menu {
         }
     }
     // Building Management Submenu
-     static void buildingManagementMenu(Scanner scanner, Landlord landlord) {
+    static void buildingManagementMenu(Scanner scanner, Landlord landlord) {
         while (true) {
             try {
                 System.out.println("\n=== Building Management ===");
@@ -135,32 +144,46 @@ public class Menu {
                         System.out.print("Enter building name: ");
                         String buildingName = scanner.nextLine();
 
-                        landlord.addBuilding(new Properties.Building(buildingName));
+                        System.out.print("Enter building address: ");
+                        String buildingAddress = scanner.nextLine();
+
+                        landlord.addBuilding(new Properties.Building(buildingName, buildingAddress));
                         break;
+
                     case 2:
                         // Remove Building
                         System.out.print("Enter building name to remove: ");
                         buildingName = scanner.nextLine();
                         landlord.removeBuilding(buildingName);
                         break;
+
                     case 3:
-                        // Update Building Name
+                        // Update Building Name and Address
                         System.out.print("Enter current building name: ");
                         String oldBuildingName = scanner.nextLine();
+
                         System.out.print("Enter new building name: ");
                         String newBuildingName = scanner.nextLine();
-                        landlord.updateBuildingName(oldBuildingName, newBuildingName);
+
+                        System.out.print("Enter new building address: ");
+                        String newBuildingAddress = scanner.nextLine();
+
+                        landlord.updateBuilding(oldBuildingName, newBuildingName, newBuildingAddress);
                         break;
+
                     case 4:
                         // View All Buildings
                         landlord.displayAllBuildings();
                         break;
+
                     case 5:
                         return; // Back to main menu
+
                     default:
                         System.out.println("Invalid choice! Please try again.");
                         break;
                 }
+
             } catch (Exception e) {
                 System.out.println("An error occurred: " + e.getMessage());
                 scanner.nextLine(); // Consume invalid input
@@ -169,7 +192,7 @@ public class Menu {
     }
 
     // Floor Management Submenu
-     static void floorManagementMenu(Scanner scanner, Landlord landlord) {
+    static void floorManagementMenu(Scanner scanner, Landlord landlord) {
         while (true) {
             try {
                 System.out.println("\n=== Floor Management ===");
@@ -231,7 +254,7 @@ public class Menu {
     }
 
     // Room Management Submenu
-     static void roomManagementMenu(Scanner scanner, Landlord landlord) {
+    static void roomManagementMenu(Scanner scanner, Landlord landlord) {
         while (true) {
             try {
                 System.out.println("\n=== Room Management ===");
@@ -494,7 +517,7 @@ public class Menu {
                                 List<Room> availableRooms = floor.getAvailableRooms();
                                 if (!availableRooms.isEmpty()) {
                                     foundAvailable = true;
-                                    System.out.println("Building: " + building.getBuildingName() + ", Floor: " + floor.getFloorNumber());
+                                    System.out.println("Building: " + building.getBuildingName() + " ,Address: "  + building.getAddress() + " , Floor: " + floor.getFloorNumber());
                                     for (Properties.Room room : availableRooms) {
                                         System.out.println("  Room: " + room.getRoomNumber());
                                     }
@@ -514,7 +537,7 @@ public class Menu {
                                 List<Properties.Room> occupiedRooms = floor.getOccupiedRooms();
                                 if (!occupiedRooms.isEmpty()) {
                                     foundOccupied = true;
-                                    System.out.println("Building: " + building.getBuildingName() + ", Floor: " + floor.getFloorNumber());
+                                    System.out.println("Building: " + building.getBuildingName() + " ,Address: "  + building.getAddress() + " , Floor: " + floor.getFloorNumber());
                                     for (Properties.Room room : occupiedRooms) {
                                         System.out.println("  Room: " + room.getRoomNumber() + ", Tenant: " + room.getTenant().getName());
                                     }

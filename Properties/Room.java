@@ -7,6 +7,7 @@ import java.time.LocalDate;
 
 public class Room {
 
+
     // ============================ Room Information ============================
     private String roomNumber;
     private double rent;
@@ -112,35 +113,46 @@ public class Room {
         waterCounterUsage = 0;
     }
 
-    // ============================ displayRoomBilling ============================
     public void displayRoomBilling() {
         if (!isOccupied) {
             System.out.println("Room " + roomNumber + " is vacant. No billing required.");
             return;
         }
 
-        // Get the utility usage from the utilityUsage object (which is set by landlord)
+        // Retrieve utility usage if available
         if (utilityUsage != null) {
             electricCounterUsage = utilityUsage.getElectricUsage();
             waterCounterUsage = utilityUsage.getWaterUsage();
         }
 
+        // Calculate costs
         double electricPrice = calculateElectricPrice();
         double waterPrice = calculateWaterPrice();
-        double totalPrice = rent + electricPrice + waterPrice;
+        double totalUtilityPrice = electricPrice + waterPrice;
+        double totalPrice = rent + totalUtilityPrice;
         double totalPriceUSD = convertToUSD(totalPrice);
 
-        System.out.println("Room Number: " + roomNumber);
-        System.out.println("Rent: " + formatKHR(rent) + " (" + formatUSD(convertToUSD(rent)) + ")");
-        System.out.println("Water counter: " + (currentWaterCounter - waterCounterUsage) + " -> " + currentWaterCounter);
-        System.out.println("Electric counter: " + (currentElectricCounter - electricCounterUsage) + " -> " + currentElectricCounter);
-        System.out.println("Water Usage: " + waterCounterUsage + " m³");
-        System.out.println("Electric Usage: " + electricCounterUsage + " kWh");
-        System.out.println("Water Price: " + formatKHR(waterPrice) + " (" + formatUSD(convertToUSD(waterPrice)) + ")");
-        System.out.println("Electric Price: " + formatKHR(electricPrice) + " (" + formatUSD(convertToUSD(electricPrice)) + ")");
-        System.out.println("Total Expense: " + formatKHR(totalPrice) + " (" + formatUSD(totalPriceUSD) + ")");
-        System.out.println();
+        // Display Billing Information
+        System.out.println("==========================================");
+        System.out.println(" Room Billing Summary");
+        System.out.println("==========================================");
+        System.out.println("Room Number       : " + roomNumber);
+        System.out.println("------------------------------------------");
+        System.out.println("Rent              : " + formatKHR(rent) + " (" + formatUSD(convertToUSD(rent)) + ")");
+        System.out.println("Water Counter     : " + (currentWaterCounter - waterCounterUsage) + " -> " + currentWaterCounter);
+        System.out.println("Electric Counter  : " + (currentElectricCounter - electricCounterUsage) + " -> " + currentElectricCounter);
+        System.out.println("------------------------------------------");
+        System.out.println("Water Usage       : " + waterCounterUsage + " m³");
+        System.out.println("Electric Usage    : " + electricCounterUsage + " kWh");
+        System.out.println("------------------------------------------");
+        System.out.println("Water Price       : " + formatKHR(waterPrice) + " (" + formatUSD(convertToUSD(waterPrice)) + ")");
+        System.out.println("Electric Price    : " + formatKHR(electricPrice) + " (" + formatUSD(convertToUSD(electricPrice)) + ")");
+        System.out.println("Total Utility Cost: " + formatKHR(totalUtilityPrice) + " (" + formatUSD(convertToUSD(totalUtilityPrice)) + ")");
+        System.out.println("------------------------------------------");
+        System.out.println("Total Expense     : " + formatKHR(totalPrice) + " (" + formatUSD(totalPriceUSD) + ")");
+        System.out.println("==========================================\n");
     }
+
 
     // ============================ Display Methods ============================
     public void displayRoomInfo() {
@@ -204,5 +216,13 @@ public class Room {
 
     public boolean isOccupied() {
         return isOccupied;
+    }
+
+    public static double getElectricRate() {
+        return ELECTRIC_RATE;
+    }
+
+    public static double getWaterRate() {
+        return WATER_RATE;
     }
 }

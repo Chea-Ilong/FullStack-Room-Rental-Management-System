@@ -101,10 +101,27 @@ public class Tenant extends User {
             return;
         }
 
-        RentPayment rentPayment = new RentPayment(IdCard, amount, false, true);
-        rentPaymentHistory.add(rentPayment);
+        double totalUtilityCost = calculateTotalUtilityCost(usage);
+        System.out.println("Total Utility Cost: " + formatKHR(totalUtilityCost) + " (" + formatUSD(convertToUSD(totalUtilityCost)) + ")");
 
-        System.out.println(name + " has paid utilities: " + formatKHR(amount) + " (" + formatUSD(convertToUSD(amount)) + ")");
+        if (amount > totalUtilityCost) {
+            System.out.println("Error: Payment amount cannot be greater than the utility balance.");
+            return;
+        }
+
+        if (amount == totalUtilityCost) {
+            RentPayment rentPayment = new RentPayment(IdCard, amount, false, true);
+            rentPaymentHistory.add(rentPayment);
+
+            System.out.println(name + " has fully paid utilities: " + formatKHR(amount) + " (" + formatUSD(convertToUSD(amount)) + ") on " + rentPayment.getPaymentDate());
+
+        } else {
+            System.out.println("Error: Partial payments for utilities are not allowed.");
+        }
+    }
+
+    public double calculateTotalUtilityCost(UtilityUsage usage) {
+        return (usage.getElectricUsage() * Room.getElectricRate()) + (usage.getWaterUsage() * Room.getWaterRate());
     }
 
     // ============================ Payment History ============================

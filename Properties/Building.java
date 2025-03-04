@@ -8,11 +8,13 @@ public class Building {
     // ============================ Building Information ============================
     private String buildingName;
     private List<Floor> floors;
+    private String address;
 
     // ============================ Constructor ============================
-    public Building(String buildingName) {
+    public Building(String buildingName, String address) {
         this.buildingName = buildingName;
         this.floors = new ArrayList<>();
+        this.address = address;
     }
 
     // ============================ Add/Remove/Update Floors ============================
@@ -92,6 +94,13 @@ public class Building {
     }
 
 
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String newAddress) {
+        this.address = newAddress;
+    }
     // Method to get room by its room number across all floors
     public Room getRoomByNumber(String roomNumber) {
         for (Floor floor : floors) {
@@ -103,4 +112,14 @@ public class Building {
         }
         return null; // Room not found
     }
+
+    @Override
+    public String toString() {
+        return "Building{" +
+                "buildingName='" + buildingName + '\'' +
+                ", floors=" + floors +
+                ", address='" + address + '\'' +
+                '}';
+    }
+
 }

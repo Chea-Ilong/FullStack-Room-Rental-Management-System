@@ -14,7 +14,7 @@ public class App {
     public static void main(String[] args) {
 
 
-      // Initialize some mock data
+        // Initialize some mock data
         List<Room> rooms = new ArrayList<>();
         List<Tenant> tenants = new ArrayList<>();
 
@@ -34,7 +34,7 @@ public class App {
         tenants.add(tenant2);
 
         // Create a Building with the rooms
-        Building building1 = new Building("Building A");
+        Building building1 = new Building("Building A","Phnom Penh City");
         List<Building> buildings = new ArrayList<>();
         buildings.add(building1);
         building1.addFloor(floor1);

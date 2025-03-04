@@ -27,6 +27,69 @@ public class Landlord extends User {
         this.utilityRecords = new HashMap<>();
     }
 
+
+    // ============================ Utility Methods =================================
+    public UtilityUsage getUtilityUsageForRoom(Room room, LocalDate date) {
+        if (room.getUtilityUsage() != null && room.getUtilityUsage().getDate().equals(date)) {
+            return room.getUtilityUsage();
+        }
+        return null;
+    }
+
+    public void setUtilityUsage(Room room, int electricUsage, int waterUsage) {
+        // Use current date by default
+        LocalDate today = LocalDate.now();
+        setUtilityUsage(room, electricUsage, waterUsage, today);
+    }
+
+    public void setUtilityUsage(Room room, int electricUsage, int waterUsage, LocalDate date) {
+        room.setUtilityUsage(electricUsage, waterUsage, date);
+        System.out.println("Utility usage for Room " + room.getRoomNumber() + " on " + date + " has been set.");
+    }
+
+    public UtilityUsage getUtilityUsage(LocalDate date) {
+        return utilityRecords.get(date);
+    }
+
+    public void displayUtilityUsage(LocalDate date) {
+        UtilityUsage usage = getUtilityUsage(date);
+        if (usage != null) {
+            System.out.println("Utility usage for " + date + ": " + usage.toString());
+        } else {
+            System.out.println("No utility data available for " + date);
+        }
+    }
+
+    // ============================ Room-Tenant Assignment =========================
+    public void assignedTenantRoom(String tenantID, String newRoomNumber) {
+        // Find the tenant by ID
+        Tenant tenant = getTenantByID(tenantID);
+        if (tenant != null) {
+            // Find the current room the tenant is assigned to
+            Room currentRoom = tenant.getAssignedRoom();
+
+            // Check if the tenant is already assigned to a room and remove them
+            if (currentRoom != null) {
+                currentRoom.removeTenant();
+                System.out.println(tenant.getName() + " has been removed from Room " + currentRoom.getRoomNumber());
+            }
+
+            // Find the new room by room number
+            Room newRoom = getRoomAcrossAllBuildings(newRoomNumber);
+            if (newRoom != null) {
+                // Assign the tenant to the new room
+                tenant.assignRoom(newRoom);
+                newRoom.assignTenant(tenant);
+                System.out.println(tenant.getName() + " has been assigned to Room " + newRoomNumber);
+            } else {
+                System.out.println("New Room not found.");
+            }
+        } else {
+            System.out.println("Tenant not found.");
+        }
+    }
+
+
     // ============================ Login & Authentication =========================
     public boolean login(Scanner scanner, String username, String password) {
         username = username.trim();
@@ -100,69 +163,6 @@ public class Landlord extends User {
         }
     }
 
-
-    // ============================ Utility Methods =================================
-    public UtilityUsage getUtilityUsageForRoom(Room room, LocalDate date) {
-        if (room.getUtilityUsage() != null && room.getUtilityUsage().getDate().equals(date)) {
-            return room.getUtilityUsage();
-        }
-        return null;
-    }
-
-    public void setUtilityUsage(Room room, int electricUsage, int waterUsage) {
-        // Use current date by default
-        LocalDate today = LocalDate.now();
-        setUtilityUsage(room, electricUsage, waterUsage, today);
-    }
-
-    public void setUtilityUsage(Room room, int electricUsage, int waterUsage, LocalDate date) {
-        room.setUtilityUsage(electricUsage, waterUsage, date);
-        System.out.println("Utility usage for Room " + room.getRoomNumber() + " on " + date + " has been set.");
-    }
-
-    public UtilityUsage getUtilityUsage(LocalDate date) {
-        return utilityRecords.get(date);
-    }
-
-    public void displayUtilityUsage(LocalDate date) {
-        UtilityUsage usage = getUtilityUsage(date);
-        if (usage != null) {
-            System.out.println("Utility usage for " + date + ": " + usage.toString());
-        } else {
-            System.out.println("No utility data available for " + date);
-        }
-    }
-
-    // ============================ Room-Tenant Assignment =========================
-    public void assignedTenantRoom(String tenantID, String newRoomNumber) {
-        // Find the tenant by ID
-        Tenant tenant = getTenantByID(tenantID);
-        if (tenant != null) {
-            // Find the current room the tenant is assigned to
-            Room currentRoom = tenant.getAssignedRoom();
-
-            // Check if the tenant is already assigned to a room and remove them
-            if (currentRoom != null) {
-                currentRoom.removeTenant();
-                System.out.println(tenant.getName() + " has been removed from Room " + currentRoom.getRoomNumber());
-            }
-
-            // Find the new room by room number
-            Room newRoom = getRoomAcrossAllBuildings(newRoomNumber);
-            if (newRoom != null) {
-                // Assign the tenant to the new room
-                tenant.assignRoom(newRoom);
-                newRoom.assignTenant(tenant);
-                System.out.println(tenant.getName() + " has been assigned to Room " + newRoomNumber);
-            } else {
-                System.out.println("New Room not found.");
-            }
-        } else {
-            System.out.println("Tenant not found.");
-        }
-    }
-
-
     // ============================ CRUD Operations for Room ========================
     // Find room by room number across all buildings and floors
     public Room getRoomAcrossAllBuildings(String roomNumber) {
@@ -200,9 +200,9 @@ public class Landlord extends User {
 
     // ============================ CRUD Operations for Building =====================
     public void addBuilding(Building building) {
-        if (building != null && !buildings.contains(building)) {
+        if (building != null && !buildingExists(building)) {
             buildings.add(building);
-            System.out.println("Building " + building.getBuildingName() + " has been added.");
+            System.out.println("Building " + building.getBuildingName() + " at " + building.getAddress() + " has been added.");
         } else {
             System.out.println("Building already exists or is invalid.");
         }
@@ -218,25 +218,36 @@ public class Landlord extends User {
         }
     }
 
-    public void updateBuildingName(String oldBuildingName, String newBuildingName) {
+    public void updateBuilding(String oldBuildingName, String newBuildingName, String newAddress) {
         Building building = getBuildingByName(oldBuildingName);
         if (building != null) {
             building.setBuildingName(newBuildingName);
-            System.out.println("Building " + oldBuildingName + " has been renamed to " + newBuildingName);
+            building.setAddress(newAddress);
+            System.out.println("Building " + oldBuildingName + " has been updated to " + newBuildingName + " at " + newAddress);
         } else {
             System.out.println("Building not found.");
         }
     }
 
+
     public Building getBuildingByName(String buildingName) {
         for (Building building : buildings) {
-            if (building.getBuildingName().equals(buildingName)) {
+            if (building.getBuildingName().equalsIgnoreCase(buildingName)) {
                 return building;
             }
         }
         return null; // Building not found
     }
 
+    private boolean buildingExists(Building newBuilding) {
+        for (Building building : buildings) {
+            if (building.getBuildingName().equalsIgnoreCase(newBuilding.getBuildingName()) &&
+                    building.getAddress().equalsIgnoreCase(newBuilding.getAddress())) {
+                return true;
+            }
+        }
+        return false;
+    }
     // ============================ CRUD Operations for Tenant =======================
     public void addTenant(Tenant tenant) {
         if (tenant != null && !tenants.contains(tenant)) {
@@ -291,10 +302,12 @@ public class Landlord extends User {
         }
 
         for (Building building : buildings) {
-            System.out.println("Building Name: " + building.getBuildingName());
+            System.out.println("Building Name: " + building.getBuildingName() +
+                    " | Address: " + building.getAddress());
             building.displayAllFloors();
             System.out.println("---------------------");
         }
+
     }
 
     public void displayAllTenants() {

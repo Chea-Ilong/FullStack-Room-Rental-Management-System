@@ -41,10 +41,9 @@ public abstract class User implements Authentication {
         if (this.name.equals(username) && this.IdCard.equals(password)) {
             System.out.println("Login successful for " + this.name);
             return true;
-        } else {
-            System.out.println("Login failed for " + username);
-            return false;
         }
+
+        return false;
     }
 
     // ============================ String Representation ============================
