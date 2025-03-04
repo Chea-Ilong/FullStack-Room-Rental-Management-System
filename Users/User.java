@@ -1,7 +1,9 @@
 package Users;
+import Interface.Authentication;
+
 import java.util.ArrayList;
 
-public abstract class User {
+public abstract class User implements Authentication {
 
     // ============================ User Information ============================
     protected String name;

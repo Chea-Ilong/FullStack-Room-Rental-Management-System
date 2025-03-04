@@ -50,7 +50,7 @@ public class Tenant extends User {
         }
 
         this.assignedRoom = room;
-        room.assignTenant(this);
+            room.assignTenant(this);
         this.balanceDue = room.getRent();
 
         System.out.println(name + " has been assigned to Room " + room.getRoomNumber() +

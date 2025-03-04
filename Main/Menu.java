@@ -2,13 +2,66 @@ package Main;
 
 import Properties.Room;
 import Users.Landlord;
+import Users.Tenant;
 
 import java.util.List;
 import java.util.Scanner;
 
 public class Menu {
 
+    // Tenant Menu
+    public static void tenantMenu(Scanner scanner, Tenant tenant, Landlord landlord) {
+        boolean inMenu = true;
+        while (inMenu) {
+            System.out.println("\n===== Tenant Menu =====");
+            System.out.println("1. Display Room Billing");
+            System.out.println("2. Display Room Info");
+            System.out.println("3. Pay Rent");
+            System.out.println("4. Pay Utilities");
+            System.out.println("5. Display Payment History");
+            System.out.println("6. Logout");
+            System.out.print("Choose an option: ");
+            int choice = scanner.nextInt();
+            scanner.nextLine(); // Consume newline
 
+            switch (choice) {
+                case 1:
+                    if (tenant.getAssignedRoom() != null) {
+                        tenant.getAssignedRoom().displayRoomBilling();
+                    } else {
+                        System.out.println("No room assigned to display billing.");
+                    }
+                    break;
+                case 2:
+                    if (tenant.getAssignedRoom() != null) {
+                        tenant.getAssignedRoom().displayRoomInfo();
+                    } else {
+                        System.out.println("No room assigned to display info.");
+                    }
+                    break;
+                case 3:
+                    System.out.print("Enter the amount to pay for rent: ");
+                    double rentAmount = scanner.nextDouble();
+                    scanner.nextLine(); // Consume newline
+                    tenant.payRent(rentAmount);
+                    break;
+                case 4:
+                    System.out.print("Enter the amount to pay for utilities: ");
+                    double utilityAmount = scanner.nextDouble();
+                    scanner.nextLine(); // Consume newline
+                    tenant.payUtilities(utilityAmount);
+                    break;
+                case 5:
+                    tenant.displayPaymentHistory();
+                    break;
+                case 6:
+                    inMenu = false;
+                    break;
+                default:
+                    System.out.println("Invalid choice. Please try again.");
+            }
+        }
+    }
     // Landlord Menu
     public static void landlordMenu(Scanner scanner, Landlord landlord) {
         while (true) {
@@ -81,6 +134,7 @@ public class Menu {
                         // Add Building
                         System.out.print("Enter building name: ");
                         String buildingName = scanner.nextLine();
+
                         landlord.addBuilding(new Properties.Building(buildingName));
                         break;
                     case 2:

@@ -5,11 +5,9 @@ import Properties.Floor;
 import Properties.Room;
 import Users.Landlord;
 import Users.Tenant;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
-
 import static Main.Menu.*;
 
 public class App {
@@ -23,7 +21,7 @@ public class App {
         // Create rooms
         Room room1 = new Room("101", 500, 200);
         Room room2 = new Room("102", 600, 250);
-        Room room3 = new Room("103", 700, 300);
+
         Floor floor1 = new Floor("1");
         floor1.addRoom(room1);
         floor1.addRoom(room2);
@@ -32,10 +30,6 @@ public class App {
         Tenant tenant1 = new Tenant("Alice", "T001", "1234567890");
         Tenant tenant2 = new Tenant("Bob", "T002", "9876543210");
 
-        rooms.add(room1);
-        rooms.add(room2);
-        rooms.add(room3);
-
         tenants.add(tenant1);
         tenants.add(tenant2);
 
@@ -43,10 +37,11 @@ public class App {
         Building building1 = new Building("Building A");
         List<Building> buildings = new ArrayList<>();
         buildings.add(building1);
+        building1.addFloor(floor1);
 
         // Create the landlord with buildings
-        Landlord landlord1 = new Landlord("lin", "012312", "01", tenants, buildings);
-
+        Landlord landlord1 = new Landlord("lin", "123", "01", tenants, buildings);
+        landlord1.assignedTenantRoom("T001","101");
 
 
         // Main login and navigation
@@ -60,7 +55,7 @@ public class App {
                 landlordMenu(scanner, landlord1);
                 // After returning from landlord menu, we'll come back here
             } else if (loginResult == 2) {
-                tenantManagementMenu(scanner, landlord1); // Passing the landlord object
+                tenantMenu(scanner, tenant1, landlord1); // Passing the landlord object
                 // After returning from tenant menu, we'll come back here
             } else {
                 // User chose to exit

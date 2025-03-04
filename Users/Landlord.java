@@ -13,19 +13,21 @@ public class Landlord extends User {
     private List<Tenant> tenants;
     private List<Building> buildings; // Manage multiple buildings
     private Map<LocalDate, UtilityUsage> utilityRecords;
-    private static final int LANDLORD_PIN = 1234;
+    private static int landlordPIN = 1234;
+    private int failedPinAttempts;
+    private static final int MAX_PIN_ATTEMPTS = 5;
+
 
     // ============================ Constructor ====================================
-    public Landlord(String name, String contact, String IDcard, List<Tenant> tenants, List<Building> buildings) {
-        super(name, IDcard,contact, "Landlord");
+    public Landlord(String name, String IDcard, String contact, List<Tenant> tenants, List<Building> buildings) {
+        super(name, IDcard, contact, "Landlord");
+        this.failedPinAttempts = 0;
         this.tenants = tenants != null ? tenants : new ArrayList<>();
         this.buildings = buildings != null ? buildings : new ArrayList<>();
         this.utilityRecords = new HashMap<>();
     }
 
     // ============================ Login & Authentication =========================
-
-
     public boolean login(Scanner scanner, String username, String password) {
         username = username.trim();
         password = password.trim();
@@ -33,23 +35,71 @@ public class Landlord extends User {
         if (this.name.equals(username) && this.IdCard.equals(password)) {
             System.out.println("Login successful for " + this.name);
 
-            // Prompt for PIN
-            System.out.print("Enter your 4-digit PIN: ");
-            int pin = scanner.nextInt();
-            scanner.nextLine(); // Consume the newline left-over
+            // Handle PIN authentication
+            while (failedPinAttempts < MAX_PIN_ATTEMPTS) {
+                System.out.print("Enter your 4-digit PIN: ");
+                if (scanner.hasNextInt()) {
+                    int pin = scanner.nextInt();
+                    scanner.nextLine(); // Consume the newline left-over
 
-            if (pin == LANDLORD_PIN) {
-                System.out.println("PIN verified. Login successful as Landlord!");
-                return true;
-            } else {
-                System.out.println("Incorrect PIN. Login failed for " + username);
-                return false;
+                    if (pin == landlordPIN) {
+                        System.out.println("PIN verified. Login successful as Landlord!");
+                        failedPinAttempts = 0;
+                        return true;
+                    } else {
+                        failedPinAttempts++;
+                        System.out.println("Incorrect PIN. Attempts left: " + (MAX_PIN_ATTEMPTS - failedPinAttempts));
+                        if (failedPinAttempts == MAX_PIN_ATTEMPTS) {
+                            System.out.print("Too many failed PIN attempts. Press R to reset your PIN or L to go back to the login page: ");
+                            String choice = scanner.nextLine().trim().toUpperCase();
+                            if (choice.equals("R")) {
+                                resetPIN(scanner);
+                            } else if (choice.equals("L")) {
+                                return false;
+                            }
+                        }
+                    }
+                } else {
+                    System.out.println("Invalid input. Please enter a 4-digit PIN.");
+                    scanner.next(); // Consume the invalid input
+                    failedPinAttempts++;
+                }
             }
+
+            System.out.println("Returning to login page.");
+            return false;
         } else {
             System.out.println("Login failed for " + username);
             return false;
         }
     }
+
+
+    // ============================ PIN Reset =========================
+    public void resetPIN(Scanner scanner) {
+        System.out.print("Enter your Landlord ID: ");
+        String inputID = scanner.nextLine().trim();
+        System.out.print("Enter your Contact Number: ");
+        String inputContact = scanner.nextLine().trim();
+
+        if (this.IdCard.equals(inputID) && this.contact.equals(inputContact)) {
+            System.out.print("Enter a new 4-digit PIN: ");
+            if (scanner.hasNextInt()) {
+                int newPin = scanner.nextInt();
+                scanner.nextLine(); // Consume newline
+
+                this.landlordPIN = newPin;
+                this.failedPinAttempts = 0;
+                System.out.println("PIN reset successful. You can now log in with the new PIN.");
+            } else {
+                System.out.println("Invalid input. PIN reset failed.");
+                scanner.next(); // Consume the invalid input
+            }
+        } else {
+            System.out.println("Incorrect Landlord ID or Contact Number. PIN reset failed.");
+        }
+    }
+
 
     // ============================ Utility Methods =================================
     public UtilityUsage getUtilityUsageForRoom(Room room, LocalDate date) {

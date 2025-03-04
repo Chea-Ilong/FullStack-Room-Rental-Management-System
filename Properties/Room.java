@@ -112,7 +112,7 @@ public class Room {
         waterCounterUsage = 0;
     }
 
-    // ============================ Billing Methods ============================
+    // ============================ displayRoomBilling ============================
     public void displayRoomBilling() {
         if (!isOccupied) {
             System.out.println("Room " + roomNumber + " is vacant. No billing required.");
