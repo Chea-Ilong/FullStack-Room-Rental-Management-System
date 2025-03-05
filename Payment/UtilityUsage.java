@@ -5,13 +5,10 @@ import java.time.format.DateTimeFormatter;
 
 public class UtilityUsage {
 
-    // ============================ Utility Usage Information ============================
     private int electricUsage;
     private int waterUsage;
-    private LocalDate date; // Exact date when the utility usage was recorded
+    private LocalDate date;
 
-    // ============================ Constructor ============================
-    // Constructor with validation
     public UtilityUsage(int electricUsage, int waterUsage, LocalDate date) {
         if (electricUsage < 0 || waterUsage < 0) {
             throw new IllegalArgumentException("Usage values cannot be negative.");
@@ -21,7 +18,6 @@ public class UtilityUsage {
         this.date = date;
     }
 
-    // ============================ Getters ============================
     public int getElectricUsage() {
         return electricUsage;
     }
@@ -34,13 +30,6 @@ public class UtilityUsage {
         return date;
     }
 
-    // ============================ Utility Date Formatting ============================
-    // Get formatted month (like "January 2025")
-    public String getFormattedMonth() {
-        return date.format(DateTimeFormatter.ofPattern("MMMM yyyy"));
-    }
-
-    // ============================ String Representation ============================
     @Override
     public String toString() {
         return "Electric Usage: " + electricUsage + " kWh, Water Usage: " + waterUsage +

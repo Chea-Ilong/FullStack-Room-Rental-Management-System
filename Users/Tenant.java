@@ -3,10 +3,10 @@ package Users;
 import Payment.UtilityUsage;
 import Properties.Room;
 import Payment.RentPayment;
-
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 
 public class Tenant extends User {
 
@@ -14,8 +14,6 @@ public class Tenant extends User {
     private static final double KHR_TO_USD_RATE = 4100.0; // Example exchange rate
 
     // ============================ Fields ====================================
-    private LocalDate rentStartDate;
-    private LocalDate rentEndDate;
     private Room assignedRoom;
     private final List<RentPayment> rentPaymentHistory;
     private boolean rentPaid;
@@ -50,7 +48,7 @@ public class Tenant extends User {
         }
 
         this.assignedRoom = room;
-            room.assignTenant(this);
+        room.assignTenant(this);
         this.balanceDue = room.getRent();
 
         System.out.println(name + " has been assigned to Room " + room.getRoomNumber() +
@@ -59,7 +57,10 @@ public class Tenant extends User {
 
     // ============================ Rent Payment ================================
     // Pay Rent
-    public void payRent(double amount) {
+    public void payRent(Scanner scanner) {
+        System.out.print("Enter the amount to pay for rent: ");
+        double amount = scanner.nextDouble();
+        scanner.nextLine(); // Consume newline
         if (assignedRoom == null) {
             System.out.println("Error: No room assigned to pay rent for.");
             return;

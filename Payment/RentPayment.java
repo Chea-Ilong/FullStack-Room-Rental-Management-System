@@ -4,15 +4,12 @@ import java.time.LocalDate;
 
 public class RentPayment {
 
-    // ============================ Payment Information ============================
     private String tenantID;
     private double amount;
     private LocalDate paymentDate;
     private boolean rentPayment;
     private boolean utilitiesPayment;
 
-    // ============================ Constructor ============================
-    // Constructor with validation
     public RentPayment(String tenantID, double amount, boolean rentPayment, boolean utilitiesPayment) {
         if (tenantID == null || tenantID.isEmpty()) {
             throw new IllegalArgumentException("Tenant ID cannot be null or empty.");
@@ -27,7 +24,6 @@ public class RentPayment {
         this.utilitiesPayment = utilitiesPayment;
     }
 
-    // ============================ Getters ============================
     public String getTenantID() {
         return tenantID;
     }
@@ -48,7 +44,6 @@ public class RentPayment {
         return utilitiesPayment;
     }
 
-    // ============================ String Representation ============================
     @Override
     public String toString() {
         return "Payment [Tenant ID: " + tenantID + ", Amount: " + amount +

@@ -63,7 +63,7 @@ public class Landlord extends User {
     // ============================ Room-Tenant Assignment =========================
     public void assignedTenantRoom(String tenantID, String newRoomNumber) {
         // Find the tenant by ID
-        Tenant tenant = getTenantByID(tenantID);
+           Tenant tenant = getTenantByID(tenantID);
         if (tenant != null) {
             // Find the current room the tenant is assigned to
             Room currentRoom = tenant.getAssignedRoom();
@@ -87,6 +87,7 @@ public class Landlord extends User {
         } else {
             System.out.println("Tenant not found.");
         }
+
     }
 
 
@@ -131,10 +132,9 @@ public class Landlord extends User {
 
             System.out.println("Returning to login page.");
             return false;
-        } else {
-            System.out.println("Login failed for " + username);
-            return false;
         }
+
+        return false;
     }
 
 

@@ -1,7 +1,6 @@
 package Users;
 
 import Interface.Authentication;
-
 import java.util.ArrayList;
 
 public abstract class User implements Authentication {
@@ -43,15 +42,13 @@ public abstract class User implements Authentication {
             System.out.println("Login successful for " + this.name);
             return true;
         }
-
         return false;
     }
 
     // ============================ String Representation ============================
     @Override
     public String toString() {
-        return "User{" +
-                "name='" + name + '\'' +
+        return "name='" + name + '\'' +
                 ", IdCard='" + IdCard + '\'' +
                 ", contact='" + contact + '\'' +
                 ", role='" + role + '\'' +
