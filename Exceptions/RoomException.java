@@ -1,11 +1,11 @@
-//package Exceptions;
-//
-//import Properties.Room;
-//
-//public class RoomException extends Exception {
-//    public RoomException(String message) {
-//        super(message);
-//    }
+package Exceptions;
+
+public class RoomException extends Exception {
+    public RoomException(String message) {
+        super(message);
+    }
+}
+
 //
 //    // Validate if the room is occupied before performing certain operations
 //    public static void validateRoomOccupied(Room room) throws RoomException {
@@ -34,4 +34,5 @@
 //            throw new RoomException("Error: Room number cannot be null or empty.");
 //        }
 //    }
+//
 //}

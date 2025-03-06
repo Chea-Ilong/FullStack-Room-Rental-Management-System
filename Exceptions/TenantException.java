@@ -1,12 +1,11 @@
-//package Exceptions;
-//
-//import Users.Tenant;
-//
-//public class TenantException extends Exception {
-//    public TenantException(String message) {
-//        super(message);
-//    }
-//
+package Exceptions;
+
+public class TenantException extends Exception {
+    public TenantException(String message) {
+        super(message);
+    }
+}
+
 //    public TenantException(String message, Throwable cause) {
 //        super(message, cause);
 //    }

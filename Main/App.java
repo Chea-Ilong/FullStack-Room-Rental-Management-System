@@ -1,19 +1,35 @@
 package Main;
 
 
+import DataBase.DataBaseConnection;
+import Exceptions.RoomException;
+import Exceptions.TenantException;
 import Properties.Building;
 import Properties.Floor;
 import Properties.Room;
 import Users.Landlord;
 import Users.Tenant;
+
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 import static Main.Menu.*;
 
 public class App {
-    public static void main(String[] args)  {
+    public static void main(String[] args) throws RoomException, TenantException {
 
+        try (Connection connection = DataBaseConnection.getConnection()) {
+            if (connection != null) {
+                System.out.println("Database connection successful!");
+            } else {
+                System.out.println("Failed to make connection!");
+            }
+        } catch (SQLException e) {
+            System.err.println("Connection error: " + e.getMessage());
+            e.printStackTrace();
+        }
 
         // Initialize some mock data
         List<Room> rooms = new ArrayList<>();

@@ -1,5 +1,7 @@
 package Users;
 
+import Exceptions.RoomException;
+import Exceptions.TenantException;
 import Payment.UtilityUsage;
 import Properties.Room;
 import Payment.RentPayment;
@@ -40,11 +42,15 @@ public class Tenant extends User {
     }
 
     // ============================ Room Assignment =============================
+
     // Assign a room to the tenant
-    public void assignRoom(Room room) {
+    public void assignRoom(Room room) throws RoomException, TenantException {
         if (this.assignedRoom != null) {
-            System.out.println("Tenant is already assigned to Room " + assignedRoom.getRoomNumber() + ". Reassigning...");
-            this.assignedRoom.removeTenant();
+            throw new TenantException("Error: Tenant is already assigned to Room " + assignedRoom.getRoomNumber() + ".");
+        }
+
+        if (room.isOccupied()) {
+            throw new RoomException("Room " + room.getRoomNumber() + " is already occupied.");
         }
 
         this.assignedRoom = room;
@@ -56,15 +62,16 @@ public class Tenant extends User {
     }
 
     // ============================ Rent Payment ================================
+
     // Pay Rent
-    public void payRent(Scanner scanner) {
+    public void payRent(Scanner scanner) throws TenantException {
+        if (assignedRoom == null) {
+            throw new TenantException("Error: No room assigned to pay rent for.");
+        }
+
         System.out.print("Enter the amount to pay for rent: ");
         double amount = scanner.nextDouble();
         scanner.nextLine(); // Consume newline
-        if (assignedRoom == null) {
-            System.out.println("Error: No room assigned to pay rent for.");
-            return;
-        }
 
         if (amount > balanceDue) {
             System.out.println("Error: Payment amount cannot be greater than the rent balance.");
@@ -89,17 +96,16 @@ public class Tenant extends User {
     }
 
     // ============================ Utility Payment ============================
+
     // Pay Utilities
-    public void payUtilities(double amount) {
+    public void payUtilities(double amount) throws TenantException {
         if (assignedRoom == null) {
-            System.out.println("Error: No room assigned to pay utilities for.");
-            return;
+            throw new TenantException("Error: No room assigned to pay utilities for.");
         }
 
         UtilityUsage usage = assignedRoom.getUtilityUsage();
         if (usage == null) {
-            System.out.println("Error: Utility usage data is not available. Please contact the landlord.");
-            return;
+            throw new TenantException("Error: Utility usage data is not available. Please contact the landlord.");
         }
 
         double totalUtilityCost = calculateTotalUtilityCost(usage);
@@ -115,17 +121,13 @@ public class Tenant extends User {
             rentPaymentHistory.add(rentPayment);
 
             System.out.println(name + " has fully paid utilities: " + formatKHR(amount) + " (" + formatUSD(convertToUSD(amount)) + ") on " + rentPayment.getPaymentDate());
-
         } else {
             System.out.println("Error: Partial payments for utilities are not allowed.");
         }
     }
-
     public double calculateTotalUtilityCost(UtilityUsage usage) {
         return (usage.getElectricUsage() * Room.getElectricRate()) + (usage.getWaterUsage() * Room.getWaterRate());
     }
-
-    // ============================ Payment History ============================
     // Display Payment History
     public void displayPaymentHistory() {
         System.out.println(name + "'s Payment History:");
@@ -133,19 +135,19 @@ public class Tenant extends User {
             System.out.println(rentPayment.toString());
         }
     }
-
     // ============================ Vacating Room =============================
+
     // Vacate Room
-    public void vacateRoom() {
-        if (assignedRoom != null) {
-            System.out.println(name + " is vacating Room " + assignedRoom.getRoomNumber());
-            assignedRoom.removeTenant();
-            this.assignedRoom = null;
-            this.balanceDue = 0.0;
-            this.rentPaid = false;
-        } else {
-            System.out.println("Error: Tenant is not assigned to any room.");
+    public void vacateRoom() throws TenantException {
+        if (assignedRoom == null) {
+            throw new TenantException("Error: Tenant is not assigned to any room.");
         }
+
+        System.out.println(name + " is vacating Room " + assignedRoom.getRoomNumber());
+        assignedRoom.removeTenant();
+        this.assignedRoom = null;
+        this.balanceDue = 0.0;
+        this.rentPaid = false;
     }
 
     // ============================ Getter and Helper Methods =================

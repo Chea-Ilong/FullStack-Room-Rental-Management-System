@@ -1,10 +1,18 @@
 package Users;
 
+import DataBase.BuildingDML;
+import DataBase.DataBaseConnection;
+import Exceptions.LandlordException;
+import Exceptions.RoomException;
+import Exceptions.TenantException;
 import Payment.UtilityUsage;
 import Properties.Building;
 import Properties.Floor;
 import Properties.Room;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.*;
 
@@ -17,7 +25,6 @@ public class Landlord extends User {
     private int failedPinAttempts;
     private static final int MAX_PIN_ATTEMPTS = 5;
 
-
     // ============================ Constructor ====================================
     public Landlord(String name, String IDcard, String contact, List<Tenant> tenants, List<Building> buildings) {
         super(name, IDcard, contact, "Landlord");
@@ -26,7 +33,6 @@ public class Landlord extends User {
         this.buildings = buildings != null ? buildings : new ArrayList<>();
         this.utilityRecords = new HashMap<>();
     }
-
 
     // ============================ Utility Methods =================================
     public UtilityUsage getUtilityUsageForRoom(Room room, LocalDate date) {
@@ -61,35 +67,49 @@ public class Landlord extends User {
     }
 
     // ============================ Room-Tenant Assignment =========================
-    public void assignedTenantRoom(String tenantID, String newRoomNumber) {
+    public void assignedTenantRoom(String tenantID, String newRoomNumber) throws RoomException, TenantException {
         // Find the tenant by ID
-           Tenant tenant = getTenantByID(tenantID);
-        if (tenant != null) {
-            // Find the current room the tenant is assigned to
-            Room currentRoom = tenant.getAssignedRoom();
-
-            // Check if the tenant is already assigned to a room and remove them
-            if (currentRoom != null) {
-                currentRoom.removeTenant();
-                System.out.println(tenant.getName() + " has been removed from Room " + currentRoom.getRoomNumber());
-            }
-
-            // Find the new room by room number
-            Room newRoom = getRoomAcrossAllBuildings(newRoomNumber);
-            if (newRoom != null) {
-                // Assign the tenant to the new room
-                tenant.assignRoom(newRoom);
-                newRoom.assignTenant(tenant);
-                System.out.println(tenant.getName() + " has been assigned to Room " + newRoomNumber);
-            } else {
-                System.out.println("New Room not found.");
-            }
-        } else {
-            System.out.println("Tenant not found.");
+        Tenant tenant = getTenantByID(tenantID);
+        if (tenant == null) {
+            throw new TenantException("Tenant with ID " + tenantID + " not found.");
         }
 
+        // Find the current room the tenant is assigned to
+        Room currentRoom = tenant.getAssignedRoom();
+
+        // Check if the tenant is already assigned to a room and remove them
+        if (currentRoom != null) {
+            currentRoom.removeTenant();
+            System.out.println(tenant.getName() + " has been removed from Room " + currentRoom.getRoomNumber());
+        }
+
+        // Find the new room by room number
+        Room newRoom = getRoomAcrossAllBuildings(newRoomNumber);
+        if (newRoom == null) {
+            throw new RoomException("New Room not found.");
+        }
+
+        // Assign the tenant to the new room
+        try {
+            tenant.assignRoom(newRoom);
+            newRoom.assignTenant(tenant);
+            System.out.println(tenant.getName() + " has been assigned to Room " + newRoomNumber);
+        } catch (RoomException e) {
+            throw new TenantException("Failed to assign tenant to Room " + newRoomNumber + ": " + e.getMessage());
+        }
     }
 
+
+    // ============================ Save Tenant to Database =========================
+//    public void saveTenant(Tenant tenant) throws SQLException {
+//        String sql = "INSERT INTO Tenants (user_id, assigned_room_id) VALUES (?, ?)";
+//        try (Connection conn = DataBaseConnection.getConnection();
+//             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+//            pstmt.setString(1, tenant.getIdCard());
+//            pstmt.setInt(2, assignedRoomId);
+//            pstmt.executeUpdate();
+//        }
+//    }
 
     // ============================ Login & Authentication =========================
     public boolean login(Scanner scanner, String username, String password) {
@@ -137,7 +157,6 @@ public class Landlord extends User {
         return false;
     }
 
-
     // ============================ PIN Reset =========================
     public void resetPIN(Scanner scanner) {
         System.out.print("Enter your Landlord ID: ");
@@ -179,15 +198,15 @@ public class Landlord extends User {
     }
 
     // ============================ CRUD Operations for Floor ========================
-    public void addFloorToBuilding(String buildingName, Floor floor) {
-        Building building = getBuildingByName(buildingName);
-        if (building != null) {
-            building.addFloor(floor);
-            System.out.println("Floor " + floor.getFloorNumber() + " added to Building " + buildingName);
-        } else {
-            System.out.println("Building " + buildingName + " not found.");
-        }
-    }
+//    public void addFloorToBuilding(String buildingName, Floor floor) {
+//        Building building = getBuildingByName(buildingName);
+//        if (building != null) {
+//            building.addFloor(floor);
+//            System.out.println("Floor " + floor.getFloorNumber() + " added to Building " + buildingName);
+//        } else {
+//            System.out.println("Building " + buildingName + " not found.");
+//        }
+//    }
 
     public void removeFloorFromBuilding(String buildingName, String floorNumber) {
         Building building = getBuildingByName(buildingName);
@@ -199,14 +218,20 @@ public class Landlord extends User {
     }
 
     // ============================ CRUD Operations for Building =====================
-    public void addBuilding(Building building) {
-        if (building != null && !buildingExists(building)) {
-            buildings.add(building);
-            System.out.println("Building " + building.getBuildingName() + " at " + building.getAddress() + " has been added.");
-        } else {
-            System.out.println("Building already exists or is invalid.");
+    public void addBuilding(Building building) throws LandlordException {
+        if (building == null) {
+            throw new LandlordException("Cannot add a null building.");
         }
+
+        if (buildingExists(building)) {
+            throw new LandlordException("Building already exists: " + building.getBuildingName());
+        }
+
+        buildings.add(building);
+        System.out.println("Building " + building.getBuildingName() + " has been added.");
     }
+
+
 
     public void removeBuilding(String buildingName) {
         Building building = getBuildingByName(buildingName);
@@ -228,16 +253,15 @@ public class Landlord extends User {
             System.out.println("Building not found.");
         }
     }
-
-
-    public Building getBuildingByName(String buildingName) {
-        for (Building building : buildings) {
-            if (building.getBuildingName().equalsIgnoreCase(buildingName)) {
-                return building;
-            }
-        }
-        return null; // Building not found
-    }
+//
+//    public Building getBuildingByName(String buildingName) {
+//        for (Building building : buildings) {
+//            if (building.getBuildingName().equalsIgnoreCase(buildingName)) {
+//                return building;
+//            }
+//        }
+//        return null; // Building not found
+//    }
 
     private boolean buildingExists(Building newBuilding) {
         for (Building building : buildings) {
@@ -248,17 +272,22 @@ public class Landlord extends User {
         }
         return false;
     }
+
     // ============================ CRUD Operations for Tenant =======================
-    public void addTenant(Tenant tenant) {
-        if (tenant != null && !tenants.contains(tenant)) {
-            tenants.add(tenant);
-            System.out.println("Tenant added: " + tenant.getName());
-        } else {
-            System.out.println("Tenant already exists or is invalid.");
+    public void addTenant(Tenant tenant) throws TenantException {
+        if (tenant == null) {
+            throw new TenantException("Cannot add a null tenant.");
         }
+
+        if (tenants.contains(tenant)) {
+            throw new TenantException("Tenant already exists: " + tenant.getName());
+        }
+
+        tenants.add(tenant);
+        System.out.println("Tenant added: " + tenant.getName());
     }
 
-    public void removeTenant(String tenantID) {
+    public void removeTenant(String tenantID) throws TenantException {
         Tenant tenant = getTenantByID(tenantID);
         if (tenant != null) {
             // If tenant has an assigned room, remove them from it
@@ -271,10 +300,19 @@ public class Landlord extends User {
             tenants.remove(tenant);
             System.out.println("Tenant removed: " + tenant.getName());
         } else {
-            System.out.println("Tenant not found.");
+            throw new TenantException("Tenant not found.");
         }
     }
+    // In your Landlord class
+    public Building getBuildingByName(String buildingName) {
+        BuildingDML buildingDML = new BuildingDML();
+        return buildingDML.getBuildingByName(buildingName);
+    }
 
+    public void addFloorToBuilding(String buildingName, Floor floor) {
+        BuildingDML buildingDML = new BuildingDML();
+        buildingDML.addFloorToBuilding(buildingName, floor);
+    }
     public Tenant getTenantByID(String tenantID) {
         for (Tenant tenant : tenants) {
             if (tenant.getIdCard().equals(tenantID)) {
@@ -307,7 +345,6 @@ public class Landlord extends User {
             building.displayAllFloors();
             System.out.println("---------------------");
         }
-
     }
 
     public void displayAllTenants() {

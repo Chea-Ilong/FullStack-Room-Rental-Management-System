@@ -2,11 +2,17 @@ package Properties;
 
 import Payment.UtilityUsage;
 import Users.Tenant;
-
+import Exceptions.RoomException;
 import java.time.LocalDate;
 
 public class Room {
 
+    // ============================ Constants ============================
+    private static final double ELECTRIC_RATE = 620.00;
+    private static final double WATER_RATE = 2500.00;
+    private static final double KHR_TO_USD_RATE = 4100.00;
+
+    // ============================ Room Information ============================
     private String roomNumber;
     private double rent;
     private boolean isOccupied;
@@ -15,10 +21,7 @@ public class Room {
     private int currentElectricCounter;
     private int currentWaterCounter;
 
-    private static final double ELECTRIC_RATE = 620.00;
-    private static final double WATER_RATE = 2500.00;
-    private static final double KHR_TO_USD_RATE = 4100.00;
-
+    // ============================ Constructor ============================
     public Room(String roomNumber, int currentElectricCounter, int currentWaterCounter) {
         this.roomNumber = roomNumber;
         this.rent = 300000;
@@ -28,54 +31,53 @@ public class Room {
         this.currentWaterCounter = Math.max(currentWaterCounter, 0);
     }
 
-    public void setUtilityUsage(int electricUsage, int waterUsage, LocalDate date) {
-        this.utilityUsage = new UtilityUsage(electricUsage, waterUsage, date);
-        currentElectricCounter += electricUsage;
-        currentWaterCounter += waterUsage;
+    // ============================ Getters and Setters ============================
+    public String getRoomNumber() {
+        return roomNumber;
+    }
+
+    public void setRoomNumber(String roomNumber) {
+        this.roomNumber = roomNumber;
+    }
+
+    public double getRent() {
+        return rent;
+    }
+
+    public Tenant getTenant() {
+        return tenant;
+    }
+
+    public boolean isOccupied() {
+        return isOccupied;
     }
 
     public UtilityUsage getUtilityUsage() {
         return this.utilityUsage;
     }
 
-    public void assignTenant(Tenant tenant) {
-        this.tenant = tenant;
-        this.isOccupied = (tenant != null);
+    public static double getElectricRate() {
+        return ELECTRIC_RATE;
     }
 
-    public void removeTenant() {
-        this.tenant = null;
-        this.isOccupied = false;
+    public static double getWaterRate() {
+        return WATER_RATE;
     }
 
-    public void markAsOccupied() {
-        if (isOccupied) {
-            System.out.println("Room " + roomNumber + " is already occupied.");
-        } else {
-            isOccupied = true;
-            System.out.println("Room " + roomNumber + " is now occupied.");
-        }
+    // ============================ Utility Management ============================
+    public void setUtilityUsage(int electricUsage, int waterUsage, LocalDate date) {
+        this.utilityUsage = new UtilityUsage(electricUsage, waterUsage, date);
+        currentElectricCounter += electricUsage;
+        currentWaterCounter += waterUsage;
     }
 
-    public void markAsVacant() {
+    public void updateUsage(int newElectricCounter, int newWaterCounter) throws RoomException {
         if (!isOccupied) {
-            System.out.println("Room " + roomNumber + " is already vacant.");
-        } else {
-            isOccupied = false;
-            resetUtilityUsage();
-            System.out.println("Room " + roomNumber + " is now vacant. Utility usage has been reset.");
-        }
-    }
-
-    public void updateUsage(int newElectricCounter, int newWaterCounter) {
-        if (!isOccupied) {
-            System.out.println("Error: Cannot update usage for a vacant room.");
-            return;
+            throw new RoomException("Cannot update usage for a vacant room.");
         }
 
         if (newElectricCounter < currentElectricCounter || newWaterCounter < currentWaterCounter) {
-            System.out.println("Error: New counters must be greater than the current counters.");
-            return;
+            throw new RoomException("New counters must be greater than the current counters.");
         }
 
         if (newElectricCounter == currentElectricCounter && newWaterCounter == currentWaterCounter) {
@@ -94,47 +96,43 @@ public class Room {
         currentWaterCounter = 0;
     }
 
-    @Override
-    public String toString() {
-        if (!isOccupied) {
-            return "Room " + roomNumber + " is vacant. No billing required.";
-        }
-
-        int electricCounterUsage = utilityUsage != null ? utilityUsage.getElectricUsage() : 0;
-        int waterCounterUsage = utilityUsage != null ? utilityUsage.getWaterUsage() : 0;
-
-        double electricPrice = calculateElectricPrice(electricCounterUsage);
-        double waterPrice = calculateWaterPrice(waterCounterUsage);
-        double totalUtilityPrice = electricPrice + waterPrice;
-        double totalPrice = rent + totalUtilityPrice;
-
-        return "==========================================\n" +
-                " Room Billing Summary\n" +
-                "==========================================\n" +
-                "Room Number       : " + roomNumber + "\n" +
-                "------------------------------------------\n" +
-                "Rent              : " + formatKHR(rent) + " (" + formatUSD(convertToUSD(rent)) + ")\n" +
-                "Water Counter     : " + (currentWaterCounter - waterCounterUsage) + " -> " + currentWaterCounter + "\n" +
-                "Electric Counter  : " + (currentElectricCounter - electricCounterUsage) + " -> " + currentElectricCounter + "\n" +
-                "------------------------------------------\n" +
-                "Water Usage       : " + waterCounterUsage + " m³\n" +
-                "Electric Usage    : " + electricCounterUsage + " kWh\n" +
-                "------------------------------------------\n" +
-                "Water Price       : " + formatKHR(waterPrice) + " (" + formatUSD(convertToUSD(waterPrice)) + ")\n" +
-                "Electric Price    : " + formatKHR(electricPrice) + " (" + formatUSD(convertToUSD(electricPrice)) + ")\n" +
-                "Total Utility Cost: " + formatKHR(totalUtilityPrice) + " (" + formatUSD(convertToUSD(totalUtilityPrice)) + ")\n" +
-                "------------------------------------------\n" +
-                "Total Expense     : " + formatKHR(totalPrice) + " (" + formatUSD(convertToUSD(totalPrice)) + ")\n" +
-                "==========================================\n";
+    // ============================ Tenant Management ============================
+    public void assignTenant(Tenant tenant) {
+        this.tenant = tenant;
+        this.isOccupied = (tenant != null);
     }
 
+    public void removeTenant() {
+        this.tenant = null;
+        this.isOccupied = false;
+    }
 
+    public void markAsOccupied() throws RoomException {
+        if (isOccupied) {
+            throw new RoomException("Room " + roomNumber + " is already occupied.");
+        } else {
+            isOccupied = true;
+            System.out.println("Room " + roomNumber + " is now occupied.");
+        }
+    }
+
+    public void markAsVacant() throws RoomException {
+        if (!isOccupied) {
+            throw new RoomException("Room " + roomNumber + " is already vacant.");
+        } else {
+            isOccupied = false;
+            resetUtilityUsage();
+            System.out.println("Room " + roomNumber + " is now vacant. Utility usage has been reset.");
+        }
+    }
+
+    // ============================ Price Calculation ============================
     private double calculateElectricPrice(int usage) {
-        return isOccupied ? usage * ELECTRIC_RATE : 0;
+        return usage * ELECTRIC_RATE;
     }
 
     private double calculateWaterPrice(int usage) {
-        return isOccupied ? usage * WATER_RATE : 0;
+        return usage * WATER_RATE;
     }
 
     private double convertToUSD(double amount) {
@@ -149,31 +147,51 @@ public class Room {
         return String.format("%.2fUSD", amount);
     }
 
-    public String getRoomNumber() {
-        return roomNumber;
+    // ============================ Billing and Reporting ============================
+    @Override
+    public String toString() {
+        if (!isOccupied) {
+            return "Room " + roomNumber + " is vacant. No billing required.";
+        }
+
+        int electricCounterUsage = utilityUsage != null ? utilityUsage.getElectricUsage() : 0;
+        int waterCounterUsage = utilityUsage != null ? utilityUsage.getWaterUsage() : 0;
+
+        double electricPrice = calculateElectricPrice(electricCounterUsage);
+        double waterPrice = calculateWaterPrice(waterCounterUsage);
+        double totalUtilityPrice = electricPrice + waterPrice;
+        double totalPrice = rent + totalUtilityPrice;
+
+        return String.format(
+                "==========================================\n" +
+                        " Room Billing Summary\n" +
+                        "==========================================\n" +
+                        "Room Number       : %s\n" +
+                        "------------------------------------------\n" +
+                        "Rent              : %s (%s)\n" +
+                        "Water Counter     : %d -> %d\n" +
+                        "Electric Counter  : %d -> %d\n" +
+                        "------------------------------------------\n" +
+                        "Water Usage       : %d m³\n" +
+                        "Electric Usage    : %d kWh\n" +
+                        "------------------------------------------\n" +
+                        "Water Price       : %s (%s)\n" +
+                        "Electric Price    : %s (%s)\n" +
+                        "Total Utility Cost: %s (%s)\n" +
+                        "------------------------------------------\n" +
+                        "Total Expense     : %s (%s)\n" +
+                        "==========================================\n",
+                roomNumber,
+                formatKHR(rent), formatUSD(convertToUSD(rent)),
+                currentWaterCounter - waterCounterUsage, currentWaterCounter,
+                currentElectricCounter - electricCounterUsage, currentElectricCounter,
+                waterCounterUsage, electricCounterUsage,
+                formatKHR(waterPrice), formatUSD(convertToUSD(waterPrice)),
+                formatKHR(electricPrice), formatUSD(convertToUSD(electricPrice)),
+                formatKHR(totalUtilityPrice), formatUSD(convertToUSD(totalUtilityPrice)),
+                formatKHR(totalPrice), formatUSD(convertToUSD(totalPrice))
+        );
     }
 
-    public double getRent() {
-        return rent;
-    }
 
-    public Tenant getTenant() {
-        return tenant;
-    }
-
-    public void setRoomNumber(String roomNumber) {
-        this.roomNumber = roomNumber;
-    }
-
-    public boolean isOccupied() {
-        return isOccupied;
-    }
-
-    public static double getElectricRate() {
-        return ELECTRIC_RATE;
-    }
-
-    public static double getWaterRate() {
-        return WATER_RATE;
-    }
 }

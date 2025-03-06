@@ -1,15 +1,22 @@
 package Main;
 
+import DataBase.BuildingDML;
+import DataBase.RoomDML;
+import DataBase.TenantDML;
+import Exceptions.TenantException;
+import Properties.Building;
 import Properties.Room;
 import Users.Landlord;
 import Users.Tenant;
+
+
 import java.util.List;
 import java.util.Scanner;
 
 public class Menu {
 
     // Tenant Menu
-    public static void tenantMenu(Scanner scanner, Tenant tenant, Landlord landlord)  {
+    public static void tenantMenu(Scanner scanner, Tenant tenant, Landlord landlord) throws TenantException {
         boolean inMenu = true;
         while (inMenu) {
             System.out.println("\n===== Tenant Menu =====");
@@ -128,7 +135,12 @@ public class Menu {
                         System.out.print("Enter building address: ");
                         String buildingAddress = scanner.nextLine();
 
-                        landlord.addBuilding(new Properties.Building(buildingName, buildingAddress));
+                        Building building = new Building(buildingName, buildingAddress);
+                        landlord.addBuilding(building);
+
+                        // Save to database
+                        BuildingDML buildingDML = new BuildingDML();
+                        buildingDML.saveBuilding(building);
                         break;
 
                     case 2:
@@ -263,17 +275,26 @@ public class Menu {
                         int waterCounter = scanner.nextInt();
                         scanner.nextLine(); // Consume newline
 
+// Retrieve or create building
                         Properties.Building building = landlord.getBuildingByName(buildingName);
-                        if (building != null) {
-                            Properties.Floor floor = building.getFloorByNumber(floorNumber);
-                            if (floor != null) {
-                                floor.addRoom(new Properties.Room(roomNumber, electricCounter, waterCounter));
-                            } else {
-                                System.out.println("Floor not found.");
-                            }
-                        } else {
-                            System.out.println("Building not found.");
+                        if (building == null) {
+                            System.out.println("Building not found. Creating new building...");
+                            building = new Properties.Building(buildingName);
+                            landlord.addBuilding(building);
                         }
+
+// Retrieve or create floor
+                        Properties.Floor floor = building.getFloorByNumber(floorNumber);
+                        if (floor == null) {
+                            System.out.println("Floor not found. Creating new floor...");
+                            floor = new Properties.Floor(floorNumber);
+                            building.addFloor(floor);
+                        }
+
+// Add room to floor
+                        floor.addRoom(new Properties.Room(roomNumber, electricCounter, waterCounter));
+                        System.out.println("Room added successfully.");
+
                         break;
                     case 2:
                         // Remove Room from Floor
@@ -286,7 +307,7 @@ public class Menu {
 
                         building = landlord.getBuildingByName(buildingName);
                         if (building != null) {
-                            Properties.Floor floor = building.getFloorByNumber(floorNumber);
+                            floor = building.getFloorByNumber(floorNumber);
                             if (floor != null) {
                                 floor.removeRoom(roomNumber);
                             } else {
@@ -355,6 +376,8 @@ public class Menu {
                         String tenantContact = scanner.nextLine();
 
                         Users.Tenant newTenant = new Users.Tenant(tenantName, tenantID, tenantContact);
+                        TenantDML tenantDML = new TenantDML();
+                        tenantDML.saveTenant(newTenant);
                         landlord.addTenant(newTenant);
                         break;
                     case 2:
@@ -491,7 +514,7 @@ public class Menu {
                         break;
                     case 3:
                         // View Available Rooms
-                        System.out.println("\n===== Available Rooms =====");
+                        System.out.println("\n========= Available Rooms =========");
                         boolean foundAvailable = false;
                         for (Properties.Building building : landlord.getBuildings()) {
                             for (Properties.Floor floor : building.getFloors()) {
