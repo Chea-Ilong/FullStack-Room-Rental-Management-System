@@ -2,14 +2,11 @@ package Main;
 
 import DataBase.*;
 import Exceptions.TenantException;
-import Payment.UtilityUsage;
 import Properties.Building;
 import Properties.Floor;
 import Properties.Room;
 import Users.Landlord;
 import Users.Tenant;
-
-
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Scanner;
@@ -168,6 +165,7 @@ public class Menu {
                     case 4:
                         // View All Buildings
                         landlord.displayAllBuildings();
+
                         break;
 
                     case 5:
@@ -229,6 +227,7 @@ public class Menu {
 
                         building = landlord.getBuildingByName(buildingName);
                         if (building != null) {
+
                             building.displayAllFloors();
                         } else {
                             System.out.println("Building not found.");
@@ -310,29 +309,26 @@ public class Menu {
                             floorId = floorDML.getFloorIdByBuildingAndNumber(buildingId, floorNumber);
                         }
 
-                        // Create and add room to database
+                        // Create room with initial counter values
                         Room newRoom = new Room(roomNumber, electricCounter, waterCounter);
                         newRoom.setRent(rent);
 
-                        // Set utility usage with today's date to ensure it's properly initialized
+                        // Set utility usage with today's date (only if Room class doesn't already handle this)
                         LocalDate today = LocalDate.now();
-                        newRoom.setUtilityUsage(electricCounter, waterCounter, today);
+                        // Only include ONE of these utility initialization methods based on your Room implementation:
+                        // EITHER rely on the Room constructor alone:
+                        // (Do nothing extra with utility usage here)
 
+                        // OR explicitly set it with setUtilityUsage, if the Room constructor doesn't handle it:
+                        // newRoom.setUtilityUsage(electricCounter, waterCounter, today);
+
+                        // Save the room to the database
                         RoomDML roomDML = new RoomDML();
                         roomDML.saveRoom(newRoom, floorId);
 
-                        // Additionally, you can explicitly save the utility usage
-                        if (floorId != -1) {
-                            int roomId = roomDML.getRoomIdByRoomNumber(roomNumber);
-                            if (roomId != -1) {
-                                UtilityUsageDML utilityDML = new UtilityUsageDML();
-                                UtilityUsage usage = new UtilityUsage(electricCounter, waterCounter, today);
-                                utilityDML.saveUtilityUsage(usage, roomId);
-                            }
-                        }
-
                         System.out.println("Room added successfully to database.");
                         break;
+
                     case 2:
                         // Remove Room from Floor
 //                        System.out.print("Enter building name: ");

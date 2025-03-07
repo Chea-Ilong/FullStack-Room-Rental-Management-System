@@ -90,8 +90,12 @@ public class RoomDML {
             }
 
             // Create and save room
+            // In your addRoomToFloor method:
             Room newRoom = new Room(roomNumber, 0, 0);
-            newRoom.setRent(rent);
+            newRoom.setRent(rent); // Make sure this method exists
+            LocalDate today = LocalDate.now();
+            newRoom.setUtilityUsage(0, 0, today); // Initialize with zero usage
+
 
             this.saveRoom(newRoom, floorId);
             System.out.println("Room " + roomNumber + " added successfully to floor " + floorNumber);
@@ -149,26 +153,21 @@ public class RoomDML {
     }
 
     // Helper method to save utility usage
-//    private void saveUtilityUsage(UtilityUsage usage, int roomId, Connection conn) throws SQLException {
-//        String query = "INSERT INTO UtilityUsage (room_id, electric_usage, water_usage, usage_date) VALUES (?, ?, ?, ?)";
-//
-//        try (PreparedStatement ps = conn.prepareStatement(query)) {
-//            ps.setInt(1, roomId);
-//            ps.setInt(2, usage.getElectricUsage());
-//            ps.setInt(3, usage.getWaterUsage());
-//            ps.setDate(4, java.sql.Date.valueOf(usage.getDate()));
-//
-//            ps.executeUpdate();
-//        }
-//    }
-// Remove the private saveUtilityUsage method and replace it with this:
     private void saveUtilityUsage(UtilityUsage usage, int roomId, Connection conn) throws SQLException {
-        // Create an instance of UtilityUsageDML and use its method
-        UtilityUsageDML utilityDML = new UtilityUsageDML();
-
-        // Since the UtilityUsageDML method uses its own connection, we don't need to pass our connection
-        utilityDML.saveUtilityUsage(usage, roomId);
+        String query = "INSERT INTO utilityusage (room_id, electric_usage, water_usage, usage_date) VALUES (?, ?, ?, ?)";
+        try (PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setInt(1, roomId);
+            ps.setInt(2, usage.getElectricUsage());
+            ps.setInt(3, usage.getWaterUsage());
+            ps.setDate(4, java.sql.Date.valueOf(usage.getDate()));
+            int rowsAffected = ps.executeUpdate();
+            System.out.println("Rows affected by utility usage insert: " + rowsAffected);
+        } catch (SQLException e) {
+            System.out.println("Failed to insert utility usage: " + e.getMessage());
+            throw e;
+        }
     }
+
 //     Get room by ID
     public Room getRoomById(int roomId) {
         String query = "SELECT room_number, rent, current_electric_counter, current_water_counter, is_occupied FROM Rooms WHERE room_id = ?";
@@ -275,97 +274,7 @@ public class RoomDML {
             }
         }
     }
-    // Add this method to your RoomDML class or Landlord class
-    public void assignTenantToRoom(String tenantID, String roomNumber) {
-        Connection conn = null;
-        try {
-            conn = DataBaseConnection.getConnection();
-            conn.setAutoCommit(false); // Start transaction
 
-            // 1. Get room_id by room number
-            RoomDML roomDML = new RoomDML();
-            int roomId = roomDML.getRoomIdByRoomNumber(roomNumber);
-
-            if (roomId == -1) {
-                System.out.println("Room not found: " + roomNumber);
-                return;
-            }
-
-            // 2. Get tenant_id (assuming tenantID is the ID Card)
-            String getTenantQuery = "SELECT tenant_id FROM Tenants JOIN Users ON Tenants.user_id = Users.user_id WHERE Users.IdCard = ?";
-            int tenantId = -1;
-
-            try (PreparedStatement ps = conn.prepareStatement(getTenantQuery)) {
-                ps.setString(1, tenantID);
-
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) {
-                        tenantId = rs.getInt("tenant_id");
-                    } else {
-                        System.out.println("Tenant not found with ID: " + tenantID);
-                        return;
-                    }
-                }
-            }
-
-            // 3. Check if room is already occupied
-            String checkRoomQuery = "SELECT is_occupied FROM Rooms WHERE room_id = ?";
-            try (PreparedStatement ps = conn.prepareStatement(checkRoomQuery)) {
-                ps.setInt(1, roomId);
-
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next() && rs.getBoolean("is_occupied")) {
-                        System.out.println("Room is already occupied: " + roomNumber);
-                        return;
-                    }
-                }
-            }
-
-            // 4. Update tenant's assigned room
-            String updateTenantQuery = "UPDATE Tenants SET assigned_room_id = ?, balance_due = (SELECT rent FROM Rooms WHERE room_id = ?), rent_paid = false WHERE tenant_id = ?";
-            try (PreparedStatement ps = conn.prepareStatement(updateTenantQuery)) {
-                ps.setInt(1, roomId);
-                ps.setInt(2, roomId);
-                ps.setInt(3, tenantId);
-
-                ps.executeUpdate();
-            }
-
-            // 5. Update room's occupancy status
-            String updateRoomQuery = "UPDATE Rooms SET is_occupied = true WHERE room_id = ?";
-            try (PreparedStatement ps = conn.prepareStatement(updateRoomQuery)) {
-                ps.setInt(1, roomId);
-
-                ps.executeUpdate();
-            }
-
-            // Commit the transaction
-            conn.commit();
-            System.out.println("Tenant successfully assigned to room " + roomNumber);
-
-        } catch (SQLException e) {
-            try {
-                if (conn != null) {
-                    conn.rollback(); // Rollback transaction on error
-                }
-            } catch (SQLException ex) {
-                System.out.println("Failed to rollback: " + ex.getMessage());
-            }
-
-            System.out.println("SQL Error: " + e.getMessage());
-            e.printStackTrace();
-        } finally {
-            // Close resources
-            try {
-                if (conn != null) {
-                    conn.setAutoCommit(true); // Reset auto-commit
-                    conn.close();
-                }
-            } catch (SQLException e) {
-                System.out.println("Error closing connection: " + e.getMessage());
-            }
-        }
-    }
     // Update room information
 //    public void updateRoom(int roomId, Room room) {
 //        String query = "UPDATE Rooms SET room_number = ?, rent = ?, current_electric_counter = ?, " +

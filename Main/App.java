@@ -1,6 +1,5 @@
 package Main;
 
-
 import DataBase.DataBaseConnection;
 import Exceptions.RoomException;
 import Exceptions.TenantException;
