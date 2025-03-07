@@ -113,6 +113,27 @@ public class BuildingDML {
             e.printStackTrace();
         }
     }
+    // Add this to your BuildingDML class
+    public int getBuildingIdByName(String buildingName) {
+        String query = "SELECT building_id FROM Buildings WHERE building_name = ?";
+
+        try (Connection conn = DataBaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(query)) {
+
+            ps.setString(1, buildingName);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("building_id");
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("SQL Error: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return -1; // Return -1 if building not found
+    }
     public Building getBuildingByName(String buildingName) {
         String query = "SELECT building_id, building_name, address FROM Buildings WHERE building_name = ?";
 

@@ -54,7 +54,27 @@ public class FloorDML {
     }
 
 
+    public int getFloorIdByBuildingAndNumber(int buildingId, String floorNumber) {
+        String query = "SELECT floor_id FROM Floors WHERE building_id = ? AND floor_number = ?";
 
+        try (Connection conn = DataBaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(query)) {
+
+            ps.setInt(1, buildingId);
+            ps.setString(2, floorNumber);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("floor_id");
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("SQL Error: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return -1; // Return -1 if floor not found
+    }
 
     // Get floor by ID
     public Floor getFloorById(int floorId) {
@@ -106,49 +126,49 @@ public class FloorDML {
     }
 
     // Update floor information
-    public void updateFloor(int floorId, Floor floor) {
-        String query = "UPDATE Floors SET floor_number = ? WHERE floor_id = ?";
-
-        try (Connection conn = DataBaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(query)) {
-
-            ps.setString(1, floor.getFloorNumber());
-            ps.setInt(2, floorId);
-
-            int rowsAffected = ps.executeUpdate();
-            if (rowsAffected > 0) {
-                System.out.println("Floor updated successfully!");
-            } else {
-                System.out.println("Floor not found or not updated.");
-            }
-
-        } catch (SQLException e) {
-            System.out.println("SQL Error: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
+//    public void updateFloor(int floorId, Floor floor) {
+//        String query = "UPDATE Floors SET floor_number = ? WHERE floor_id = ?";
+//
+//        try (Connection conn = DataBaseConnection.getConnection();
+//             PreparedStatement ps = conn.prepareStatement(query)) {
+//
+//            ps.setString(1, floor.getFloorNumber());
+//            ps.setInt(2, floorId);
+//
+//            int rowsAffected = ps.executeUpdate();
+//            if (rowsAffected > 0) {
+//                System.out.println("Floor updated successfully!");
+//            } else {
+//                System.out.println("Floor not found or not updated.");
+//            }
+//
+//        } catch (SQLException e) {
+//            System.out.println("SQL Error: " + e.getMessage());
+//            e.printStackTrace();
+//        }
+//    }
 
     // Delete floor
-    public void deleteFloor(int floorId) {
-        // Note: This will only work if there are no rooms associated with this floor
-        // due to foreign key constraints
-        String query = "DELETE FROM Floors WHERE floor_id = ?";
-
-        try (Connection conn = DataBaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(query)) {
-
-            ps.setInt(1, floorId);
-
-            int rowsAffected = ps.executeUpdate();
-            if (rowsAffected > 0) {
-                System.out.println("Floor deleted successfully!");
-            } else {
-                System.out.println("Floor not found or not deleted.");
-            }
-
-        } catch (SQLException e) {
-            System.out.println("SQL Error: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
+//    public void deleteFloor(int floorId) {
+//        // Note: This will only work if there are no rooms associated with this floor
+//        // due to foreign key constraints
+//        String query = "DELETE FROM Floors WHERE floor_id = ?";
+//
+//        try (Connection conn = DataBaseConnection.getConnection();
+//             PreparedStatement ps = conn.prepareStatement(query)) {
+//
+//            ps.setInt(1, floorId);
+//
+//            int rowsAffected = ps.executeUpdate();
+//            if (rowsAffected > 0) {
+//                System.out.println("Floor deleted successfully!");
+//            } else {
+//                System.out.println("Floor not found or not deleted.");
+//            }
+//
+//        } catch (SQLException e) {
+//            System.out.println("SQL Error: " + e.getMessage());
+//            e.printStackTrace();
+//        }
+//    }
 }

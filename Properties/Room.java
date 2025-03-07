@@ -107,6 +107,14 @@ public class Room {
         this.isOccupied = false;
     }
 
+    public int getCurrentElectricCounter() {
+        return currentElectricCounter;
+    }
+
+    public int getCurrentWaterCounter() {
+        return currentWaterCounter;
+    }
+
     public void markAsOccupied() throws RoomException {
         if (isOccupied) {
             throw new RoomException("Room " + roomNumber + " is already occupied.");
@@ -193,5 +201,17 @@ public class Room {
         );
     }
 
+
+    public void setRent(double rent) {
+        this.rent = rent;
+    }
+    // In your Room class, make sure the setters are setting the values directly, not adding to them
+    public void setCurrentElectricCounter(int counter) {
+        this.currentElectricCounter = counter; // Direct assignment, not addition
+    }
+
+    public void setCurrentWaterCounter(int counter) {
+        this.currentWaterCounter = counter; // Direct assignment, not addition
+    }
 
 }

@@ -2,6 +2,7 @@ package Users;
 
 import DataBase.BuildingDML;
 import DataBase.DataBaseConnection;
+import DataBase.RoomDML;
 import Exceptions.LandlordException;
 import Exceptions.RoomException;
 import Exceptions.TenantException;
@@ -34,6 +35,12 @@ public class Landlord extends User {
         this.utilityRecords = new HashMap<>();
     }
 
+    // In your Landlord class
+//    public void assignedTenantRoom(String tenantID, String roomNumber) {
+//        // This is just a wrapper that calls the RoomDML method
+//        RoomDML roomDML = new RoomDML();
+//        roomDML.assignTenantToRoom(tenantID, roomNumber);
+//    }
     // ============================ Utility Methods =================================
     public UtilityUsage getUtilityUsageForRoom(Room room, LocalDate date) {
         if (room.getUtilityUsage() != null && room.getUtilityUsage().getDate().equals(date)) {
