@@ -5,7 +5,9 @@ import java.util.ArrayList;
 
 public abstract class User implements Authentication {
 
-    // ============================ User Information ============================
+    // ====================================================================================================
+    // User Information
+    // ====================================================================================================
     protected String name;
     protected String IdCard;
     protected String contact;
@@ -13,7 +15,9 @@ public abstract class User implements Authentication {
 
     private static final ArrayList<User> userList = new ArrayList<>();
 
-    // ============================ Constructor ============================
+    // ====================================================================================================
+    // Constructor
+    // ====================================================================================================
     public User(String username, String password, String phoneNumber, String role) {
         this.name = username;
         this.IdCard = password;
@@ -22,7 +26,9 @@ public abstract class User implements Authentication {
         userList.add(this);
     }
 
-    // ============================ Getters ============================
+    // ====================================================================================================
+    // Getters
+    // ====================================================================================================
     public String getName() {
         return name;
     }
@@ -35,9 +41,10 @@ public abstract class User implements Authentication {
         return contact;
     }
 
-    // ============================ Login Method ============================
-    public boolean  login(String username, String password) {
-
+    // ====================================================================================================
+    // Login Method
+    // ====================================================================================================
+    public boolean login(String username, String password) {
         if (this.name.equals(username) && this.IdCard.equals(password)) {
             System.out.println("Login successful for " + this.name);
             return true;
@@ -45,7 +52,9 @@ public abstract class User implements Authentication {
         return false;
     }
 
-    // ============================ String Representation ============================
+    // ====================================================================================================
+    // String Representation
+    // ====================================================================================================
     @Override
     public String toString() {
         return "name='" + name + '\'' +

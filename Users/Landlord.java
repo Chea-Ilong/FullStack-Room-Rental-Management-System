@@ -1,8 +1,8 @@
 package Users;
 
 import DataBase.BuildingDML;
-import DataBase.DataBaseConnection;
 import DataBase.RoomDML;
+import DataBase.TenantDML;
 import Exceptions.LandlordException;
 import Exceptions.RoomException;
 import Exceptions.TenantException;
@@ -10,15 +10,14 @@ import Payment.UtilityUsage;
 import Properties.Building;
 import Properties.Floor;
 import Properties.Room;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.*;
 
 public class Landlord extends User {
-    // ============================ Fields ==========================================
+
+    // ====================================================================================================
+    // Fields
+    // ====================================================================================================
     private List<Tenant> tenants;
     private List<Building> buildings; // Manage multiple buildings
     private Map<LocalDate, UtilityUsage> utilityRecords;
@@ -26,7 +25,9 @@ public class Landlord extends User {
     private int failedPinAttempts;
     private static final int MAX_PIN_ATTEMPTS = 5;
 
-    // ============================ Constructor ====================================
+    // ====================================================================================================
+    // Constructor
+    // ====================================================================================================
     public Landlord(String name, String IDcard, String contact, List<Tenant> tenants, List<Building> buildings) {
         super(name, IDcard, contact, "Landlord");
         this.failedPinAttempts = 0;
@@ -35,13 +36,9 @@ public class Landlord extends User {
         this.utilityRecords = new HashMap<>();
     }
 
-    // In your Landlord class
-//    public void assignedTenantRoom(String tenantID, String roomNumber) {
-//        // This is just a wrapper that calls the RoomDML method
-//        RoomDML roomDML = new RoomDML();
-//        roomDML.assignTenantToRoom(tenantID, roomNumber);
-//    }
-    // ============================ Utility Methods =================================
+    // ====================================================================================================
+    // Utility Methods
+    // ====================================================================================================
     public UtilityUsage getUtilityUsageForRoom(Room room, LocalDate date) {
         if (room.getUtilityUsage() != null && room.getUtilityUsage().getDate().equals(date)) {
             return room.getUtilityUsage();
@@ -49,14 +46,20 @@ public class Landlord extends User {
         return null;
     }
 
-    public void setUtilityUsage(Room room, int electricUsage, int waterUsage) {
+    public void setUtilityUsage(Room room, int electricUsage, int waterUsage) throws RoomException {
         // Use current date by default
         LocalDate today = LocalDate.now();
         setUtilityUsage(room, electricUsage, waterUsage, today);
     }
 
-    public void setUtilityUsage(Room room, int electricUsage, int waterUsage, LocalDate date) {
+    public void setUtilityUsage(Room room, int electricUsage, int waterUsage, LocalDate date) throws RoomException {
+        // Update in memory
         room.setUtilityUsage(electricUsage, waterUsage, date);
+
+        // Update in database
+        RoomDML roomDML = new RoomDML();
+        roomDML.updateUtilityUsage(room.getRoomNumber(), electricUsage, waterUsage, date);
+
         System.out.println("Utility usage for Room " + room.getRoomNumber() + " on " + date + " has been set.");
     }
 
@@ -73,7 +76,9 @@ public class Landlord extends User {
         }
     }
 
-    // ============================ Room-Tenant Assignment =========================
+    // ====================================================================================================
+    // Room-Tenant Assignment
+    // ====================================================================================================
     public void assignedTenantRoom(String tenantID, String newRoomNumber) throws RoomException, TenantException {
         // Find the tenant by ID
         Tenant tenant = getTenantByID(tenantID);
@@ -106,19 +111,13 @@ public class Landlord extends User {
         }
     }
 
+    // ====================================================================================================
+    // Save Tenant to Database
+    // ====================================================================================================
 
-    // ============================ Save Tenant to Database =========================
-//    public void saveTenant(Tenant tenant) throws SQLException {
-//        String sql = "INSERT INTO Tenants (user_id, assigned_room_id) VALUES (?, ?)";
-//        try (Connection conn = DataBaseConnection.getConnection();
-//             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-//            pstmt.setString(1, tenant.getIdCard());
-//            pstmt.setInt(2, assignedRoomId);
-//            pstmt.executeUpdate();
-//        }
-//    }
-
-    // ============================ Login & Authentication =========================
+    // ====================================================================================================
+    // Login & Authentication
+    // ====================================================================================================
     public boolean login(Scanner scanner, String username, String password) {
         username = username.trim();
         password = password.trim();
@@ -164,7 +163,9 @@ public class Landlord extends User {
         return false;
     }
 
-    // ============================ PIN Reset =========================
+    // ====================================================================================================
+    // PIN Reset
+    // ====================================================================================================
     public void resetPIN(Scanner scanner) {
         System.out.print("Enter your Landlord ID: ");
         String inputID = scanner.nextLine().trim();
@@ -189,7 +190,9 @@ public class Landlord extends User {
         }
     }
 
-    // ============================ CRUD Operations for Room ========================
+    // ====================================================================================================
+    // CRUD Operations for Room
+    // ====================================================================================================
     // Find room by room number across all buildings and floors
     public Room getRoomAcrossAllBuildings(String roomNumber) {
         for (Building building : buildings) {
@@ -204,17 +207,9 @@ public class Landlord extends User {
         return null; // Room not found
     }
 
-    // ============================ CRUD Operations for Floor ========================
-//    public void addFloorToBuilding(String buildingName, Floor floor) {
-//        Building building = getBuildingByName(buildingName);
-//        if (building != null) {
-//            building.addFloor(floor);
-//            System.out.println("Floor " + floor.getFloorNumber() + " added to Building " + buildingName);
-//        } else {
-//            System.out.println("Building " + buildingName + " not found.");
-//        }
-//    }
-
+    // ====================================================================================================
+    // CRUD Operations for Floor
+    // ====================================================================================================
     public void removeFloorFromBuilding(String buildingName, String floorNumber) {
         Building building = getBuildingByName(buildingName);
         if (building != null) {
@@ -224,7 +219,9 @@ public class Landlord extends User {
         }
     }
 
-    // ============================ CRUD Operations for Building =====================
+    // ====================================================================================================
+    // CRUD Operations for Building
+    // ====================================================================================================
     public void addBuilding(Building building) throws LandlordException {
         if (building == null) {
             throw new LandlordException("Cannot add a null building.");
@@ -237,8 +234,6 @@ public class Landlord extends User {
         buildings.add(building);
         System.out.println("Building " + building.getBuildingName() + " has been added.");
     }
-
-
 
     public void removeBuilding(String buildingName) {
         Building building = getBuildingByName(buildingName);
@@ -260,15 +255,6 @@ public class Landlord extends User {
             System.out.println("Building not found.");
         }
     }
-//
-//    public Building getBuildingByName(String buildingName) {
-//        for (Building building : buildings) {
-//            if (building.getBuildingName().equalsIgnoreCase(buildingName)) {
-//                return building;
-//            }
-//        }
-//        return null; // Building not found
-//    }
 
     private boolean buildingExists(Building newBuilding) {
         for (Building building : buildings) {
@@ -280,21 +266,18 @@ public class Landlord extends User {
         return false;
     }
 
-    // ============================ CRUD Operations for Tenant =======================
-    public void addTenant(Tenant tenant) throws TenantException {
-        if (tenant == null) {
-            throw new TenantException("Cannot add a null tenant.");
+    // ====================================================================================================
+    // CRUD Operations for Tenant
+    // ====================================================================================================
+    public void addTenant(Tenant tenant) {
+        TenantDML tenantDML = new TenantDML();
+        if (!tenantDML.tenantExists(tenant.getIdCard())) {
+            tenantDML.saveTenant(tenant);
+            System.out.println("Tenant added: " + tenant.getName());
         }
-
-        if (tenants.contains(tenant)) {
-            throw new TenantException("Tenant already exists: " + tenant.getName());
-        }
-
-        tenants.add(tenant);
-        System.out.println("Tenant added: " + tenant.getName());
     }
 
-    public void removeTenant(String tenantID) throws TenantException {
+    public void removeTenant(String tenantID) throws TenantException, RoomException {
         Tenant tenant = getTenantByID(tenantID);
         if (tenant != null) {
             // If tenant has an assigned room, remove them from it
@@ -310,7 +293,7 @@ public class Landlord extends User {
             throw new TenantException("Tenant not found.");
         }
     }
-    // In your Landlord class
+
     public Building getBuildingByName(String buildingName) {
         BuildingDML buildingDML = new BuildingDML();
         return buildingDML.getBuildingByName(buildingName);
@@ -320,6 +303,7 @@ public class Landlord extends User {
         BuildingDML buildingDML = new BuildingDML();
         buildingDML.addFloorToBuilding(buildingName, floor);
     }
+
     public Tenant getTenantByID(String tenantID) {
         for (Tenant tenant : tenants) {
             if (tenant.getIdCard().equals(tenantID)) {
@@ -329,7 +313,9 @@ public class Landlord extends User {
         return null; // Tenant not found
     }
 
-    // ============================ Getter Methods ===================================
+    // ====================================================================================================
+    // Getter Methods
+    // ====================================================================================================
     public List<Tenant> getTenants() {
         return tenants;
     }
@@ -338,7 +324,9 @@ public class Landlord extends User {
         return buildings;
     }
 
-    // ============================ Display Information Methods ======================
+    // ====================================================================================================
+    // Display Information Methods
+    // ====================================================================================================
     public void displayAllBuildings() {
         System.out.println("\n===== All Buildings =====");
         if (buildings.isEmpty()) {
@@ -371,7 +359,9 @@ public class Landlord extends User {
         }
     }
 
-    // ============================ toString Method =================================
+    // ====================================================================================================
+    // toString Method
+    // ====================================================================================================
     @Override
     public String toString() {
         return super.toString() +

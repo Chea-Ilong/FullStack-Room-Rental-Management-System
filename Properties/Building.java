@@ -5,12 +5,16 @@ import java.util.List;
 
 public class Building {
 
-    // ============================ Building Information ============================
+    // ====================================================================================================
+    // Building Information
+    // ====================================================================================================
     private String buildingName;
     private List<Floor> floors;
     private String address;
 
-    // ============================ Constructor ============================
+    // ====================================================================================================
+    // Constructor
+    // ====================================================================================================
     public Building(String buildingName, String address) {
         this.buildingName = buildingName;
         this.floors = new ArrayList<>();
@@ -21,7 +25,9 @@ public class Building {
         this.buildingName = buildingName;
     }
 
-    // ============================ Add/Remove/Update Floors ============================
+    // ====================================================================================================
+    // Add/Remove/Update Floors
+    // ====================================================================================================
     // Create: Add a floor to the building
     public void addFloor(Floor floor) {
         if (floor != null && !floors.contains(floor)) {
@@ -54,7 +60,9 @@ public class Building {
         }
     }
 
-    // ============================ Floor Lookup ============================
+    // ====================================================================================================
+    // Floor Lookup
+    // ====================================================================================================
     // Read: Get a floor by its floor number
     public Floor getFloorByNumber(String floorNumber) {
         for (Floor floor : floors) {
@@ -65,7 +73,9 @@ public class Building {
         return null; // Floor not found
     }
 
-    // ============================ Floor Display ============================
+    // ====================================================================================================
+    // Floor Display
+    // ====================================================================================================
     // Read: Display all floors in the building
     public void displayAllFloors() {
         System.out.println("\n===== All Floors in Building " + buildingName + " =====");
@@ -81,7 +91,9 @@ public class Building {
         }
     }
 
-    // ============================ Getters/Setters ============================
+    // ====================================================================================================
+    // Getters/Setters
+    // ====================================================================================================
     // Getter for building name
     public String getBuildingName() {
         return buildingName;
@@ -97,14 +109,16 @@ public class Building {
         this.buildingName = buildingName;
     }
 
-
+    // Getter for address
     public String getAddress() {
         return address;
     }
 
+    // Setter for address
     public void setAddress(String newAddress) {
         this.address = newAddress;
     }
+
     // Method to get room by its room number across all floors
     public Room getRoomByNumber(String roomNumber) {
         for (Floor floor : floors) {
@@ -117,6 +131,9 @@ public class Building {
         return null; // Room not found
     }
 
+    // ====================================================================================================
+    // toString Method
+    // ====================================================================================================
     @Override
     public String toString() {
         return "Building{" +
@@ -125,5 +142,4 @@ public class Building {
                 ", address='" + address + '\'' +
                 '}';
     }
-
 }

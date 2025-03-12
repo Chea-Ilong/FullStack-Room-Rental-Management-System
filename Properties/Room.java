@@ -1,5 +1,6 @@
 package Properties;
 
+import DataBase.RoomDML;
 import Payment.UtilityUsage;
 import Users.Tenant;
 import Exceptions.RoomException;
@@ -7,12 +8,16 @@ import java.time.LocalDate;
 
 public class Room {
 
-    // ============================ Constants ============================
+    // ====================================================================================================
+    // Constants
+    // ====================================================================================================
     private static final double ELECTRIC_RATE = 620.00;
     private static final double WATER_RATE = 2500.00;
     private static final double KHR_TO_USD_RATE = 4100.00;
 
-    // ============================ Room Information ============================
+    // ====================================================================================================
+    // Room Information
+    // ====================================================================================================
     private String roomNumber;
     private double rent;
     private boolean isOccupied;
@@ -21,7 +26,9 @@ public class Room {
     private int currentElectricCounter;
     private int currentWaterCounter;
 
-    // ============================ Constructor ============================
+    // ====================================================================================================
+    // Constructor
+    // ====================================================================================================
     public Room(String roomNumber, int currentElectricCounter, int currentWaterCounter) {
         this.roomNumber = roomNumber;
         this.rent = 300000;
@@ -31,7 +38,9 @@ public class Room {
         this.currentWaterCounter = Math.max(currentWaterCounter, 0);
     }
 
-    // ============================ Getters and Setters ============================
+    // ====================================================================================================
+    // Getters and Setters
+    // ====================================================================================================
     public String getRoomNumber() {
         return roomNumber;
     }
@@ -42,6 +51,10 @@ public class Room {
 
     public double getRent() {
         return rent;
+    }
+
+    public void setRent(double rent) {
+        this.rent = rent;
     }
 
     public Tenant getTenant() {
@@ -64,7 +77,39 @@ public class Room {
         return WATER_RATE;
     }
 
-    // ============================ Utility Management ============================
+    public int getCurrentElectricCounter() {
+        return currentElectricCounter;
+    }
+
+    public void setCurrentElectricCounter(int counter) {
+        this.currentElectricCounter = counter;
+    }
+
+    public int getCurrentWaterCounter() {
+        return currentWaterCounter;
+    }
+
+    public void setCurrentWaterCounter(int counter) {
+        this.currentWaterCounter = counter;
+    }
+
+    public int getElectricCounter() {
+        if (utilityUsage != null) {
+            return utilityUsage.getElectricUsage();
+        }
+        return this.currentElectricCounter;
+    }
+
+    public int getWaterCounter() {
+        if (utilityUsage != null) {
+            return utilityUsage.getWaterUsage();
+        }
+        return this.currentWaterCounter;
+    }
+
+    // ====================================================================================================
+    // Utility Management
+    // ====================================================================================================
     public void setUtilityUsage(int electricUsage, int waterUsage, LocalDate date) {
         this.utilityUsage = new UtilityUsage(electricUsage, waterUsage, date);
         currentElectricCounter += electricUsage;
@@ -96,23 +141,42 @@ public class Room {
         currentWaterCounter = 0;
     }
 
-    // ============================ Tenant Management ============================
+    public void updateUtilityUsage(int newElectricUsage, int newWaterUsage, LocalDate date) {
+        this.currentElectricCounter = newElectricUsage;
+        this.currentWaterCounter = newWaterUsage;
+        this.utilityUsage = new UtilityUsage(newElectricUsage, newWaterUsage, date);
+
+        // Update the database with the new utility usage
+        RoomDML roomDML = new RoomDML();
+        roomDML.updateUtilityUsage(this.roomNumber, newElectricUsage, newWaterUsage, date);
+    }
+
+    // ====================================================================================================
+    // Tenant Management
+    // ====================================================================================================
     public void assignTenant(Tenant tenant) {
         this.tenant = tenant;
         this.isOccupied = (tenant != null);
+        if (tenant != null) {
+            RoomDML roomDML = new RoomDML();
+            roomDML.syncRoomWithTenant(this);
+        }
     }
-
+    // Add this method to your Room class
+    public void setTenantDirectly(Tenant tenant) {
+        this.tenant = tenant;
+        this.isOccupied = true;
+        // Link the room back to the tenant
+        try {
+            tenant.assignRoom(this);
+        } catch (Exception e) {
+            // This is a special case where we're bypassing normal checks
+            System.out.println(" ");
+        }
+    }
     public void removeTenant() {
         this.tenant = null;
         this.isOccupied = false;
-    }
-
-    public int getCurrentElectricCounter() {
-        return currentElectricCounter;
-    }
-
-    public int getCurrentWaterCounter() {
-        return currentWaterCounter;
     }
 
     public void markAsOccupied() throws RoomException {
@@ -134,7 +198,9 @@ public class Room {
         }
     }
 
-    // ============================ Price Calculation ============================
+    // ====================================================================================================
+    // Price Calculation
+    // ====================================================================================================
     private double calculateElectricPrice(int usage) {
         return usage * ELECTRIC_RATE;
     }
@@ -155,7 +221,9 @@ public class Room {
         return String.format("%.2fUSD", amount);
     }
 
-    // ============================ Billing and Reporting ============================
+    // ====================================================================================================
+    // Billing and Reporting
+    // ====================================================================================================
     @Override
     public String toString() {
         if (!isOccupied) {
@@ -200,18 +268,13 @@ public class Room {
                 formatKHR(totalPrice), formatUSD(convertToUSD(totalPrice))
         );
     }
+    // In your tenant menu or wherever you display room information
+    public void displayRoomInformation(Room room) {
+        // First ensure room has up-to-date tenant information
+        RoomDML roomDML = new RoomDML();
+        roomDML.syncRoomWithTenant(room);
 
-
-    public void setRent(double rent) {
-        this.rent = rent;
+        // Now display the room information
+        System.out.println(room.toString());
     }
-    // In your Room class, make sure the setters are setting the values directly, not adding to them
-    public void setCurrentElectricCounter(int counter) {
-        this.currentElectricCounter = counter; // Direct assignment, not addition
-    }
-
-    public void setCurrentWaterCounter(int counter) {
-        this.currentWaterCounter = counter; // Direct assignment, not addition
-    }
-
 }

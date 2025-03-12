@@ -9,22 +9,22 @@ import java.util.List;
 
 public class UtilityUsageDML {
 
-    // Save utility usage
+    // ====================================================================================================
+    // Save Utility Usage
+    // ====================================================================================================
     public void saveUtilityUsage(UtilityUsage usage, int roomId) {
         String checkQuery = "SELECT COUNT(*) FROM UtilityUsage WHERE room_id = ? AND usage_date = ?";
         String insertQuery = "INSERT INTO UtilityUsage (room_id, electric_usage, water_usage, usage_date) VALUES (?, ?, ?, ?)";
+        String roomCheckQuery = "SELECT COUNT(*) FROM Rooms WHERE room_id = ?";
 
-        try (Connection conn = DataBaseConnection.getConnection()) {
-            // First check if data already exists
-            try (PreparedStatement checkPs = conn.prepareStatement(checkQuery)) {
-                checkPs.setInt(1, roomId);
-                checkPs.setDate(2, java.sql.Date.valueOf(usage.getDate()));
+        try (Connection conn = DataBaseConnection.getConnection();
+             PreparedStatement checkPs = conn.prepareStatement(roomCheckQuery)) {
 
-                try (ResultSet rs = checkPs.executeQuery()) {
-                    if (rs.next() && rs.getInt(1) > 0) {
-                        System.out.println("Utility usage already exists for this room and date - skipping insert");
-                        return;
-                    }
+            checkPs.setInt(1, roomId);
+            try (ResultSet rs = checkPs.executeQuery()) {
+                if (rs.next() && rs.getInt(1) == 0) {
+                    System.out.println("Error: Room with ID " + roomId + " does not exist in database");
+                    return;
                 }
             }
 
@@ -48,7 +48,9 @@ public class UtilityUsageDML {
         }
     }
 
-    // Get all utility usage records for a room
+    // ====================================================================================================
+    // Get All Utility Usage Records for a Room
+    // ====================================================================================================
     public List<UtilityUsage> getUtilityUsageByRoomId(int roomId) {
         List<UtilityUsage> usageList = new ArrayList<>();
         String query = "SELECT electric_usage, water_usage, usage_date FROM UtilityUsage WHERE room_id = ? ORDER BY usage_date DESC";
@@ -77,7 +79,9 @@ public class UtilityUsageDML {
         return usageList;
     }
 
-    // Get utility usage for a specific month
+    // ====================================================================================================
+    // Get Utility Usage for a Specific Month
+    // ====================================================================================================
 
 //    public UtilityUsage getUtilityUsageByMonth(int roomId, int year, int month) {
 //        String query = "SELECT electric_usage, water_usage, usage_date FROM UtilityUsage " +
@@ -109,7 +113,10 @@ public class UtilityUsageDML {
 //        return null; // No usage found for that month
 //    }
 
-//    // Delete utility usage record
+    // ====================================================================================================
+    // Delete Utility Usage Record
+    // ====================================================================================================
+
 //    public void deleteUtilityUsage(int usageId) {
 //        String query = "DELETE FROM UtilityUsage WHERE usage_id = ?";
 //

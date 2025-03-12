@@ -124,7 +124,27 @@ public class FloorDML {
             }
         }
     }
+    // Delete floor
+    public void deleteFloor(int floorId) {
+        String query = "DELETE FROM Floors WHERE floor_id = ?";
 
+        try (Connection conn = DataBaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(query)) {
+
+            ps.setInt(1, floorId);
+
+            int rowsAffected = ps.executeUpdate();
+            if (rowsAffected > 0) {
+                System.out.println("Floor deleted successfully!");
+            } else {
+                System.out.println("Floor not found or not deleted.");
+            }
+
+        } catch (SQLException e) {
+            System.out.println("SQL Error: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
     // Update floor information
 //    public void updateFloor(int floorId, Floor floor) {
 //        String query = "UPDATE Floors SET floor_number = ? WHERE floor_id = ?";

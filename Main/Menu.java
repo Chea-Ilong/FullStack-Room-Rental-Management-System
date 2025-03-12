@@ -1,7 +1,9 @@
 package Main;
 
 import DataBase.*;
+import Exceptions.RoomException;
 import Exceptions.TenantException;
+import Payment.UtilityUsage;
 import Properties.Building;
 import Properties.Floor;
 import Properties.Room;
@@ -14,7 +16,9 @@ import java.util.Scanner;
 public class Menu {
 
     // Tenant Menu
+    // Tenant Menu
     public static void tenantMenu(Scanner scanner, Tenant tenant, Landlord landlord) throws TenantException {
+
         boolean inMenu = true;
         while (inMenu) {
             System.out.println("\n===== Tenant Menu =====");
@@ -28,21 +32,25 @@ public class Menu {
             scanner.nextLine(); // Consume newline
 
             switch (choice) {
-                case 1:
-                    if (tenant.getAssignedRoom() != null) {
+                case 1: // View Room Information
+
+                        // Now display room information with synchronized data
+                        System.out.println("\n===== Room Information =====");
                         System.out.println(tenant.getAssignedRoom().toString());
-                    } else {
-                        System.out.println("No room assigned to display billing.");
-                    }
+
                     break;
                 case 2:
                     tenant.payRent(scanner);
                     break;
                 case 3:
-                    System.out.print("Enter the amount to pay for utilities: ");
-                    double utilityAmount = scanner.nextDouble();
-                    scanner.nextLine(); // Consume newline
-                    tenant.payUtilities(utilityAmount);
+                    if (tenant.getAssignedRoom() != null) {
+                        System.out.print("Enter the amount to pay for utilities: ");
+                        double utilityAmount = scanner.nextDouble();
+                        scanner.nextLine(); // Consume newline
+                        tenant.payUtilities(utilityAmount);
+                    } else {
+                        System.out.println("No room assigned to pay utilities for. Please contact the landlord.");
+                    }
                     break;
                 case 4:
                     tenant.displayPaymentHistory();
@@ -55,7 +63,6 @@ public class Menu {
             }
         }
     }
-
 
     // Landlord Menu
     public static void landlordMenu(Scanner scanner, Landlord landlord) {
@@ -400,6 +407,7 @@ public class Menu {
 
                 switch (choice) {
                     case 1:
+
                         // Add Tenant
                         System.out.print("Enter tenant name: ");
                         String tenantName = scanner.nextLine();
@@ -408,10 +416,14 @@ public class Menu {
                         System.out.print("Enter tenant contact: ");
                         String tenantContact = scanner.nextLine();
 
-                        Users.Tenant newTenant = new Users.Tenant(tenantName, tenantID, tenantContact);
                         TenantDML tenantDML = new TenantDML();
-                        tenantDML.saveTenant(newTenant);
-                        landlord.addTenant(newTenant);
+                        if (!tenantDML.tenantExists(tenantID)) {
+                            Tenant newTenant = new Tenant(tenantName, tenantID, tenantContact);
+                            tenantDML.saveTenant(newTenant);
+                            landlord.addTenant(newTenant);
+                        } else {
+                            System.out.println(STR."Error: Tenant with ID \{tenantID} already exists.");
+                        }
                         break;
                     case 2:
                         // Remove Tenant
@@ -426,14 +438,15 @@ public class Menu {
                         System.out.print("Enter room number: ");
                         String roomNumber = scanner.nextLine();
 
-                        landlord.assignedTenantRoom(tenantID, roomNumber);
+                        LandlordDML landlordDML = new LandlordDML();
+                        landlordDML.assignRoomToTenant(tenantID, roomNumber);
                         break;
                     case 4:
                         // View Tenant Details
                         System.out.print("Enter tenant ID: ");
                         tenantID = scanner.nextLine();
 
-                        Users.Tenant tenant = landlord.getTenantByID(tenantID);
+                        Tenant tenant = landlord.getTenantByID(tenantID);
                         if (tenant != null) {
                             System.out.println(tenant.toString());
                         } else {
@@ -457,70 +470,97 @@ public class Menu {
         }
     }
 
-    // Utility Management Submenu
-    static void utilityManagementMenu(Scanner scanner, Landlord landlord) {
-        while (true) {
-            try {
-                System.out.println("\n=== Utility Management ===");
-                System.out.println("1. Set Utility Usage for Room");
-                System.out.println("2. View Utility Usage");
-                System.out.println("3. Back to Main Menu");
-                System.out.print("Choose an option: ");
-                int choice = scanner.nextInt();
-                scanner.nextLine(); // Consume newline
+//     Utility Management Submenu
+   static void utilityManagementMenu(Scanner scanner, Landlord landlord) {
+    while (true) {
+        try {
+            System.out.println("\n=== Utility Management ===");
+            System.out.println("1. Set Utility Usage for Room");
+            System.out.println("2. View Utility Usage");
+            System.out.println("3. Back to Main Menu");
+            System.out.print("Choose an option: ");
+            int choice = scanner.nextInt();
+            scanner.nextLine(); // Consume newline
 
-                switch (choice) {
-                    case 1:
-                        // Set Utility Usage for Room
-                        System.out.print("Enter room number: ");
-                        String roomNumber = scanner.nextLine();
-                        System.out.print("Enter electric usage: ");
-                        int electricUsage = scanner.nextInt();
-                        System.out.print("Enter water usage: ");
-                        int waterUsage = scanner.nextInt();
-                        scanner.nextLine(); // Consume newline
+            switch (choice) {
+                case 1:
+                    System.out.print("Enter Room Number: ");
+                    String roomNumber = scanner.nextLine();
 
-                        Properties.Room room = landlord.getRoomAcrossAllBuildings(roomNumber);
-                        if (room != null) {
+                    Room room = landlord.getRoomAcrossAllBuildings(roomNumber);
+                    if (room == null) {
+                        System.out.println("Room not found.");
+                        break; // Don't return, continue the loop
+                    }
+
+                    System.out.print("Enter Electric Usage (kWh): ");
+                    int electricUsage = scanner.nextInt();
+
+                    System.out.print("Enter Water Usage (cubic meters): ");
+                    int waterUsage = scanner.nextInt();
+                    scanner.nextLine(); // Consume newline
+
+                    System.out.print("Use today's date? (Y/N): ");
+                    String useTodayDate = scanner.nextLine();
+
+                    try {
+                        if (useTodayDate.equalsIgnoreCase("Y")) {
                             landlord.setUtilityUsage(room, electricUsage, waterUsage);
                         } else {
-                            System.out.println("Room not found.");
+                            System.out.print("Enter date (YYYY-MM-DD): ");
+                            String dateString = scanner.nextLine();
+                            LocalDate date = LocalDate.parse(dateString);
+                            landlord.setUtilityUsage(room, electricUsage, waterUsage, date);
                         }
-                        break;
-                    case 2:
-                        // View Utility Usage
-                        System.out.print("Enter room number: ");
-                        roomNumber = scanner.nextLine();
-                        System.out.print("Enter date (YYYY-MM-DD): ");
-                        String dateStr = scanner.nextLine();
-                        java.time.LocalDate date = java.time.LocalDate.parse(dateStr);
+                    } catch (RoomException e) {
+                        System.out.println("Error: " + e.getMessage());
+                    }
+                    break;
 
-                        room = landlord.getRoomAcrossAllBuildings(roomNumber);
-                        if (room != null) {
-                            Payment.UtilityUsage usage = landlord.getUtilityUsageForRoom(room, date);
-                            if (usage != null) {
-                                System.out.println("Utility usage for Room " + roomNumber + " on " + date + ":");
-                                System.out.println("Electric usage: " + usage.getElectricUsage() + " kWh");
-                                System.out.println("Water usage: " + usage.getWaterUsage() + " m³");
-                            } else {
-                                System.out.println("No utility data available for this room on " + date);
-                            }
-                        } else {
-                            System.out.println("Room not found.");
-                        }
-                        break;
-                    case 3:
-                        return; // Back to main menu
-                    default:
-                        System.out.println("Invalid choice! Please try again.");
-                        break;
-                }
-            } catch (Exception e) {
-                System.out.println("An error occurred: " + e.getMessage());
-                scanner.nextLine(); // Consume invalid input
+                case 2:
+                    // View Utility Usage
+                    System.out.print("Enter Room Number: ");
+                    roomNumber = scanner.nextLine(); // Reuse roomNumber variable
+
+                    room = landlord.getRoomAcrossAllBuildings(roomNumber);
+                    if (room == null) {
+                        System.out.println("Room not found.");
+                        break; // Don't return, continue the loop
+                    }
+
+                    UtilityUsage usage = room.getUtilityUsage();
+                    if (usage == null) {
+                        System.out.println("No utility data available for Room " + roomNumber);
+                    } else {
+                        System.out.println("Room " + roomNumber + " utility usage:");
+                        System.out.println("Date: " + usage.getDate());
+                        System.out.println("Electric Usage: " + usage.getElectricUsage() + " kWh");
+                        System.out.println("Water Usage: " + usage.getWaterUsage() + " cubic meters");
+
+                        // Calculate costs
+                        double electricCost = usage.getElectricUsage() * Room.getElectricRate();
+                        double waterCost = usage.getWaterUsage() * Room.getWaterRate();
+                        double totalCost = electricCost + waterCost;
+
+                        System.out.println("Electric Cost: " + String.format("%.0f KHR", electricCost));
+                        System.out.println("Water Cost: " + String.format("%.0f KHR", waterCost));
+                        System.out.println("Total Cost: " + String.format("%.0f KHR", totalCost));
+                    }
+                    break;
+
+                case 3:
+                    return; // Back to main menu
+
+                default:
+                    System.out.println("Invalid choice! Please try again.");
+                    break;
             }
+        } catch (Exception e) {
+            System.out.println("An error occurred: " + e.getMessage());
+            scanner.nextLine(); // Consume invalid input
         }
     }
+}
 
     // Reports Menu
     static void reportsMenu(Scanner scanner, Landlord landlord) {

@@ -1,21 +1,29 @@
 package Properties;
 
+import Exceptions.RoomException;
+
 import java.util.ArrayList;
 import java.util.List;
 
 public class Floor {
 
-    // ============================ Floor Information ============================
+    // ====================================================================================================
+    // Floor Information
+    // ====================================================================================================
     private String floorNumber;
     private List<Room> rooms;
 
-    // ============================ Constructor ============================
+    // ====================================================================================================
+    // Constructor
+    // ====================================================================================================
     public Floor(String floorNumber) {
         this.floorNumber = floorNumber;
         this.rooms = new ArrayList<>();
     }
 
-    // ============================ Add/Remove/Update Rooms ============================
+    // ====================================================================================================
+    // Add/Remove/Update Rooms
+    // ====================================================================================================
     // Add a room to the floor (Create)
     public void addRoom(Room room) {
         if (room != null && !rooms.contains(room)) {
@@ -38,7 +46,7 @@ public class Floor {
     }
 
     // Update room details (Update)
-    public void updateRoom(String roomNumber, Room updatedRoom) {
+    public void updateRoom(String roomNumber, Room updatedRoom) throws RoomException {
         Room room = getRoomByNumber(roomNumber);
         if (room != null) {
             room.setRoomNumber(updatedRoom.getRoomNumber());
@@ -50,7 +58,9 @@ public class Floor {
         }
     }
 
-    // ============================ Room Lookup ============================
+    // ====================================================================================================
+    // Room Lookup
+    // ====================================================================================================
     // Get a room by its room number (Read)
     public Room getRoomByNumber(String roomNumber) {
         for (Room room : rooms) {
@@ -61,7 +71,9 @@ public class Floor {
         return null; // Room not found
     }
 
-    // ============================ Room Display ============================
+    // ====================================================================================================
+    // Room Display
+    // ====================================================================================================
     // Display all rooms on the floor (Read)
     public void displayAllRooms() {
         System.out.println("\n===== All Rooms on Floor " + floorNumber + " =====");
@@ -76,7 +88,9 @@ public class Floor {
         }
     }
 
-    // ============================ Available and Occupied Rooms ============================
+    // ====================================================================================================
+    // Available and Occupied Rooms
+    // ====================================================================================================
     // Get a list of available (vacant) rooms
     public List<Room> getAvailableRooms() {
         List<Room> availableRooms = new ArrayList<>();
@@ -99,7 +113,9 @@ public class Floor {
         return occupiedRooms;
     }
 
-    // ============================ Utility Management ============================
+    // ====================================================================================================
+    // Utility Management
+    // ====================================================================================================
     // Reset utility usage for all rooms on the floor
     public void resetUtilityUsageForAllRooms() {
         for (Room room : rooms) {
@@ -108,7 +124,9 @@ public class Floor {
         System.out.println("Utility usage reset for all rooms on Floor " + floorNumber);
     }
 
-    // ============================ Getters/Setters ============================
+    // ====================================================================================================
+    // Getters/Setters
+    // ====================================================================================================
     // Getter for floor number
     public String getFloorNumber() {
         return floorNumber;
