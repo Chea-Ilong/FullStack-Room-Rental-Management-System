@@ -13,11 +13,15 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Scanner;
 
+import static Main.Menu.RoomManagement.roomManagementMenu;
+
 public class Menu {
 
-    // Tenant Menu
-    // Tenant Menu
-    public static void tenantMenu(Scanner scanner, Tenant tenant, Landlord landlord) throws TenantException {
+    public static void tenantMenu(Scanner scanner, Tenant tenant, Landlord landlord) throws TenantException, RoomException {
+//        // Add at the beginning of tenantMenu method
+//        System.out.println("DEBUG: Tenant name: " + tenant.getName());
+//        System.out.println("DEBUG: Assigned room: " +
+//                (tenant.getAssignedRoom() != null ? tenant.getAssignedRoom().getRoomNumber() : "None"));
 
         boolean inMenu = true;
         while (inMenu) {
@@ -33,12 +37,26 @@ public class Menu {
 
             switch (choice) {
                 case 1: // View Room Information
+                    System.out.println("\n===== Room Information =====");
+                    Room assignedRoom = tenant.getAssignedRoom();
 
-                        // Now display room information with synchronized data
-                        System.out.println("\n===== Room Information =====");
-                        System.out.println(tenant.getAssignedRoom().toString());
+                    if (assignedRoom != null) {
+                        // Get a fresh copy of the room from the database
+                        RoomDML roomDML = new RoomDML();
+                        Room freshRoom = roomDML.getRoomByRoomNumber(assignedRoom.getRoomNumber());
 
+                        if (freshRoom != null) {
+                            // Update the tenant's assigned room information without trying to reassign
+                            tenant.updateRoomInformation(freshRoom);
+                            System.out.println(freshRoom.toString());
+                        } else {
+                            System.out.println(assignedRoom.toString());
+                        }
+                    } else {
+                        System.out.println("You don't have an assigned room. Please contact the landlord.");
+                    }
                     break;
+
                 case 2:
                     tenant.payRent(scanner);
                     break;
@@ -131,6 +149,8 @@ public class Menu {
                 int choice = scanner.nextInt();
                 scanner.nextLine(); // Consume newline
 
+                BuildingDML buildingDML = new BuildingDML();
+
                 switch (choice) {
                     case 1:
                         // Add Building
@@ -144,7 +164,6 @@ public class Menu {
                         landlord.addBuilding(building);
 
                         // Save to database
-                        BuildingDML buildingDML = new BuildingDML();
                         buildingDML.saveBuilding(building);
                         break;
 
@@ -152,7 +171,18 @@ public class Menu {
                         // Remove Building
                         System.out.print("Enter building name to remove: ");
                         buildingName = scanner.nextLine();
-                        landlord.removeBuilding(buildingName);
+
+                        // Get building ID from database
+                        int buildingId = buildingDML.getBuildingIdByName(buildingName);
+                        if (buildingId != -1) {
+                            // Remove from database
+                            buildingDML.deleteBuilding(buildingId);
+                            // Remove from landlord object
+                            landlord.removeBuilding(buildingName);
+                            System.out.println("Building removed from database successfully.");
+                        } else {
+                            System.out.println("Building not found in database.");
+                        }
                         break;
 
                     case 3:
@@ -166,13 +196,32 @@ public class Menu {
                         System.out.print("Enter new building address: ");
                         String newBuildingAddress = scanner.nextLine();
 
-                        landlord.updateBuilding(oldBuildingName, newBuildingName, newBuildingAddress);
+                        // Update in database
+                        int buildingIdToUpdate = buildingDML.getBuildingIdByName(oldBuildingName);
+                        if (buildingIdToUpdate != -1) {
+                            Building updatedBuilding = new Building(newBuildingName, newBuildingAddress);
+                            buildingDML.updateBuilding(buildingIdToUpdate, updatedBuilding);
+
+                            // Update in landlord object
+                            landlord.updateBuilding(oldBuildingName, newBuildingName, newBuildingAddress);
+                            System.out.println("Building updated in database successfully.");
+                        } else {
+                            System.out.println("Building not found in database.");
+                        }
                         break;
 
                     case 4:
                         // View All Buildings
+                        System.out.println("\n--- All Buildings (from memory) ---");
                         landlord.displayAllBuildings();
 
+                        // You could also implement a method to display buildings directly from database
+                        // For example:
+                        // System.out.println("\n--- All Buildings (from database) ---");
+                        // List<Building> buildings = buildingDML.getAllBuildings();
+                        // for (Building b : buildings) {
+                        //     System.out.println("Name: " + b.getBuildingName() + ", Address: " + b.getAddress());
+                        // }
                         break;
 
                     case 5:
@@ -192,13 +241,17 @@ public class Menu {
 
     // Floor Management Submenu
     static void floorManagementMenu(Scanner scanner, Landlord landlord) {
+        FloorDML floorDML = new FloorDML();
+        BuildingDML buildingDML = new BuildingDML(); // Assuming there's a BuildingDML class
+
         while (true) {
             try {
                 System.out.println("\n=== Floor Management ===");
                 System.out.println("1. Add Floor to Building");
                 System.out.println("2. Remove Floor from Building");
                 System.out.println("3. View Floors in Building");
-                System.out.println("4. Back to Main Menu");
+                System.out.println("4. Update Floor Information");
+                System.out.println("5. Back to Main Menu");
                 System.out.print("Choose an option: ");
                 int choice = scanner.nextInt();
                 scanner.nextLine(); // Consume newline
@@ -213,11 +266,25 @@ public class Menu {
 
                         Properties.Building building = landlord.getBuildingByName(buildingName);
                         if (building != null) {
-                            landlord.addFloorToBuilding(buildingName, new Properties.Floor(floorNumber));
+                            // Get building ID from database
+                            int buildingId = buildingDML.getBuildingIdByName(building.getName());
+                            if (buildingId != -1) {
+                                // Create and save the floor using FloorDML
+                                Properties.Floor newFloor = new Properties.Floor(floorNumber);
+                                boolean success = floorDML.saveFloor(newFloor, buildingId);
+
+                                if (success) {
+                                    // Also update the in-memory model
+                                    landlord.addFloorToBuilding(buildingName, newFloor);
+                                }
+                            } else {
+                                System.out.println("Building not found in database.");
+                            }
                         } else {
                             System.out.println("Building not found.");
                         }
                         break;
+
                     case 2:
                         // Remove Floor from Building
                         System.out.print("Enter building name: ");
@@ -225,8 +292,26 @@ public class Menu {
                         System.out.print("Enter floor number to remove: ");
                         floorNumber = scanner.nextLine();
 
-                        landlord.removeFloorFromBuilding(buildingName, floorNumber);
+                        building = landlord.getBuildingByName(buildingName);
+                        if (building != null) {
+                            // Get building ID from database
+                            int buildingId = buildingDML.getBuildingIdByName(building.getName());
+                            if (buildingId != -1) {
+                                // Delete from database
+                                boolean success = floorDML.deleteFloorByBuildingAndNumber(buildingId, floorNumber);
+
+                                if (success) {
+                                    // Also update the in-memory model
+                                    landlord.removeFloorFromBuilding(buildingName, floorNumber);
+                                }
+                            } else {
+                                System.out.println("Building not found in database.");
+                            }
+                        } else {
+                            System.out.println("Building not found.");
+                        }
                         break;
+
                     case 3:
                         // View Floors in Building
                         System.out.print("Enter building name: ");
@@ -234,14 +319,74 @@ public class Menu {
 
                         building = landlord.getBuildingByName(buildingName);
                         if (building != null) {
+                            // Get building ID from database
+                            int buildingId = buildingDML.getBuildingIdByName(building.getName());
+                            if (buildingId != -1) {
+                                // Get floors from database
+                                List<Properties.Floor> floors = floorDML.getFloorsByBuildingId(buildingId);
 
-                            building.displayAllFloors();
+                                if (floors.isEmpty()) {
+                                    System.out.println("No floors found for this building.");
+                                } else {
+                                    System.out.println("Floors in Building " + building.getName() + ":");
+                                    for (Properties.Floor floor : floors) {
+                                        System.out.println("- Floor: " + floor.getFloorNumber() +
+                                                " (Rooms: " +
+                                                (floor.getRooms() != null ? floor.getRooms().size() : 0) +
+                                                ")");
+                                    }
+                                }
+                            } else {
+                                // Fallback to in-memory display if not in database
+                                building.displayAllFloors();
+                            }
                         } else {
                             System.out.println("Building not found.");
                         }
                         break;
+
                     case 4:
+                        // Update Floor Information
+                        System.out.print("Enter building name: ");
+                        buildingName = scanner.nextLine();
+                        System.out.print("Enter current floor number: ");
+                        String currentFloorNumber = scanner.nextLine();
+                        System.out.print("Enter new floor number: ");
+                        String newFloorNumber = scanner.nextLine();
+
+                        building = landlord.getBuildingByName(buildingName);
+                        if (building != null) {
+                            // Get building ID and floor ID from database
+                            int buildingId = buildingDML.getBuildingIdByName(building.getName());
+                            if (buildingId != -1) {
+                                int floorId = floorDML.getFloorIdByBuildingAndNumber(buildingId, currentFloorNumber);
+
+                                if (floorId != -1) {
+                                    // Update in database
+                                    Properties.Floor updatedFloor = new Properties.Floor(newFloorNumber);
+                                    boolean success = floorDML.updateFloor(floorId, updatedFloor);
+
+                                    if (success) {
+                                        System.out.println("Floor updated successfully in database.");
+                                        // You might want to update the in-memory model as well
+                                        // This would need a method in the Landlord class to update a floor
+                                    } else {
+                                        System.out.println("Failed to update floor in database.");
+                                    }
+                                } else {
+                                    System.out.println("Floor not found in database.");
+                                }
+                            } else {
+                                System.out.println("Building not found in database.");
+                            }
+                        } else {
+                            System.out.println("Building not found.");
+                        }
+                        break;
+
+                    case 5:
                         return; // Back to main menu
+
                     default:
                         System.out.println("Invalid choice! Please try again.");
                         break;
@@ -253,139 +398,117 @@ public class Menu {
         }
     }
 
-    // Room Management Submenu
-    static void roomManagementMenu(Scanner scanner, Landlord landlord) {
-        while (true) {
-            try {
-                System.out.println("\n=== Room Management ===");
-                System.out.println("1. Add Room to Floor");
-                System.out.println("2. Remove Room from Floor");
-                System.out.println("3. View Room Details");
-                System.out.println("4. View All Rooms");
-                System.out.println("5. Back to Main Menu");
-                System.out.print("Choose an option: ");
-                int choice = scanner.nextInt();
-                scanner.nextLine(); // Consume newline
+    public class RoomManagement {
 
-                switch (choice) {
-                    case 1:
-                        // Add Room to Floor
-                        System.out.print("Enter building name: ");
-                        String buildingName = scanner.nextLine();
-                        System.out.print("Enter floor number: ");
-                        String floorNumber = scanner.nextLine();
-                        System.out.print("Enter room number: ");
-                        String roomNumber = scanner.nextLine();
-                        System.out.print("Enter rent amount: ");
-                        double rent = scanner.nextDouble();
-                        System.out.print("Enter initial electric counter: ");
-                        int electricCounter = scanner.nextInt();
-                        System.out.print("Enter initial water counter: ");
-                        int waterCounter = scanner.nextInt();
-                        scanner.nextLine(); // Consume newline
+        static void roomManagementMenu(Scanner scanner, Landlord landlord) {
+            while (true) {
+                try {
+                    System.out.println("\n=== Room Management ===");
+                    System.out.println("1. Add Room to Floor");
+                    System.out.println("2. Remove Room from Floor");
+                    System.out.println("3. View Room Details");
+                    System.out.println("4. View All Rooms");
+                    System.out.println("5. Back to Main Menu");
+                    System.out.print("Choose an option: ");
+                    int choice = scanner.nextInt();
+                    scanner.nextLine(); // Consume newline
 
-                        // Check if building exists in database
-                        BuildingDML buildingDML = new BuildingDML();
-                        int buildingId = buildingDML.getBuildingIdByName(buildingName);
+                    switch (choice) {
+                        case 1:
+                            // Add Room to Floor
+                            System.out.print("Enter building name: ");
+                            String buildingName = scanner.nextLine();
+                            System.out.print("Enter floor number: ");
+                            String floorNumber = scanner.nextLine();
+                            System.out.print("Enter room number: ");
+                            String roomNumber = scanner.nextLine();
+                            System.out.print("Enter rent amount: ");
+                            double rent = scanner.nextDouble();
+                            System.out.print("Enter initial electric counter: ");
+                            int electricCounter = scanner.nextInt();
+                            System.out.print("Enter initial water counter: ");
+                            int waterCounter = scanner.nextInt();
+                            scanner.nextLine(); // Consume newline
 
-                        if (buildingId == -1) {
-                            // Building doesn't exist, create it
-                            System.out.println("Building not found. Creating new building...");
-                            System.out.print("Enter building address: ");
-                            String address = scanner.nextLine();
+                            BuildingDML buildingDML = new BuildingDML();
+                            FloorDML floorDML = new FloorDML();
+                            RoomDML roomDML = new RoomDML();
 
-                            Building newBuilding = new Building(buildingName, address);
-                            buildingDML.saveBuilding(newBuilding);
-
-                            // Get the newly created building's ID
-                            buildingId = buildingDML.getBuildingIdByName(buildingName);
-                        }
-
-                        // Check if floor exists in database
-                        FloorDML floorDML = new FloorDML();
-                        int floorId = floorDML.getFloorIdByBuildingAndNumber(buildingId, floorNumber);
-
-                        if (floorId == -1) {
-                            // Floor doesn't exist, create it
-                            System.out.println("Floor not found. Creating new floor...");
-
-                            Floor newFloor = new Floor(floorNumber);
-                            floorDML.saveFloor(newFloor, buildingId);
-
-                            // Get the newly created floor's ID
-                            floorId = floorDML.getFloorIdByBuildingAndNumber(buildingId, floorNumber);
-                        }
-
-                        // Create room with initial counter values
-                        Room newRoom = new Room(roomNumber, electricCounter, waterCounter);
-                        newRoom.setRent(rent);
-
-                        // Set utility usage with today's date (only if Room class doesn't already handle this)
-                        LocalDate today = LocalDate.now();
-                        // Only include ONE of these utility initialization methods based on your Room implementation:
-                        // EITHER rely on the Room constructor alone:
-                        // (Do nothing extra with utility usage here)
-
-                        // OR explicitly set it with setUtilityUsage, if the Room constructor doesn't handle it:
-                        // newRoom.setUtilityUsage(electricCounter, waterCounter, today);
-
-                        // Save the room to the database
-                        RoomDML roomDML = new RoomDML();
-                        roomDML.saveRoom(newRoom, floorId);
-
-                        System.out.println("Room added successfully to database.");
-                        break;
-
-                    case 2:
-                        // Remove Room from Floor
-//                        System.out.print("Enter building name: ");
-//                        buildingName = scanner.nextLine();
-//                        System.out.print("Enter floor number: ");
-//                        floorNumber = scanner.nextLine();
-//                        System.out.print("Enter room number to remove: ");
-//                        roomNumber = scanner.nextLine();
-//
-//                        building = landlord.getBuildingByName(buildingName);
-//                        if (building != null) {
-//                            floor = building.getFloorByNumber(floorNumber);
-//                            if (floor != null) {
-//                                floor.removeRoom(roomNumber);
-//                            } else {
-//                                System.out.println("Floor not found.");
-//                            }
-//                        } else {
-//                            System.out.println("Building not found.");
-//                        }
-                        break;
-                    case 3:
-                        // View Room Details
-                        System.out.print("Enter room number: ");
-                        roomNumber = scanner.nextLine();
-
-                        Properties.Room room = landlord.getRoomAcrossAllBuildings(roomNumber);
-                        if (room != null) {
-                            System.out.println(room.toString());
-                        } else {
-                            System.out.println("Room not found.");
-                        }
-                        break;
-                    case 4:
-                        // View All Rooms (across all buildings)
-                        for (Properties.Building b : landlord.getBuildings()) {
-                            for (Properties.Floor f : b.getFloors()) {
-                                f.displayAllRooms();
+                            int buildingId = buildingDML.getBuildingIdByName(buildingName);
+                            if (buildingId == -1) {
+                                System.out.println("Building not found. Creating new building...");
+                                System.out.print("Enter building address: ");
+                                String address = scanner.nextLine();
+                                Building newBuilding = new Building(buildingName, address);
+                                buildingDML.saveBuilding(newBuilding);
+                                buildingId = buildingDML.getBuildingIdByName(buildingName);
                             }
-                        }
-                        break;
-                    case 5:
-                        return; // Back to main menu
-                    default:
-                        System.out.println("Invalid choice! Please try again.");
-                        break;
+
+                            int floorId = floorDML.getFloorIdByBuildingAndNumber(buildingId, floorNumber);
+                            if (floorId == -1) {
+                                System.out.println("Floor not found. Creating new floor...");
+                                Floor newFloor = new Floor(floorNumber);
+                                floorDML.saveFloor(newFloor, buildingId);
+                                floorId = floorDML.getFloorIdByBuildingAndNumber(buildingId, floorNumber);
+                            }
+
+                            Room newRoom = new Room(roomNumber, electricCounter, waterCounter);
+                            newRoom.setRent(rent);
+                            newRoom.setUtilityUsage(electricCounter, waterCounter, LocalDate.now());
+
+                            roomDML.saveRoom(newRoom, floorId);
+                            System.out.println("Room added successfully to database.");
+                            break;
+
+                        case 2:
+                            // Remove Room from Floor
+                            System.out.print("Enter room number to remove: ");
+                            roomNumber = scanner.nextLine();
+
+                            roomDML = new RoomDML();
+                            int roomId = roomDML.getRoomIdByRoomNumber(roomNumber);
+
+                            if (roomId != -1) {
+                                roomDML.deleteRoom(roomId);
+                                System.out.println("Room removed successfully.");
+                            } else {
+                                System.out.println("Room not found.");
+                            }
+                            break;
+
+                        case 3:
+                            // View Room Details
+                            System.out.print("Enter room number: ");
+                            roomNumber = scanner.nextLine();
+
+                            Room room = landlord.getRoomAcrossAllBuildings(roomNumber);
+                            if (room != null) {
+                                System.out.println(room.toString());
+                            } else {
+                                System.out.println("Room not found.");
+                            }
+                            break;
+
+                        case 4:
+                            // View All Rooms (across all buildings)
+                            for (Building building : landlord.getBuildings()) {
+                                for (Floor floor : building.getFloors()) {
+                                    floor.displayAllRooms();
+                                }
+                            }
+                            break;
+
+                        case 5:
+                            return; // Back to main menu
+
+                        default:
+                            System.out.println("Invalid choice! Please try again.");
+                            break;
+                    }
+                } catch (Exception e) {
+                    System.out.println("An error occurred: " + e.getMessage());
+                    scanner.nextLine(); // Consume invalid input
                 }
-            } catch (Exception e) {
-                System.out.println("An error occurred: " + e.getMessage());
-                scanner.nextLine(); // Consume invalid input
             }
         }
     }
@@ -407,7 +530,6 @@ public class Menu {
 
                 switch (choice) {
                     case 1:
-
                         // Add Tenant
                         System.out.print("Enter tenant name: ");
                         String tenantName = scanner.nextLine();
@@ -422,7 +544,7 @@ public class Menu {
                             tenantDML.saveTenant(newTenant);
                             landlord.addTenant(newTenant);
                         } else {
-                            System.out.println(STR."Error: Tenant with ID \{tenantID} already exists.");
+                            System.out.println("Error: Tenant with ID " + tenantID + " already exists.");
                         }
                         break;
                     case 2:
@@ -485,35 +607,44 @@ public class Menu {
             switch (choice) {
                 case 1:
                     System.out.print("Enter Room Number: ");
-                    String roomNumber = scanner.nextLine();
+                    String roomNumber = scanner.nextLine().trim();
 
-                    Room room = landlord.getRoomAcrossAllBuildings(roomNumber);
+// Instead of using landlord.getRoomAcrossAllBuildings, use the database directly
+                    RoomDML roomDML = new RoomDML();
+                    Room room = roomDML.getRoomByRoomNumber(roomNumber);
+
                     if (room == null) {
-                        System.out.println("Room not found.");
-                        break; // Don't return, continue the loop
+                        System.out.println("Room not found in database.");
+                        return;
                     }
 
-                    System.out.print("Enter Electric Usage (kWh): ");
-                    int electricUsage = scanner.nextInt();
+                    System.out.print("Enter Electric Usage: ");
+                    int electricUsage;
+                    try {
+                        electricUsage = Integer.parseInt(scanner.nextLine().trim());
+                    } catch (NumberFormatException e) {
+                        System.out.println("Invalid input. Electric usage must be a number.");
+                        return;
+                    }
 
-                    System.out.print("Enter Water Usage (cubic meters): ");
-                    int waterUsage = scanner.nextInt();
-                    scanner.nextLine(); // Consume newline
-
-                    System.out.print("Use today's date? (Y/N): ");
-                    String useTodayDate = scanner.nextLine();
+                    System.out.print("Enter Water Usage: ");
+                    int waterUsage;
+                    try {
+                        waterUsage = Integer.parseInt(scanner.nextLine().trim());
+                    } catch (NumberFormatException e) {
+                        System.out.println("Invalid input. Water usage must be a number.");
+                        return;
+                    }
 
                     try {
-                        if (useTodayDate.equalsIgnoreCase("Y")) {
-                            landlord.setUtilityUsage(room, electricUsage, waterUsage);
-                        } else {
-                            System.out.print("Enter date (YYYY-MM-DD): ");
-                            String dateString = scanner.nextLine();
-                            LocalDate date = LocalDate.parse(dateString);
-                            landlord.setUtilityUsage(room, electricUsage, waterUsage, date);
-                        }
-                    } catch (RoomException e) {
-                        System.out.println("Error: " + e.getMessage());
+                        // Use the direct method to set utility usage
+                        roomDML.setUtilityUsageDirectly(roomNumber, electricUsage, waterUsage);
+                        System.out.println("Utility usage for Room " + roomNumber + " has been set.");
+
+                        // If you still need to update the in-memory model:
+                        room.setUtilityUsage(electricUsage, waterUsage, LocalDate.now());
+                    } catch (Exception e) {
+                        System.out.println("Error setting utility usage: " + e.getMessage());
                     }
                     break;
 

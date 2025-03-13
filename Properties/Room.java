@@ -141,15 +141,22 @@ public class Room {
         currentWaterCounter = 0;
     }
 
+    // Simplify utility management with a single update method
     public void updateUtilityUsage(int newElectricUsage, int newWaterUsage, LocalDate date) {
+        // Validate parameters
+        if (newElectricUsage < 0 || newWaterUsage < 0) {
+            throw new IllegalArgumentException("Usage values cannot be negative");
+        }
+
+        // Update object state
         this.currentElectricCounter = newElectricUsage;
         this.currentWaterCounter = newWaterUsage;
         this.utilityUsage = new UtilityUsage(newElectricUsage, newWaterUsage, date);
 
-        // Update the database with the new utility usage
-        RoomDML roomDML = new RoomDML();
-        roomDML.updateUtilityUsage(this.roomNumber, newElectricUsage, newWaterUsage, date);
+        // Persist to database
+        new RoomDML().saveUtilityUsage(this.roomNumber, newElectricUsage, newWaterUsage, date);
     }
+
 
     // ====================================================================================================
     // Tenant Management
@@ -159,7 +166,7 @@ public class Room {
         this.isOccupied = (tenant != null);
         if (tenant != null) {
             RoomDML roomDML = new RoomDML();
-            roomDML.syncRoomWithTenant(this);
+            roomDML.syncRoomWithTenant(String.valueOf(this));
         }
     }
     // Add this method to your Room class
@@ -272,7 +279,7 @@ public class Room {
     public void displayRoomInformation(Room room) {
         // First ensure room has up-to-date tenant information
         RoomDML roomDML = new RoomDML();
-        roomDML.syncRoomWithTenant(room);
+        roomDML.syncRoomWithTenant(String.valueOf(room));
 
         // Now display the room information
         System.out.println(room.toString());

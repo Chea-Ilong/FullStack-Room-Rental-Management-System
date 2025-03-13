@@ -288,7 +288,17 @@ public class Tenant extends User {
     private String formatUSD(double amount) {
         return String.format("%.2f USD", amount);
     }
-
+    // Add this method to your Tenant class
+    public void updateRoomInformation(Room updatedRoom) {
+        if (this.assignedRoom != null &&
+                this.assignedRoom.getRoomNumber().equals(updatedRoom.getRoomNumber())) {
+            // It's the same room, just update the information
+            this.assignedRoom = updatedRoom;
+        } else {
+            // It's a different room, would need formal assignment
+            System.out.println("Cannot update room information - different room number.");
+        }
+    }
     // ====================================================================================================
     // Override toString
     // ====================================================================================================

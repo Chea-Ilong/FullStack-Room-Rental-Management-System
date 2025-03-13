@@ -86,7 +86,7 @@ public class LandlordDML {
 
         return buildings;
     }
-    public void assignRoomToTenant(String tenantId, String roomNumber) {
+    public void assignRoomToTenant(String tenantIdCard, String roomNumber) {
         RoomDML roomDML = new RoomDML();
         int roomId = roomDML.getRoomIdByRoomNumber(roomNumber);
 
@@ -95,12 +95,11 @@ public class LandlordDML {
             return;
         }
 
-        String checkRoomQuery = "SELECT is_occupied FROM Rooms WHERE room_id = ?";
-
         try (Connection conn = DataBaseConnection.getConnection()) {
             conn.setAutoCommit(false); // Start transaction
 
-            // Check room occupancy
+            // Check if room is already occupied
+            String checkRoomQuery = "SELECT is_occupied FROM Rooms WHERE room_id = ?";
             try (PreparedStatement ps = conn.prepareStatement(checkRoomQuery)) {
                 ps.setInt(1, roomId);
                 try (ResultSet rs = ps.executeQuery()) {
@@ -111,31 +110,45 @@ public class LandlordDML {
                 }
             }
 
-            // Update tenant's assigned room
-            String updateTenantQuery = "UPDATE Tenants SET assigned_room_id = ? WHERE user_id = (SELECT user_id FROM Users WHERE IdCard = ?)";
-            try (PreparedStatement ps = conn.prepareStatement(updateTenantQuery)) {
-                ps.setInt(1, roomId);
-                ps.setString(2, tenantId);
-                int tenantRowsUpdated = ps.executeUpdate();
+            // Get user_id from ID card in a single query
+            int userId = getUserIdByIdCard(conn, tenantIdCard);
+            if (userId == -1) {
+                System.out.println("Tenant with ID card " + tenantIdCard + " not found");
+                return;
+            }
+
+            // Update tenant assignment AND mark room as occupied in a single transaction
+            String updateTenantQuery = "UPDATE Tenants SET assigned_room_id = ? WHERE user_id = ?";
+            String updateRoomQuery = "UPDATE Rooms SET is_occupied = TRUE WHERE room_id = ?";
+
+            try (
+                    PreparedStatement tenantStmt = conn.prepareStatement(updateTenantQuery);
+                    PreparedStatement roomStmt = conn.prepareStatement(updateRoomQuery)
+            ) {
+                // Set up and execute tenant update
+                tenantStmt.setInt(1, roomId);
+                tenantStmt.setInt(2, userId);
+                int tenantRowsUpdated = tenantStmt.executeUpdate();
 
                 if (tenantRowsUpdated <= 0) {
-                    System.out.println("Error: Tenant with ID " + tenantId + " not found.");
+                    System.out.println("Error: Tenant record for ID card " + tenantIdCard + " not found.");
                     conn.rollback();
                     return;
                 }
+
+                // Set up and execute room update
+                roomStmt.setInt(1, roomId);
+                roomStmt.executeUpdate();
+
+                // Commit transaction
+                conn.commit();
+                System.out.println("Tenant assigned to Room " + roomNumber + " successfully.");
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(true);
             }
-
-            // Mark room as occupied
-            String updateRoomQuery = "UPDATE Rooms SET is_occupied = TRUE WHERE room_id = ?";
-            try (PreparedStatement ps = conn.prepareStatement(updateRoomQuery)) {
-                ps.setInt(1, roomId);
-                ps.executeUpdate();
-            }
-
-            // Commit transaction
-            conn.commit();
-            System.out.println("Tenant assigned to Room " + roomNumber + " successfully.");
-
         } catch (SQLException e) {
             System.out.println("SQL Error: " + e.getMessage());
             e.printStackTrace();

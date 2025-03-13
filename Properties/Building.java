@@ -142,4 +142,8 @@ public class Building {
                 ", address='" + address + '\'' +
                 '}';
     }
+
+    public String getName() {
+        return buildingName;
+    }
 }

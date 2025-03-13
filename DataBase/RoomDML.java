@@ -11,7 +11,6 @@ import java.time.LocalDate;
 
 public class RoomDML {
 
-    // ===== Room Creation Methods =====
 
     public void saveRoom(Room room, int floorId) {
         Connection conn = null;
@@ -136,24 +135,157 @@ public class RoomDML {
             e.printStackTrace();
         }
     }
+    public UtilityUsage getUtilityUsageFromDatabase(String roomNumber, LocalDate date) {
+        String query = "SELECT u.electric_usage, u.water_usage, u.usage_date " +
+                "FROM UtilityUsage u " +
+                "JOIN Rooms r ON u.room_id = r.room_id " +
+                "WHERE r.room_number = ? AND u.usage_date = ?";
 
-    private void saveUtilityUsage(UtilityUsage usage, int roomId, Connection conn) throws SQLException {
-        String query = "INSERT INTO utilityusage (room_id, electric_usage, water_usage, usage_date) VALUES (?, ?, ?, ?)";
-        try (PreparedStatement ps = conn.prepareStatement(query)) {
-            ps.setInt(1, roomId);
-            ps.setInt(2, usage.getElectricUsage());
-            ps.setInt(3, usage.getWaterUsage());
-            ps.setDate(4, java.sql.Date.valueOf(usage.getDate()));
-            int rowsAffected = ps.executeUpdate();
-            System.out.println("Rows affected by utility usage insert: " + rowsAffected);
+        try (Connection conn = DataBaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(query)) {
+
+            ps.setString(1, roomNumber);
+            ps.setDate(2, java.sql.Date.valueOf(date));
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    int electricUsage = rs.getInt("electric_usage");
+                    int waterUsage = rs.getInt("water_usage");
+
+
+                    UtilityUsage usage = new UtilityUsage(electricUsage, waterUsage, date);
+//                    usage.setIsPaid(isPaid);
+                    return usage;
+                }
+            }
         } catch (SQLException e) {
-            System.out.println("Failed to insert utility usage: " + e.getMessage());
-            throw e;
+            System.out.println("SQL Error retrieving utility usage: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return null; // Not found
+    }
+    // Enhanced saveUtilityUsage method
+    public void saveUtilityUsage(String roomNumber, int electricUsage, int waterUsage, LocalDate date) {
+        System.out.println("Attempting to save utility usage for room: " + roomNumber);
+
+        int roomId = getRoomIdByRoomNumber(roomNumber);
+        if (roomId == -1) {
+            System.out.println("Error: Room not found: " + roomNumber);
+            System.out.println("Please check if the room exists and try again.");
+            return;
+        }
+
+        try (Connection conn = DataBaseConnection.getConnection()) {
+            conn.setAutoCommit(false);
+
+            // Check if there's already a utility usage record for this date
+            String checkQuery = "SELECT * FROM UtilityUsage WHERE room_id = ? AND usage_date = ?";
+            try (PreparedStatement checkPs = conn.prepareStatement(checkQuery)) {
+                checkPs.setInt(1, roomId);
+                checkPs.setDate(2, Date.valueOf(date));
+
+                boolean recordExists = false;
+                try (ResultSet rs = checkPs.executeQuery()) {
+                    recordExists = rs.next();
+                }
+
+                // Use an insert or update based on whether the record exists
+                String query;
+                if (recordExists) {
+                    query = "UPDATE UtilityUsage SET electric_usage = ?, water_usage = ? " +
+                            "WHERE room_id = ? AND usage_date = ?";
+                    System.out.println("Updating existing utility record...");
+                } else {
+                    query = "INSERT INTO UtilityUsage (electric_usage, water_usage, room_id, usage_date) " +
+                            "VALUES (?, ?, ?, ?)";
+                    System.out.println("Creating new utility record...");
+                }
+
+                try (PreparedStatement ps = conn.prepareStatement(query)) {
+                    ps.setInt(1, electricUsage);
+                    ps.setInt(2, waterUsage);
+                    ps.setInt(3, roomId);
+                    ps.setDate(4, Date.valueOf(date));
+
+                    int affected = ps.executeUpdate();
+
+                    // Update room counters in the same transaction
+                    updateRoomCounters(conn, roomId, electricUsage, waterUsage);
+
+                    conn.commit();
+                    System.out.println("Utility usage " + (recordExists ? "updated" : "saved") +
+                            " successfully for room: " + roomNumber +
+                            " (" + affected + " rows affected)");
+                }
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(true);
+            }
+        } catch (SQLException e) {
+            System.out.println("SQL Error saving utility usage: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    // Support method that accepts a connection for transaction support
+    private void updateRoomCounters(Connection conn, int roomId, int electricCounter, int waterCounter) throws SQLException {
+        String query = "UPDATE Rooms SET current_electric_counter = ?, current_water_counter = ? WHERE room_id = ?";
+
+        try (PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setInt(1, electricCounter);
+            ps.setInt(2, waterCounter);
+            ps.setInt(3, roomId);
+            ps.executeUpdate();
         }
     }
 
     // ===== Room Retrieval Methods =====
+    // Add this method to the RoomDML class
+    public Room getRoomByRoomNumber(String roomNumber) {
+        String query = "SELECT r.room_id, r.room_number, r.rent, r.current_electric_counter, " +
+                "r.current_water_counter, r.is_occupied FROM Rooms r WHERE r.room_number = ?";
 
+        try (Connection conn = DataBaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(query)) {
+
+            ps.setString(1, roomNumber);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    int roomId = rs.getInt("room_id");
+                    double rent = rs.getDouble("rent");
+                    int electricCounter = rs.getInt("current_electric_counter");
+                    int waterCounter = rs.getInt("current_water_counter");
+                    boolean isOccupied = rs.getBoolean("is_occupied");
+
+                    // Create room object
+                    Room room = new Room(roomNumber, electricCounter, waterCounter);
+                    room.setRent(rent);
+
+                    // Set occupancy state if needed
+                    if (isOccupied) {
+                        try {
+                            room.markAsOccupied();
+                            // Load tenant data
+                            loadTenantForRoom(room, roomId, conn);
+                        } catch (RoomException e) {
+                            System.out.println("Error marking room as occupied: " + e.getMessage());
+                        }
+                    }
+
+                    return room;
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("SQL Error retrieving room: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return null;
+    }
     public Room getRoomById(int roomId) {
         String query = "SELECT room_number, rent, current_electric_counter, current_water_counter, is_occupied FROM Rooms WHERE room_id = ?";
 
@@ -198,26 +330,62 @@ public class RoomDML {
     }
 
     public int getRoomIdByRoomNumber(String roomNumber) {
-        String query = "SELECT room_id FROM Rooms WHERE room_number = ?";
+        // Try to normalize the room number format (remove leading zeros)
+        String normalizedRoomNumber = roomNumber.replaceFirst("^0+(?!$)", "");
+
+        String query = "SELECT room_id, room_number FROM Rooms WHERE room_number = ? OR room_number = ?";
 
         try (Connection conn = DataBaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(query)) {
 
             ps.setString(1, roomNumber);
+            ps.setString(2, normalizedRoomNumber);
+
+            System.out.println("Searching for room with number: " + roomNumber +
+                    " or normalized: " + normalizedRoomNumber);
 
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    return rs.getInt("room_id");
+                    int roomId = rs.getInt("room_id");
+                    String foundRoomNumber = rs.getString("room_number");
+                    System.out.println("Found room: " + foundRoomNumber + " with ID: " + roomId);
+                    return roomId;
+                } else {
+                    System.out.println("No room found matching '" + roomNumber + "' or '" +
+                            normalizedRoomNumber + "'");
+
+                    // Print a list of all available rooms to assist debugging
+                    displayAllRoomNumbers();
                 }
             }
         } catch (SQLException e) {
-            System.out.println("SQL Error: " + e.getMessage());
+            System.out.println("SQL Error finding room: " + e.getMessage());
             e.printStackTrace();
         }
 
         return -1; // Return -1 if room not found
     }
+    private void displayAllRoomNumbers() {
+        String query = "SELECT room_number FROM Rooms";
 
+        try (Connection conn = DataBaseConnection.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
+
+            System.out.println("\nAvailable room numbers in database:");
+            boolean hasRooms = false;
+            while (rs.next()) {
+                hasRooms = true;
+                System.out.println(" - " + rs.getString("room_number"));
+            }
+
+            if (!hasRooms) {
+                System.out.println("No rooms found in the database.");
+            }
+        } catch (SQLException e) {
+            System.out.println("Error listing room numbers: " + e.getMessage());
+        }
+    }
     public int getRoomIdByFloorAndNumber(int floorId, String roomNumber) {
         String query = "SELECT room_id FROM Rooms WHERE floor_id = ? AND room_number = ?";
 
@@ -375,6 +543,7 @@ public class RoomDML {
              PreparedStatement ps = conn.prepareStatement(query)) {
 
             ps.setInt(1, electricCounter);
+            ps.setInt(1, electricCounter);
             ps.setInt(2, waterCounter);
             ps.setInt(3, roomId);
 
@@ -477,36 +646,116 @@ public class RoomDML {
             e.printStackTrace();
         }
     }
-    public void syncRoomWithTenant(Room room) {
-        String query = "SELECT u.name, u.IdCard, u.contact " +
-                "FROM Rooms r " +
-                "JOIN Tenants t ON r.room_id = t.assigned_room_id " +
-                "JOIN Users u ON t.user_id = u.user_id " +
-                "WHERE r.room_number = ?";
+    public void syncRoomWithTenant(String roomNumber) {
+        try (Connection conn = DataBaseConnection.getConnection()) {
+            Room room = getRoomByRoomNumber(roomNumber);
+            if (room == null) {
+//                System.out.println("Room not found: " + roomNumber);
+                return;
+            }
 
-        try (Connection conn = DataBaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(query)) {
+            int roomId = getRoomIdByRoomNumber(roomNumber);
+            String query = "SELECT u.name, u.IdCard, u.contact " +
+                    "FROM Tenants t " +
+                    "JOIN Users u ON t.user_id = u.user_id " +
+                    "WHERE t.assigned_room_id = ?";
 
-            ps.setString(1, room.getRoomNumber());
+            try (PreparedStatement ps = conn.prepareStatement(query)) {
+                ps.setInt(1, roomId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        String name = rs.getString("name");
+                        String idCard = rs.getString("IdCard");
+                        String contact = rs.getString("contact");
 
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    String name = rs.getString("name");
-                    String idCard = rs.getString("IdCard");
-                    String contact = rs.getString("contact");
-
-                    // Create tenant and assign to room properly
-                    Tenant tenant = new Tenant(name, idCard, contact);
-                    try {
-                        // Use a special method that bypasses the normal occupancy check
-                        room.setTenantDirectly(tenant);
-                    } catch (Exception e) {
-                        System.out.println("Failed to set tenant: " + e.getMessage());
+                        room.setTenantDirectly(new Tenant(name, idCard, contact));
+                        System.out.println("Room-tenant association synchronized successfully");
+                    } else {
+                        // No tenant assigned, make sure room is vacant
+                        room.removeTenant();
                     }
                 }
             }
         } catch (SQLException e) {
             System.out.println("SQL Error syncing room with tenant: " + e.getMessage());
+            e.printStackTrace();
         }
     }
+    public void displayAllRooms() {
+        String query = "SELECT room_id, floor_id, room_number, is_occupied FROM Rooms";
+
+        try (Connection conn = DataBaseConnection.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
+
+            System.out.println("\n=== Available Rooms ===");
+            System.out.println("Room ID | Floor ID | Room Number | Occupied");
+            System.out.println("----------------------------------------");
+
+            boolean hasRooms = false;
+            while (rs.next()) {
+                hasRooms = true;
+                int roomId = rs.getInt("room_id");
+                int floorId = rs.getInt("floor_id");
+                String roomNumber = rs.getString("room_number");
+                boolean isOccupied = rs.getBoolean("is_occupied");
+
+                System.out.printf("%-7d | %-8d | %-11s | %s%n",
+                        roomId, floorId, roomNumber, isOccupied ? "Yes" : "No");
+            }
+
+            if (!hasRooms) {
+                System.out.println("No rooms found in the database.");
+            }
+            System.out.println("----------------------------------------");
+
+        } catch (SQLException e) {
+            System.out.println("SQL Error listing rooms: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    public boolean setUtilityUsageDirectly(String roomNumber, int electricUsage, int waterUsage) {
+        try (Connection conn = DataBaseConnection.getConnection()) {
+            // First, find the room ID directly
+            PreparedStatement findRoom = conn.prepareStatement(
+                    "SELECT room_id FROM Rooms WHERE room_number = ?");
+            findRoom.setString(1, roomNumber);
+            ResultSet rs = findRoom.executeQuery();
+
+            if (!rs.next()) {
+                System.out.println("ERROR: Room not found: '" + roomNumber + "'");
+                // Run the debug utility to see what's in the database
+
+                return false;
+            }
+
+            int roomId = rs.getInt("room_id");
+            System.out.println("Found room with ID: " + roomId);
+
+            // Use a simple approach - direct SQL insert/update
+            LocalDate today = LocalDate.now();
+
+            // Insert into UtilityUsage table
+            PreparedStatement insertUsage = conn.prepareStatement(
+                    "INSERT INTO UtilityUsage (room_id, electric_usage, water_usage, usage_date) " +
+                            "VALUES (?, ?, ?, ?) " +
+                            "ON DUPLICATE KEY UPDATE electric_usage = VALUES(electric_usage), water_usage = VALUES(water_usage)");
+            insertUsage.setInt(1, roomId);
+            insertUsage.setInt(2, electricUsage);
+            insertUsage.setInt(3, waterUsage);
+            insertUsage.setDate(4, java.sql.Date.valueOf(today));
+            int usageUpdated = insertUsage.executeUpdate();
+
+            System.out.println("Updated utility usage: " + usageUpdated + " rows");
+
+            return true;
+        } catch (SQLException e) {
+            System.out.println("SQL Error setting utility: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+
 }

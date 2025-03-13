@@ -40,10 +40,21 @@ public class Landlord extends User {
     // Utility Methods
     // ====================================================================================================
     public UtilityUsage getUtilityUsageForRoom(Room room, LocalDate date) {
+        // First check the in-memory cache
         if (room.getUtilityUsage() != null && room.getUtilityUsage().getDate().equals(date)) {
             return room.getUtilityUsage();
         }
-        return null;
+
+        // If not found in memory, try to load from database
+        RoomDML roomDML = new RoomDML();
+        UtilityUsage usage = roomDML.getUtilityUsageFromDatabase(room.getRoomNumber(), date);
+
+        // If found in database, update the room object
+        if (usage != null) {
+            room.setUtilityUsage(usage.getElectricUsage(), usage.getWaterUsage(), usage.getDate());
+        }
+
+        return usage;
     }
 
     public void setUtilityUsage(Room room, int electricUsage, int waterUsage) throws RoomException {
@@ -53,12 +64,22 @@ public class Landlord extends User {
     }
 
     public void setUtilityUsage(Room room, int electricUsage, int waterUsage, LocalDate date) throws RoomException {
+        // Try to get the most up-to-date room data from the database
+        RoomDML roomDML = new RoomDML();
+        Room updatedRoom = roomDML.getRoomByRoomNumber(room.getRoomNumber());
+
+        // If the room was found in the database, use that instead
+        if (updatedRoom != null) {
+            room = updatedRoom;
+        } else {
+            System.out.println("Warning: Room " + room.getRoomNumber() + " not found in database.");
+        }
+
         // Update in memory
         room.setUtilityUsage(electricUsage, waterUsage, date);
 
         // Update in database
-        RoomDML roomDML = new RoomDML();
-        roomDML.updateUtilityUsage(room.getRoomNumber(), electricUsage, waterUsage, date);
+        roomDML.saveUtilityUsage(room.getRoomNumber(), electricUsage, waterUsage, date);
 
         System.out.println("Utility usage for Room " + room.getRoomNumber() + " on " + date + " has been set.");
     }
@@ -337,7 +358,25 @@ public class Landlord extends User {
         for (Building building : buildings) {
             System.out.println("Building Name: " + building.getBuildingName() +
                     " | Address: " + building.getAddress());
-            building.displayAllFloors();
+
+            List<Floor> floors = building.getFloors();
+            if (floors.isEmpty()) {
+                System.out.println("  No floors available.");
+            } else {
+                for (Floor floor : floors) {
+                    System.out.println("  Floor: " + floor.getFloorNumber());
+
+                    List<Room> rooms = floor.getRooms();
+                    if (rooms.isEmpty()) {
+                        System.out.println("    No rooms available.");
+                    } else {
+                        System.out.println("    Rooms: ");
+                        for (Room room : rooms) {
+                            System.out.println("      - Room: " + room.getRoomNumber());
+                        }
+                    }
+                }
+            }
             System.out.println("---------------------");
         }
     }
