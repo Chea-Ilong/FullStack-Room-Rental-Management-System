@@ -6,11 +6,12 @@ import DataBase.TenantDML;
 import Exceptions.LandlordException;
 import Exceptions.RoomException;
 import Exceptions.TenantException;
-import Payment.UtilityUsage;
+import Payment.Bill;
+import Payment.BillRecord;
 import Properties.Building;
 import Properties.Floor;
 import Properties.Room;
-import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.*;
 
 public class Landlord extends User {
@@ -20,7 +21,8 @@ public class Landlord extends User {
     // ====================================================================================================
     private List<Tenant> tenants;
     private List<Building> buildings; // Manage multiple buildings
-    private Map<LocalDate, UtilityUsage> utilityRecords;
+    // Removed utilityRecords field
+    private BillRecord billRecord; // Add BillRecord reference
     private static int landlordPIN = 1234;
     private int failedPinAttempts;
     private static final int MAX_PIN_ATTEMPTS = 5;
@@ -33,108 +35,56 @@ public class Landlord extends User {
         this.failedPinAttempts = 0;
         this.tenants = tenants != null ? tenants : new ArrayList<>();
         this.buildings = buildings != null ? buildings : new ArrayList<>();
-        this.utilityRecords = new HashMap<>();
+        this.billRecord = new BillRecord(); // Initialize BillRecord
     }
 
     // ====================================================================================================
-    // Utility Methods
+    // Bill Management Methods
     // ====================================================================================================
-    public UtilityUsage getUtilityUsageForRoom(Room room, LocalDate date) {
-        // First check the in-memory cache
-        if (room.getUtilityUsage() != null && room.getUtilityUsage().getDate().equals(date)) {
-            return room.getUtilityUsage();
+
+    // Create and distribute bills to rooms in a specific building and floor
+    public List<Bill> createBillsForFloor(String buildingName, String floorNumber,
+                                          double rentAmount,
+                                          Map<String, Integer> electricUsageMap,
+                                          Map<String, Integer> waterUsageMap) {
+        Building building = getBuildingByName(buildingName);
+        if (building == null) {
+            System.out.println("Building not found: " + buildingName);
+            return new ArrayList<>();
         }
 
-        // If not found in memory, try to load from database
-        RoomDML roomDML = new RoomDML();
-        UtilityUsage usage = roomDML.getUtilityUsageFromDatabase(room.getRoomNumber(), date);
-
-        // If found in database, update the room object
-        if (usage != null) {
-            room.setUtilityUsage(usage.getElectricUsage(), usage.getWaterUsage(), usage.getDate());
+        Floor floor = building.getFloorByNumber(floorNumber);
+        if (floor == null) {
+            System.out.println("Floor not found: " + floorNumber);
+            return new ArrayList<>();
         }
 
-        return usage;
+        List<Room> rooms = floor.getRooms();
+        return billRecord.distributeBills(rooms, buildingName, floorNumber,
+                rentAmount, electricUsageMap, waterUsageMap);
     }
 
-    public void setUtilityUsage(Room room, int electricUsage, int waterUsage) throws RoomException {
-        // Use current date by default
-        LocalDate today = LocalDate.now();
-        setUtilityUsage(room, electricUsage, waterUsage, today);
+    // View bills for a specific month
+    public List<Bill> viewBillsForMonth(int year, int month) {
+        YearMonth yearMonth = YearMonth.of(year, month);
+        return billRecord.getBillsForMonth(yearMonth);
     }
 
-    public void setUtilityUsage(Room room, int electricUsage, int waterUsage, LocalDate date) throws RoomException {
-        // Try to get the most up-to-date room data from the database
-        RoomDML roomDML = new RoomDML();
-        Room updatedRoom = roomDML.getRoomByRoomNumber(room.getRoomNumber());
-
-        // If the room was found in the database, use that instead
-        if (updatedRoom != null) {
-            room = updatedRoom;
-        } else {
-            System.out.println("Warning: Room " + room.getRoomNumber() + " not found in database.");
-        }
-
-        // Update in memory
-        room.setUtilityUsage(electricUsage, waterUsage, date);
-
-        // Update in database
-        roomDML.saveUtilityUsage(room.getRoomNumber(), electricUsage, waterUsage, date);
-
-        System.out.println("Utility usage for Room " + room.getRoomNumber() + " on " + date + " has been set.");
+    // View bills for a specific tenant
+    public List<Bill> viewBillsForTenant(String tenantId) {
+        return billRecord.getBillHistoryForTenant(tenantId);
     }
 
-    public UtilityUsage getUtilityUsage(LocalDate date) {
-        return utilityRecords.get(date);
+    // View unpaid bills
+    public List<Bill> viewUnpaidBills() {
+        return billRecord.getUnpaidBills();
     }
 
-    public void displayUtilityUsage(LocalDate date) {
-        UtilityUsage usage = getUtilityUsage(date);
-        if (usage != null) {
-            System.out.println("Utility usage for " + date + ": " + usage.toString());
-        } else {
-            System.out.println("No utility data available for " + date);
-        }
+    // Generate monthly billing report
+    public String generateMonthlyBillingReport(int year, int month) {
+        YearMonth yearMonth = YearMonth.of(year, month);
+        return billRecord.generateMonthlyReport(yearMonth);
     }
-
-    // ====================================================================================================
-    // Room-Tenant Assignment
-    // ====================================================================================================
-    public void assignedTenantRoom(String tenantID, String newRoomNumber) throws RoomException, TenantException {
-        // Find the tenant by ID
-        Tenant tenant = getTenantByID(tenantID);
-        if (tenant == null) {
-            throw new TenantException("Tenant with ID " + tenantID + " not found.");
-        }
-
-        // Find the current room the tenant is assigned to
-        Room currentRoom = tenant.getAssignedRoom();
-
-        // Check if the tenant is already assigned to a room and remove them
-        if (currentRoom != null) {
-            currentRoom.removeTenant();
-            System.out.println(tenant.getName() + " has been removed from Room " + currentRoom.getRoomNumber());
-        }
-
-        // Find the new room by room number
-        Room newRoom = getRoomAcrossAllBuildings(newRoomNumber);
-        if (newRoom == null) {
-            throw new RoomException("New Room not found.");
-        }
-
-        // Assign the tenant to the new room
-        try {
-            tenant.assignRoom(newRoom);
-            newRoom.assignTenant(tenant);
-            System.out.println(tenant.getName() + " has been assigned to Room " + newRoomNumber);
-        } catch (RoomException e) {
-            throw new TenantException("Failed to assign tenant to Room " + newRoomNumber + ": " + e.getMessage());
-        }
-    }
-
-    // ====================================================================================================
-    // Save Tenant to Database
-    // ====================================================================================================
 
     // ====================================================================================================
     // Login & Authentication
@@ -257,9 +207,16 @@ public class Landlord extends User {
     }
 
     public void removeBuilding(String buildingName) {
-        Building building = getBuildingByName(buildingName);
-        if (building != null) {
-            buildings.remove(building);
+        BuildingDML buildingDML = new BuildingDML();
+        int buildingId = buildingDML.getBuildingIdByName(buildingName);
+
+        if (buildingId != -1) {
+            buildingDML.deleteBuilding(buildingId);
+            // Also remove from local collection if needed
+            Building building = getBuildingByName(buildingName);
+            if (building != null) {
+                buildings.remove(building);
+            }
             System.out.println("Building " + buildingName + " has been removed.");
         } else {
             System.out.println("Building not found.");
@@ -267,36 +224,43 @@ public class Landlord extends User {
     }
 
     public void updateBuilding(String oldBuildingName, String newBuildingName, String newAddress) {
-        Building building = getBuildingByName(oldBuildingName);
+        BuildingDML buildingDML = new BuildingDML();
+        Building building = buildingDML.getBuildingByName(oldBuildingName);
+
         if (building != null) {
+            // Update the building object
             building.setBuildingName(newBuildingName);
             building.setAddress(newAddress);
-            System.out.println("Building " + oldBuildingName + " has been updated to " + newBuildingName + " at " + newAddress);
+
+            // Get the building ID and update it in the database
+            int buildingId = buildingDML.getBuildingIdByName(oldBuildingName);
+            if (buildingId != -1) {
+                buildingDML.updateBuilding(buildingId, building);
+                System.out.println("Building " + oldBuildingName + " has been updated to " + newBuildingName + " at " + newAddress);
+            } else {
+                System.out.println("Building ID could not be found in database.");
+            }
         } else {
             System.out.println("Building not found.");
         }
     }
 
     private boolean buildingExists(Building newBuilding) {
-        for (Building building : buildings) {
-            if (building.getBuildingName().equalsIgnoreCase(newBuilding.getBuildingName()) &&
-                    building.getAddress().equalsIgnoreCase(newBuilding.getAddress())) {
-                return true;
-            }
-        }
-        return false;
+        BuildingDML buildingDML = new BuildingDML();
+        Building existingBuilding = buildingDML.getBuildingByName(newBuilding.getBuildingName());
+        return existingBuilding != null;
     }
 
     // ====================================================================================================
-    // CRUD Operations for Tenant
-    // ====================================================================================================
-    public void addTenant(Tenant tenant) {
-        TenantDML tenantDML = new TenantDML();
-        if (!tenantDML.tenantExists(tenant.getIdCard())) {
-            tenantDML.saveTenant(tenant);
-            System.out.println("Tenant added: " + tenant.getName());
-        }
+// CRUD Operations for Tenant
+// ====================================================================================================
+public void addTenant(Tenant tenant) {
+    TenantDML tenantDML = new TenantDML();
+    if (!tenantDML.tenantExists(tenant.getIdCard())) {
+        tenantDML.saveTenant(tenant);
+        System.out.println("Tenant added: " + tenant.getName());
     }
+}
 
     public void removeTenant(String tenantID) throws TenantException, RoomException {
         Tenant tenant = getTenantByID(tenantID);
@@ -343,6 +307,10 @@ public class Landlord extends User {
 
     public List<Building> getBuildings() {
         return buildings;
+    }
+
+    public BillRecord getBillRecord() {
+        return billRecord;
     }
 
     // ====================================================================================================

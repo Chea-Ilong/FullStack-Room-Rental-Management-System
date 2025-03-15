@@ -1,5 +1,4 @@
 package Main;
-
 import DataBase.DataBaseConnection;
 import DataBase.LandlordDML;
 import DataBase.TenantDML;
@@ -17,10 +16,9 @@ import static Main.Menu.*;
 public class App {
 
 
-    //building need real time config
+    //building floor room need real time config
     //tenant pay rent and utility
     //add usage to room and display to each tenant corresponding to the room
-
 
     // Add a class variable to keep track of the currently logged in tenant
     private static Tenant currentLoggedInTenant = null;
@@ -40,11 +38,11 @@ public class App {
         // Create a LandlordDML class to fetch the landlord from the database
         LandlordDML landlordDML = new LandlordDML();
         Landlord landlord = landlordDML.getLandlordByIdCard("123");
-
         if (landlord == null) {
             System.err.println("Could not find landlord in database. Please check your data.");
             return;
         }
+
 
         // Load all tenants for this landlord
         TenantDML tenantDML = new TenantDML();
