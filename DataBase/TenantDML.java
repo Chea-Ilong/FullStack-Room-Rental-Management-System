@@ -262,19 +262,19 @@ public class TenantDML {
     }
 
     private void insertTenant(Connection conn, int userId, Tenant tenant) throws SQLException {
-        String query = "INSERT INTO Tenants (user_id, assigned_room_id, rent_paid, balance_due) VALUES (?, ?, ?, ?)";
+        String query = "INSERT INTO Tenants (user_id, assigned_room_id) VALUES (?, ? )";
         try (PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setInt(1, userId);
 
             Room assignedRoom = tenant.getAssignedRoom();
             if (assignedRoom != null) {
                 ps.setInt(2, getRoomIdFromDatabase(assignedRoom, conn));
-                ps.setBoolean(3, false);  // Always set rent_paid to false for new tenants
-                ps.setDouble(4, 0.0); // Set balance_due to 0.0 as rent is managed through bills
+
+
             } else {
                 ps.setNull(2, java.sql.Types.INTEGER);
-                ps.setBoolean(3, false);
-                ps.setDouble(4, 0.0);
+
+
             }
 
             int rowsAffected = ps.executeUpdate();

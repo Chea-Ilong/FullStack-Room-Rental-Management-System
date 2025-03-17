@@ -15,7 +15,7 @@ public class Bill {
     private static final double WATER_RATE = 2500.00;
 
     // Fields
-    private String billID;
+    private int billID;
     private Room room;
     private Tenant tenant;
     private String buildingName;
@@ -29,6 +29,7 @@ public class Bill {
     private boolean isPaid;
     private int electricUsage;
     private int waterUsage;
+    private LocalDate paymentDate;
 
     // Constructor
     public Bill(Room room, String buildingName, String floorNumber,
@@ -41,7 +42,7 @@ public class Bill {
             throw new IllegalArgumentException("Cannot create bill for a vacant room.");
         }
 
-        this.billID = generateBillID();
+        // Don't set billID here, it will be set after database insert
         this.room = room;
         this.tenant = room.getTenant();
         this.buildingName = buildingName;
@@ -66,59 +67,73 @@ public class Bill {
         this.totalAmount = rentAmount + electricAmount + waterAmount;
     }
 
-    public void markAsPaid(double amount) {
+    // In the Bill class
+    public void markAsPaid(double paymentAmount) {
         if (isPaid) {
-            throw new IllegalStateException("Bill is already paid.");
+            throw new IllegalStateException("Bill is already paid");
         }
-        if (amount < totalAmount) {
-            throw new IllegalArgumentException("Payment amount is less than the total bill amount.");
+
+        if (paymentAmount < totalAmount) {
+            throw new IllegalArgumentException("Payment amount must be at least the total bill amount");
         }
+
         this.isPaid = true;
+        this.paymentDate = LocalDate.now();
     }
 
     public double calculateLateFee() {
         return isPaid || !LocalDate.now().isAfter(dueDate) ? 0
                 : totalAmount * 0.01 * (LocalDate.now().toEpochDay() - dueDate.toEpochDay());
     }
-
+    @Override
     public String toString() {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
         double lateFee = calculateLateFee();
         double finalTotal = totalAmount + lateFee;
 
-        return String.format(
-                "===============================================\n" +
-                        "                  INVOICE                      \n" +
-                        "===============================================\n" +
-                        "Bill ID            : %s\n" +
-                        "Building           : %s\n" +
-                        "Floor              : %s\n" +
-                        "Room Number        : %s\n" +
-                        "Tenant ID          : %s\n" +
-                        "Tenant Name        : %s\n" +
-                        "-----------------------------------------------\n" +
-                        "Bill Date          : %s\n" +
-                        "Due Date           : %s\n" +
-                        "-----------------------------------------------\n" +
-                        "Rent               : %s (%s)\n" +
-                        "Electricity Usage  : %d -> %d (%s)\n" +
-                        "Water Usage        : %d -> %d (%s)\n" +
-                        "Subtotal           : %s (%s)\n" +
-                        (lateFee > 0 ? "Late Fee           : %s (%s)\n" + "Total Due          : %s (%s)\n" : "") +
-                        "-----------------------------------------------\n" +
-                        "Status             : %s\n" +
-                        "===============================================\n",
-                billID, buildingName, floorNumber, room.getRoomNumber(), tenant.getIdCard(), tenant.getName(),
-                billDate.format(formatter), dueDate.format(formatter),
-                formatKHR(rentAmount), formatUSD(convertToUSD(rentAmount)),
-                room.getCurrentElectricCounter(), room.getCurrentElectricCounter() + electricUsage, formatKHR(electricAmount),
-                room.getCurrentWaterCounter(), room.getCurrentWaterCounter() + waterUsage, formatKHR(waterAmount),
-                formatKHR(totalAmount), formatUSD(convertToUSD(totalAmount)),
-                lateFee > 0 ? formatKHR(lateFee) : "", lateFee > 0 ? formatUSD(convertToUSD(lateFee)) : "",
-                lateFee > 0 ? formatKHR(finalTotal) : "", lateFee > 0 ? formatUSD(convertToUSD(finalTotal)) : "",
-                isPaid ? "PAID" : "UNPAID"
-        );
+        StringBuilder sb = new StringBuilder();
+        sb.append("===============================================\n")
+                .append("                  INVOICE                      \n")
+                .append("===============================================\n")
+                .append("Bill ID            : ").append(billID).append("\n")
+                .append("Building           : ").append(buildingName).append("\n")
+                .append("Floor              : ").append(floorNumber).append("\n")
+                .append("Room Number        : ").append(room.getRoomNumber()).append("\n")
+                .append("Tenant ID          : ").append(tenant.getIdCard()).append("\n")
+                .append("Tenant Name        : ").append(tenant.getName()).append("\n")
+                .append("-----------------------------------------------\n")
+                .append("Bill Date          : ").append(billDate.format(formatter)).append("\n")
+                .append("Due Date           : ").append(dueDate.format(formatter)).append("\n")
+                .append("-----------------------------------------------\n")
+                .append("Water Rate         : ").append(formatKHR(WATER_RATE)).append("\n")
+                .append("Electric Rate      : ").append(formatKHR(ELECTRIC_RATE)).append("\n")
+                .append("-----------------------------------------------\n")
+                .append("Rent               : ").append(formatKHR(rentAmount))
+                .append(" (").append(formatUSD(convertToUSD(rentAmount))).append(")\n")
+                .append("Electricity Usage  : ").append(room.getCurrentElectricCounter()).append(" -> ")
+                .append(room.getCurrentElectricCounter() + electricUsage).append(" (")
+                .append(formatKHR(electricAmount)).append(")\n")
+                .append("Water Usage        : ").append(room.getCurrentWaterCounter()).append(" -> ")
+                .append(room.getCurrentWaterCounter() + waterUsage).append(" (")
+                .append(formatKHR(waterAmount)).append(")\n")
+                .append("Subtotal           : ").append(formatKHR(totalAmount))
+                .append(" (").append(formatUSD(convertToUSD(totalAmount))).append(")\n");
+
+        // Append late fee only if applicable
+        if (lateFee > 0) {
+            sb.append("Late Fee           : ").append(formatKHR(lateFee))
+                    .append(" (").append(formatUSD(convertToUSD(lateFee))).append(")\n")
+                    .append("Total Due          : ").append(formatKHR(finalTotal))
+                    .append(" (").append(formatUSD(convertToUSD(finalTotal))).append(")\n");
+        }
+
+        sb.append("-----------------------------------------------\n")
+                .append("Status             : ").append(isPaid ? "PAID" : "UNPAID").append("\n")
+                .append("===============================================\n");
+
+        return sb.toString();
     }
+
 
     private double convertToUSD(double amount) {
         return amount / KHR_TO_USD_RATE;
@@ -163,9 +178,8 @@ public class Bill {
     public Tenant getTenant() {
         return tenant;
     }
-    // Add these methods to the Bill class
 
-    public String getBillID() {
+    public int getBillID() {
         return billID;
     }
 
@@ -188,4 +202,22 @@ public class Bill {
     public int getWaterUsage() {
         return waterUsage;
     }
+
+
+    public void setBillID(int billID) {
+        this.billID = billID;
+    }
+
+    public void setBillDate(LocalDate billDate) {
+        this.billDate = billDate;
+    }
+
+    public void setDueDate(LocalDate dueDate) {
+        this.dueDate = dueDate;
+    }
+
+//    public void setPaid(boolean paid) {
+//        this.isPaid = paid;
+//    }
+
 }

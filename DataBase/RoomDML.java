@@ -19,6 +19,7 @@ public class RoomDML {
             conn = DataBaseConnection.getConnection();
             conn.setAutoCommit(false); // Start transaction
 
+
             // Save room to Rooms table
             String roomQuery = "INSERT INTO Rooms (floor_id, room_number, current_electric_counter, current_water_counter, is_occupied) VALUES (?, ?, ?, ?, ?)";
             roomStmt = conn.prepareStatement(roomQuery, Statement.RETURN_GENERATED_KEYS);
@@ -41,8 +42,6 @@ public class RoomDML {
             }
 
             int roomId = generatedKeys.getInt(1);
-
-
 
             // Commit the transaction
             conn.commit();
@@ -73,9 +72,22 @@ public class RoomDML {
             }
         }
     }
+//
+//    private boolean roomExists(Connection conn, String roomNumber, int floorId) throws SQLException {
+//        String query = "SELECT COUNT(*) FROM Rooms WHERE room_number = ? AND floor_id = ?";
+//        try (PreparedStatement ps = conn.prepareStatement(query)) {
+//            ps.setString(1, roomNumber);
+//            ps.setInt(2, floorId);
+//            try (ResultSet rs = ps.executeQuery()) {
+//                if (rs.next()) {
+//                    return rs.getInt(1) > 0;
+//                }
+//            }
+//        }
+//        return false;
+//    }
 
-    // New method to create an initial bill for a room
-    private void createInitialBill(Connection conn, int roomId, double amount) throws SQLException {
+    public void createInitialBill(Connection conn, int roomId, double amount) {
         String billQuery = "INSERT INTO Bills (room_id, bill_type, amount, due_date, is_paid) VALUES (?, ?, ?, ?, ?)";
 
         try (PreparedStatement billStmt = conn.prepareStatement(billQuery)) {
@@ -83,12 +95,20 @@ public class RoomDML {
             billStmt.setString(2, "Rent and Utilities");
             billStmt.setDouble(3, amount);
 
-            // Set due date to the end of current month
+            // Set due date to the end of the current month
             LocalDate dueDate = LocalDate.now().withDayOfMonth(LocalDate.now().lengthOfMonth());
             billStmt.setDate(4, Date.valueOf(dueDate));
             billStmt.setBoolean(5, false);
 
-            billStmt.executeUpdate();
+            int rowsAffected = billStmt.executeUpdate();
+            if (rowsAffected > 0) {
+                System.out.println("Bill created successfully for room ID: " + roomId);
+            } else {
+                System.err.println("Failed to create bill for room ID: " + roomId);
+            }
+        } catch (SQLException e) {
+            System.err.println("SQL Error creating bill: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 

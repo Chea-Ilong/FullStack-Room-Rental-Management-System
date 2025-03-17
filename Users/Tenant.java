@@ -1,11 +1,15 @@
 package Users;
 
+import DataBase.BillDML;
 import DataBase.TenantDML;
 import Exceptions.RoomException;
 import Exceptions.TenantException;
+import Payment.Bill;
 import Properties.Room;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class Tenant extends User {
@@ -15,7 +19,6 @@ public class Tenant extends User {
     // ====================================================================================================
     private Room assignedRoom;
     private boolean rentPaid;
-    private double balanceDue;
     private Map<LocalDate, Boolean> billPaymentStatus;
     private static final double KHR_TO_USD_RATE = 4100.00;
 
@@ -24,7 +27,6 @@ public class Tenant extends User {
     public Tenant(String name, String IdCard, String contact) {
         super(name, IdCard, contact, "Tenant");
         this.rentPaid = false;
-        this.balanceDue = 0.0;
         this.billPaymentStatus = new HashMap<>();
     }
 
@@ -52,11 +54,22 @@ public class Tenant extends User {
 
     // Helper method to check if bill is paid for a specific date
     public boolean isBillPaid(LocalDate date) {
-        // Normalize date to first day of month to track monthly payments
-        LocalDate normalizedDate = LocalDate.of(date.getYear(), date.getMonth(), 1);
+        // Get current year and month from the date
+        YearMonth yearMonth = YearMonth.from(date);
 
-        // Return true if payment exists and is marked as paid, false otherwise
-        return billPaymentStatus.getOrDefault(normalizedDate, false);
+        // Check in database using BillDML
+        BillDML billDML = new BillDML();
+
+        // Logic to check if bill is paid
+        List<Bill> bills = billDML.getBillsByTenantId(this.getIdCard());
+        for (Bill bill : bills) {
+            if (YearMonth.from(bill.getBillDate()).equals(yearMonth)) {
+                return bill.isPaid();
+            }
+        }
+
+        // No bill found for this date
+        return false;
     }
 
     // Mark a bill as paid for a specific date
@@ -96,7 +109,6 @@ public class Tenant extends User {
         System.out.println(name + " is vacating Room " + assignedRoom.getRoomNumber());
         assignedRoom.removeTenant();
         this.assignedRoom = null;
-        this.balanceDue = 0.0;
         this.rentPaid = false;
     }
 
@@ -106,33 +118,33 @@ public class Tenant extends User {
     public Room getAssignedRoom() {
         return assignedRoom;
     }
-
-    // Convert KHR to USD
-    private double convertToUSD(double amount) {
-        return amount / KHR_TO_USD_RATE;
-    }
-
-    // Format amount in KHR
-    private String formatKHR(double amount) {
-        return String.format("%.0f KHR", amount);
-    }
-
-    // Format amount in USD
-    private String formatUSD(double amount) {
-        return String.format("%.2f USD", amount);
-    }
-
-    // Add this method to your Tenant class
-    public void updateRoomInformation(Room updatedRoom) {
-        if (this.assignedRoom != null &&
-                this.assignedRoom.getRoomNumber().equals(updatedRoom.getRoomNumber())) {
-            // It's the same room, just update the information
-            this.assignedRoom = updatedRoom;
-        } else {
-            // It's a different room, would need formal assignment
-            System.out.println("Cannot update room information - different room number.");
-        }
-    }
+//
+//    // Convert KHR to USD
+//    private double convertToUSD(double amount) {
+//        return amount / KHR_TO_USD_RATE;
+//    }
+//
+//    // Format amount in KHR
+//    private String formatKHR(double amount) {
+//        return String.format("%.0f KHR", amount);
+//    }
+//
+//    // Format amount in USD
+//    private String formatUSD(double amount) {
+//        return String.format("%.2f USD", amount);
+//    }
+//
+//    // Add this method to your Tenant class
+//    public void updateRoomInformation(Room updatedRoom) {
+//        if (this.assignedRoom != null &&
+//                this.assignedRoom.getRoomNumber().equals(updatedRoom.getRoomNumber())) {
+//            // It's the same room, just update the information
+//            this.assignedRoom = updatedRoom;
+//        } else {
+//            // It's a different room, would need formal assignment
+//            System.out.println("Cannot update room information - different room number.");
+//        }
+//    }
 
     // ====================================================================================================
     // Override toString
@@ -142,7 +154,6 @@ public class Tenant extends User {
         return super.toString() +
                 "Tenant{" +
                 "assignedRoom=" + (assignedRoom != null ? assignedRoom.getRoomNumber() : "None") +
-                ", balanceDue=" + formatKHR(balanceDue) +
                 ", rentPaid=" + rentPaid +
                 '}';
     }

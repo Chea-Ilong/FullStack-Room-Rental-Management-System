@@ -5,86 +5,150 @@ import Properties.Room;
 import Users.Tenant;
 import java.sql.*;
 import java.time.LocalDate;
-import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
+
+import static DataBase.DataBaseConnection.getConnection;
 
 public class BillDML {
 
     // Save a new bill to the database
     public boolean saveBill(Bill bill) {
-        String query = "INSERT INTO Bills (bill_id, room_id, tenant_id, building_name, floor_number, " +
-                "bill_date, due_date, rent_amount, electric_amount, water_amount, " +
-                "total_amount, is_paid, electric_usage, water_usage) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        Connection conn = null;
+        PreparedStatement ps = null;
+        ResultSet generatedKeys = null;
 
-        try (Connection conn = DataBaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(query)) {
+        try {
+            conn = getConnection();
+            conn.setAutoCommit(false); // Start transaction
 
-            // Get the tenant and room IDs
+            String query = "INSERT INTO Bills (room_id, tenant_id, due_date, is_paid, bill_date, " +
+                    "electric_amount, water_amount, electric_usage, water_usage, building_name, floor_number, " +
+                    "rent_amount, total_amount) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+            ps = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
+
+            // Get the room ID
             Room room = bill.getRoom();
-            Tenant tenant = bill.getTenant();
-
-            // Get room_id and tenant_id from database
             RoomDML roomDML = new RoomDML();
             int roomId = roomDML.getRoomIdByRoomNumber(room.getRoomNumber());
-
-            TenantDML tenantDML = new TenantDML();
-            int tenantId = tenantDML.getTenantIdByIdCard(tenant.getIdCard());
+            if (roomId == -1) {
+                return false;
+            }
 
             // Set parameters
-            ps.setString(1, getOrGenerateBillId(bill));
-            ps.setInt(2, roomId);
-            ps.setInt(3, tenantId);
-            ps.setString(4, bill.getBuildingName());
-            ps.setString(5, bill.getFloorNumber());
-            ps.setDate(6, java.sql.Date.valueOf(bill.getBillDate()));
-            ps.setDate(7, java.sql.Date.valueOf(bill.getDueDate()));
-            ps.setDouble(8, bill.getRentAmount());
-            ps.setDouble(9, bill.getElectricAmount());
-            ps.setDouble(10, bill.getWaterAmount());
-            ps.setDouble(11, bill.getTotalAmount());
-            ps.setBoolean(12, bill.isPaid());
-            ps.setInt(13, bill.getElectricUsage());
-            ps.setInt(14, bill.getWaterUsage());
+            ps.setInt(1, roomId);
+            ps.setString(2, bill.getTenant().getIdCard());
+            ps.setDate(3, java.sql.Date.valueOf(bill.getDueDate()));
+            ps.setBoolean(4, bill.isPaid());
+            ps.setDate(5, java.sql.Date.valueOf(bill.getBillDate()));
+            ps.setDouble(6, bill.getElectricAmount());
+            ps.setDouble(7, bill.getWaterAmount());
+            ps.setInt(8, bill.getElectricUsage());
+            ps.setInt(9, bill.getWaterUsage());
+            ps.setString(10, bill.getBuildingName());
+            ps.setString(11, bill.getFloorNumber());
+            ps.setDouble(12, bill.getRentAmount());
+            ps.setDouble(13, bill.getTotalAmount());
 
+            // Execute the insert
             int rowsAffected = ps.executeUpdate();
-            return rowsAffected > 0;
+
+            // Verify rows affected
+            if (rowsAffected > 0) {
+                // Retrieve the generated bill_id
+                generatedKeys = ps.getGeneratedKeys();
+                if (generatedKeys.next()) {
+                    int generatedBillId = generatedKeys.getInt(1);
+                    bill.setBillID(generatedBillId);
+                }
+                conn.commit(); // Commit the transaction
+                return true;
+            } else {
+                conn.rollback(); // Rollback on failure
+                return false;
+            }
 
         } catch (SQLException e) {
-            System.out.println("SQL Error: " + e.getMessage());
+            System.out.println("SQL Error in saveBill method: " + e.getMessage());
+            e.printStackTrace();
+
+            // Try to rollback on error
+            try {
+                if (conn != null) {
+                    conn.rollback();
+                }
+            } catch (SQLException ex) {
+                System.out.println("Failed to rollback transaction: " + ex.getMessage());
+            }
+
+            return false;
+        } finally {
+            // Close resources properly
+            try {
+                if (generatedKeys != null) generatedKeys.close();
+                if (ps != null) ps.close();
+                if (conn != null) {
+                    conn.setAutoCommit(true); // Reset auto-commit
+                    conn.close();
+                }
+            } catch (SQLException e) {
+                System.out.println("Error closing resources: " + e.getMessage());
+            }
+        }
+    }
+
+
+    // Update methods to use integer IDs
+    public boolean updateBillPaymentStatus(int billID, boolean paid) {
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+
+        try {
+            // Get database connection
+            conn = getConnection();
+
+            String sql = "UPDATE Bills SET is_paid = ? WHERE bill_id = ?";
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setBoolean(1, paid);
+            pstmt.setInt(2, billID);
+
+            // Execute update and check affected rows
+            int affectedRows = pstmt.executeUpdate();
+
+            // Print debug information
+            System.out.println("Bill update affected rows: " + affectedRows + " for bill ID: " + billID);
+
+            return affectedRows > 0;
+        } catch (SQLException e) {
+            System.err.println("Error updating bill payment status: " + e.getMessage());
             e.printStackTrace();
             return false;
-        }
-    }
-
-    // Helper method to get or generate bill ID
-    private String getOrGenerateBillId(Bill bill) {
-        // If the bill has an existing ID, use it
-        // This assumes Bill class has a getter for billID
-        try {
-            java.lang.reflect.Method getBillIdMethod = bill.getClass().getDeclaredMethod("getBillID");
-            getBillIdMethod.setAccessible(true);
-            String billId = (String) getBillIdMethod.invoke(bill);
-            if (billId != null && !billId.isEmpty()) {
-                return billId;
+        } finally {
+            // Properly close resources to prevent leaks
+            try {
+                if (pstmt != null) pstmt.close();
+                if (conn != null) conn.close();
+            } catch (SQLException e) {
+                System.err.println("Error closing database resources: " + e.getMessage());
             }
-        } catch (Exception e) {
-            // If method not found or error, generate new ID
         }
-
-        // Generate a new ID based on timestamp and random number
-        return "BILL-" + System.currentTimeMillis() + "-" + (int)(Math.random() * 10000);
     }
 
-    // Update bill status to paid
-    public boolean markBillAsPaid(String billId) {
-        String query = "UPDATE Bills SET is_paid = true WHERE bill_id = ?";
+    // Update markBillAsPaid to use integer ID
+    public boolean markBillAsPaid(int billId) {
+        return updateBillPaymentStatus(billId, true);
+    }
 
-        try (Connection conn = DataBaseConnection.getConnection();
+    // Update deleteBill to use integer ID
+    public boolean deleteBill(int billId) {
+        String query = "DELETE FROM Bills WHERE bill_id = ?";
+
+        try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(query)) {
 
-            ps.setString(1, billId);
+            ps.setInt(1, billId);
             int rowsAffected = ps.executeUpdate();
             return rowsAffected > 0;
 
@@ -94,7 +158,8 @@ public class BillDML {
             return false;
         }
     }
-    // Add this method to BillDML class
+
+    // Get tenant balance due
     public double getTenantBalanceDue(String tenantId) {
         Connection conn = null;
         PreparedStatement stmt = null;
@@ -102,10 +167,10 @@ public class BillDML {
         double balance = 0.0;
 
         try {
-            conn = DataBaseConnection.getConnection();
+            conn = getConnection();
 
             // Query to get the sum of outstanding bill amounts for the tenant
-            String query = "SELECT SUM(b.total_amount) AS balance " +
+            String query = "SELECT SUM(total_amount) AS balance " +
                     "FROM Bills b " +
                     "JOIN Tenants t ON b.tenant_id = t.tenant_id " +
                     "JOIN Users u ON t.user_id = u.user_id " +
@@ -134,17 +199,22 @@ public class BillDML {
 
         return balance;
     }
+
     // Get bills by tenant ID
     public List<Bill> getBillsByTenantId(String tenantIdCard) {
         List<Bill> bills = new ArrayList<>();
 
-        String query = "SELECT b.* FROM Bills b " +
-                "JOIN Tenants t ON b.tenant_id = t.tenant_id " +
+        String query = "SELECT b.*, bu.building_name, fl.floor_number, r.current_electric_counter AS electric_usage, r.current_water_counter AS water_usage " +
+                "FROM Bills b " +
+                "JOIN Rooms r ON b.room_id = r.room_id " +
+                "JOIN Floors fl ON r.floor_id = fl.floor_id " +
+                "JOIN Buildings bu ON fl.building_id = bu.building_id " +
+                "JOIN Tenants t ON r.room_id = t.assigned_room_id " +
                 "JOIN Users u ON t.user_id = u.user_id " +
                 "WHERE u.IdCard = ? " +
                 "ORDER BY b.bill_date DESC";
 
-        try (Connection conn = DataBaseConnection.getConnection();
+        try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(query)) {
 
             ps.setString(1, tenantIdCard);
@@ -169,10 +239,15 @@ public class BillDML {
     public List<Bill> getBillsByMonth(int year, int month) {
         List<Bill> bills = new ArrayList<>();
 
-        String query = "SELECT * FROM Bills WHERE YEAR(bill_date) = ? AND MONTH(bill_date) = ? " +
-                "ORDER BY bill_date";
+        String query = "SELECT b.*, bu.building_name, fl.floor_number, r.current_electric_counter AS electric_usage, r.current_water_counter AS water_usage " +
+                "FROM Bills b " +
+                "JOIN Rooms r ON b.room_id = r.room_id " +
+                "JOIN Floors fl ON r.floor_id = fl.floor_id " +
+                "JOIN Buildings bu ON fl.building_id = bu.building_id " +
+                "WHERE YEAR(b.bill_date) = ? AND MONTH(b.bill_date) = ? " +
+                "ORDER BY b.bill_date";
 
-        try (Connection conn = DataBaseConnection.getConnection();
+        try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(query)) {
 
             ps.setInt(1, year);
@@ -198,9 +273,14 @@ public class BillDML {
     public List<Bill> getUnpaidBills() {
         List<Bill> bills = new ArrayList<>();
 
-        String query = "SELECT * FROM Bills WHERE is_paid = false ORDER BY due_date";
+        String query = "SELECT b.*, bu.building_name, fl.floor_number, r.current_electric_counter AS electric_usage, r.current_water_counter AS water_usage " +
+                "FROM Bills b " +
+                "JOIN Rooms r ON b.room_id = r.room_id " +
+                "JOIN Floors fl ON r.floor_id = fl.floor_id " +
+                "JOIN Buildings bu ON fl.building_id = bu.building_id " +
+                "WHERE b.is_paid = false ORDER BY b.due_date";
 
-        try (Connection conn = DataBaseConnection.getConnection();
+        try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(query);
              ResultSet rs = ps.executeQuery()) {
 
@@ -221,9 +301,8 @@ public class BillDML {
 
     // Helper method to create Bill from ResultSet
     private Bill createBillFromResultSet(ResultSet rs, Connection conn) throws SQLException {
-        // Get room and tenant information
+        // Get room information
         int roomId = rs.getInt("room_id");
-        int tenantId = rs.getInt("tenant_id");
 
         RoomDML roomDML = new RoomDML();
         Room room = roomDML.getRoomById(roomId);
@@ -233,10 +312,8 @@ public class BillDML {
             return null;
         }
 
-        // Because we need to create a Bill with proper constructor parameters
-        // We're creating a "reconstructed" bill using reflection
+        // Create the Bill instance
         try {
-            // Create Bill instance using reflection since we don't have access to add new constructors
             Bill bill = createBillInstance(
                     room,
                     rs.getString("building_name"),
@@ -246,8 +323,21 @@ public class BillDML {
                     rs.getInt("water_usage")
             );
 
-            // Set additional fields using reflection if needed
-            // This could be refined further based on Bill class structure
+            // Set additional fields
+            bill.setBillID(rs.getInt("bill_id"));
+
+            // Set the payment status from the database
+            boolean isPaid = rs.getBoolean("is_paid");
+            if (isPaid) {
+                // Mark the bill as paid with the total amount
+                bill.markAsPaid(rs.getDouble("total_amount"));
+            }
+
+            // Set other bill properties if needed
+            LocalDate billDate = rs.getDate("bill_date").toLocalDate();
+            LocalDate dueDate = rs.getDate("due_date").toLocalDate();
+            bill.setBillDate(billDate);
+            bill.setDueDate(dueDate);
 
             return bill;
         } catch (Exception e) {
@@ -257,7 +347,9 @@ public class BillDML {
         }
     }
 
-    // Helper method to create Bill instance using reflection
+
+
+    // Helper method to create Bill instance
     private Bill createBillInstance(Room room, String buildingName, String floorNumber,
                                     double rentAmount, int electricUsage, int waterUsage) {
         try {
@@ -268,54 +360,38 @@ public class BillDML {
         }
     }
 
-    // Delete bill by ID
-    public boolean deleteBill(String billId) {
-        String query = "DELETE FROM Bills WHERE bill_id = ?";
 
-        try (Connection conn = DataBaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(query)) {
-
-            ps.setString(1, billId);
-            int rowsAffected = ps.executeUpdate();
-            return rowsAffected > 0;
-
-        } catch (SQLException e) {
-            System.out.println("SQL Error: " + e.getMessage());
-            e.printStackTrace();
-            return false;
-        }
-    }
 
     // Create the Bills table if it doesn't exist
     public void createBillsTableIfNotExists() {
         String createTableSQL = "CREATE TABLE IF NOT EXISTS Bills (" +
-                "bill_id VARCHAR(50) PRIMARY KEY, " +
-                "room_id INT, " +
-                "tenant_id INT, " +
+                "bill_id VARCHAR(50) PRIMARY KEY, " +  // Changed from INT to VARCHAR
+                "room_id INT NOT NULL, " +
+                "tenant_id VARCHAR(50), " +
                 "building_name VARCHAR(100), " +
                 "floor_number VARCHAR(20), " +
-                "bill_date DATE, " +
-                "due_date DATE, " +
+                "bill_date DATE DEFAULT CURRENT_DATE, " +
+                "due_date DATE NOT NULL, " +
                 "rent_amount DOUBLE, " +
                 "electric_amount DOUBLE, " +
                 "water_amount DOUBLE, " +
                 "total_amount DOUBLE, " +
-                "is_paid BOOLEAN, " +
+                "is_paid BOOLEAN DEFAULT FALSE, " +
                 "electric_usage INT, " +
                 "water_usage INT, " +
-                "FOREIGN KEY (room_id) REFERENCES Rooms(room_id), " +
-                "FOREIGN KEY (tenant_id) REFERENCES Tenants(tenant_id)" +
-                ")";
+                "FOREIGN KEY (room_id) REFERENCES Rooms(room_id) ON DELETE CASCADE" +
+                ") ENGINE=InnoDB";
 
-        try (Connection conn = DataBaseConnection.getConnection();
+        try (Connection conn = getConnection();
              Statement stmt = conn.createStatement()) {
 
             stmt.execute(createTableSQL);
             System.out.println("Bills table created or already exists");
 
         } catch (SQLException e) {
-            System.out.println("SQL Error: " + e.getMessage());
+            System.out.println("SQL Error in creating Bills table: " + e.getMessage());
             e.printStackTrace();
         }
     }
+
 }

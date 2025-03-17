@@ -1,5 +1,6 @@
 package Payment;
 
+import DataBase.BillDML;
 import Properties.Building;
 import Properties.Floor;
 import Properties.Room;
@@ -58,29 +59,33 @@ public class BillRecord {
                                       double rentAmount, Map<String, Integer> electricUsageMap,
                                       Map<String, Integer> waterUsageMap) {
         List<Bill> generatedBills = new ArrayList<>();
+        BillDML billDML = new BillDML();
+
+        // Ensure the bills table exists
+        billDML.createBillsTableIfNotExists();
 
         for (Room room : rooms) {
-            if (room.isOccupied() && room.getTenant() != null) {
-                try {
-                    String roomNumber = room.getRoomNumber();
+            if (!room.isOccupied()) {
+                continue;  // Skip unoccupied rooms
+            }
 
-                    // Get usage from maps or default to 0
-                    int electricUsage = electricUsageMap.getOrDefault(roomNumber, 0);
-                    int waterUsage = waterUsageMap.getOrDefault(roomNumber, 0);
+            String roomNumber = room.getRoomNumber();
 
-                    // Create the bill with landlord inputs
-                    Bill bill = new Bill(room, buildingName, floorNumber, rentAmount, electricUsage, waterUsage);
+            // Get usage data for this room
+            int electricUsage = electricUsageMap.getOrDefault(roomNumber, 0);
+            int waterUsage = waterUsageMap.getOrDefault(roomNumber, 0);
 
-                    // Store the bill
-                    YearMonth billingPeriod = YearMonth.from(bill.getBillDate());
-                    storeBill(bill, buildingName, floorNumber);
+            // Create the bill
+            Bill bill = new Bill(room, buildingName, floorNumber, rentAmount, electricUsage, waterUsage);
 
-                    // Add to the list of generated bills
-                    generatedBills.add(bill);
+            // Save to database
+            boolean saved = billDML.saveBill(bill);
 
-                } catch (IllegalArgumentException e) {
-                    System.out.println("Error creating bill for room " + room.getRoomNumber() + ": " + e.getMessage());
-                }
+            if (saved) {
+                System.out.println("Bill saved successfully for room " + roomNumber);
+                generatedBills.add(bill);
+            } else {
+                System.out.println("Failed to save bill for room " + roomNumber);
             }
         }
 
@@ -100,7 +105,37 @@ public class BillRecord {
 
         return billDatabase.get(buildingName).get(floorNumber).get(roomNumber).get(billingPeriod);
     }
+    public void markAndStorePaidBill(Bill bill, double paymentAmount) {
+        bill.markAsPaid(paymentAmount);  // Mark bill as paid
+        storeBill(bill, bill.getBuildingName(), bill.getFloorNumber());  // Persist updated bill
+    }
 
+    /**
+     * Update an existing bill in the record
+     * @param bill The updated bill
+     */
+    public void updateBill(Bill bill) {
+        String buildingName = bill.getBuildingName();
+        String floorNumber = bill.getFloorNumber();
+        String roomNumber = bill.getRoom().getRoomNumber();
+        YearMonth billingPeriod = YearMonth.from(bill.getBillDate());
+
+        // Check if the bill exists in our structure
+        if (billDatabase.containsKey(buildingName) &&
+                billDatabase.get(buildingName).containsKey(floorNumber) &&
+                billDatabase.get(buildingName).get(floorNumber).containsKey(roomNumber) &&
+                billDatabase.get(buildingName).get(floorNumber).get(roomNumber).containsKey(billingPeriod)) {
+
+            // Update the bill
+            billDatabase.get(buildingName).get(floorNumber).get(roomNumber).put(billingPeriod, bill);
+            System.out.println("Bill updated successfully in BillRecord for Room " + roomNumber +
+                    " in " + buildingName + ", Floor " + floorNumber +
+                    " for period " + billingPeriod.getMonth() + " " + billingPeriod.getYear());
+        } else {
+            // If the bill doesn't exist in our structure, store it
+            storeBill(bill, buildingName, floorNumber);
+        }
+    }
     /**
      * Get all bills for a specific room
      */
@@ -118,18 +153,20 @@ public class BillRecord {
      * Get all bills for a specific tenant
      */
     public List<Bill> getBillHistoryForTenant(String tenantId) {
-        List<Bill> tenantBills = new ArrayList<>();
+        // Create a BillDML instance
+        BillDML billDML = new BillDML();
 
-        // Iterate through all bills to find those matching the tenant ID
-        for (Map<String, Map<String, Map<YearMonth, Bill>>> buildingMap : billDatabase.values()) {
-            for (Map<String, Map<YearMonth, Bill>> floorMap : buildingMap.values()) {
-                for (Map<YearMonth, Bill> roomMap : floorMap.values()) {
-                    for (Bill bill : roomMap.values()) {
-                        if (bill.getTenant() != null && bill.getTenant().getIdCard().equals(tenantId)) {
-                            tenantBills.add(bill);
-                        }
-                    }
-                }
+        // Get bills from the database
+        List<Bill> tenantBills = billDML.getBillsByTenantId(tenantId);
+
+        // Store each bill in the billDatabase structure
+        for (Bill bill : tenantBills) {
+            String buildingName = bill.getBuildingName();
+            String floorNumber = bill.getFloorNumber();
+
+            // Only store if we have the necessary information
+            if (buildingName != null && floorNumber != null && bill.getRoom() != null) {
+                updateBill(bill);
             }
         }
 
@@ -164,12 +201,25 @@ public class BillRecord {
     public List<Bill> getBillsForMonth(YearMonth month) {
         List<Bill> monthlyBills = new ArrayList<>();
 
+        System.out.println("DEBUG: Searching for bills for month: " + month);
+
         // Iterate through all bills to find those for the specified month
-        for (Map<String, Map<String, Map<YearMonth, Bill>>> buildingMap : billDatabase.values()) {
-            for (Map<String, Map<YearMonth, Bill>> floorMap : buildingMap.values()) {
-                for (Map<YearMonth, Bill> roomMap : floorMap.values()) {
+        for (String buildingName : billDatabase.keySet()) {
+            Map<String, Map<String, Map<YearMonth, Bill>>> buildingMap = billDatabase.get(buildingName);
+            System.out.println("DEBUG: Building: " + buildingName);
+
+            for (String floorNumber : buildingMap.keySet()) {
+                Map<String, Map<YearMonth, Bill>> floorMap = buildingMap.get(floorNumber);
+                System.out.println("DEBUG: Floor: " + floorNumber);
+
+                for (String roomNumber : floorMap.keySet()) {
+                    Map<YearMonth, Bill> roomMap = floorMap.get(roomNumber);
+                    System.out.println("DEBUG: Room: " + roomNumber + ", Key set: " + roomMap.keySet());
+
                     if (roomMap.containsKey(month)) {
-                        monthlyBills.add(roomMap.get(month));
+                        Bill bill = roomMap.get(month);
+                        System.out.println("DEBUG: Found bill ID: " + bill.getBillID() + ", Paid: " + bill.isPaid());
+                        monthlyBills.add(bill);
                     }
                 }
             }

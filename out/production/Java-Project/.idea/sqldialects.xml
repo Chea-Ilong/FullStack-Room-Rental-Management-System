@@ -2,9 +2,9 @@
 <project version="4">
   <component name="SqlDialectMappings">
     <file url="file://$APPLICATION_CONFIG_DIR$/consoles/db/46866ce8-2152-4c10-9247-3785ac49adb5/console.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/DataBase/BillDML.java" dialect="GenericSQL" />
     <file url="file://$PROJECT_DIR$/DataBase/BillRecordDML.java" dialect="GenericSQL" />
     <file url="file://$PROJECT_DIR$/DataBase/RoomDML.java" dialect="GenericSQL" />
     <file url="file://$PROJECT_DIR$/DataBase/TenantDML.java" dialect="GenericSQL" />
-    <file url="file://$PROJECT_DIR$/DataBase/UtilityUsageDML.java" dialect="GenericSQL" />
   </component>
 </project>

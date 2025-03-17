@@ -4,6 +4,7 @@ import DataBase.*;
 import Exceptions.RoomException;
 import Exceptions.TenantException;
 import Payment.Bill;
+import Payment.BillRecord;
 import Properties.Building;
 import Properties.Floor;
 import Properties.Room;
@@ -37,6 +38,7 @@ public class Menu {
 
                 switch (choice) {
                     case 1:
+
                         if (tenant.getAssignedRoom() == null) {
                             System.out.println("You are not assigned to any room.");
                         } else {
@@ -51,6 +53,12 @@ public class Menu {
                             } else {
                                 // Find bills for this tenant
                                 List<Bill> tenantBills = landlord.getBillRecord().getBillHistoryForTenant(tenant.getIdCard());
+                                if (!tenantBills.isEmpty()) {
+                                    tenantBills.forEach(bill ->
+                                            System.out.println("Bill - ID: " + bill.getBillID() + ", Paid: " + bill.isPaid() + ", Date: " + bill.getBillDate())
+                                    );
+                                }
+
                                 List<Bill> unpaidBills = tenantBills.stream()
                                         .filter(bill -> !bill.isPaid())
                                         .collect(Collectors.toList());
@@ -61,7 +69,7 @@ public class Menu {
                                     System.out.println("\n===== Your Unpaid Bills =====");
                                     for (int i = 0; i < unpaidBills.size(); i++) {
                                         Bill bill = unpaidBills.get(i);
-                                        System.out.printf("%d. Bill ID: %s - Date: %s - Amount: %.0f KHR (%.2f USD)\n",
+                                        System.out.printf("%d. Bill ID: %d - Date: %s - Amount: %.0f KHR (%.2f USD)\n",
                                                 i + 1,
                                                 bill.getBillID(),
                                                 bill.getBillDate(),
@@ -85,14 +93,33 @@ public class Menu {
                                             System.out.print("Confirm payment (Y/N)? ");
                                             String confirm = scanner.nextLine().trim().toUpperCase();
 
+                                            // In the tenant menu case for bill payment
                                             if (confirm.equals("Y")) {
                                                 try {
+                                                    // Mark bill as paid in memory
                                                     selectedBill.markAsPaid(selectedBill.getTotalAmount());
                                                     tenant.markBillAsPaid(selectedBill.getBillDate());
-                                                    System.out.println("Payment successful! Thank you.");
+
+                                                    // Create a new BillDML instance
+                                                    BillDML billDML = new BillDML();
+
+                                                    // Update bill payment status in database
+                                                    boolean updateSuccessful = billDML.updateBillPaymentStatus(selectedBill.getBillID(), true);
+
+                                                    if (updateSuccessful) {
+                                                        // Update the bill in the BillRecord
+                                                        landlord.getBillRecord().updateBill(selectedBill);
+
+                                                        System.out.println("Payment successful! Thank you.");
+
+                                                    } else {
+                                                        System.out.println("Warning: Payment was processed but database update failed.");
+                                                        System.out.println("Please contact the landlord for assistance.");
+                                                    }
                                                 } catch (IllegalArgumentException | IllegalStateException e) {
                                                     System.out.println("Payment error: " + e.getMessage());
                                                 }
+
                                             } else {
                                                 System.out.println("Payment cancelled.");
                                             }
@@ -107,6 +134,7 @@ public class Menu {
                             }
                         }
                         break;
+
                     case 2:
                         System.out.println("\n===== Your Payment History =====");
 
@@ -678,48 +706,51 @@ public class Menu {
                     System.out.print("Enter floor number: ");
                     String floorNumber = scanner.nextLine();
 
+                    System.out.print("Enter room number: ");
+                    String roomNumber = scanner.nextLine();
+
+                    // Validate that the room exists
+                    Room room = landlord.getRoomAcrossAllBuildings(roomNumber);
+                    if (room == null) {
+                        System.out.println("Room not found. Please try again.");
+                        break;
+                    }
+
+                    // Check if room is occupied
+                    if (!room.isOccupied()) {
+                        System.out.println("Room " + roomNumber + " is not occupied. Cannot create a bill.");
+                        break;
+                    }
+
                     System.out.print("Enter base rent amount (KHR): ");
                     double rentAmount = scanner.nextDouble();
                     scanner.nextLine(); // consume newline
 
-                    // Get electric usage for each room
+                    System.out.print("Electric usage for room " + roomNumber + " (kWh): ");
+                    int electricUsage = scanner.nextInt();
+
+                    System.out.print("Water usage for room " + roomNumber + " (m³): ");
+                    int waterUsage = scanner.nextInt();
+                    scanner.nextLine(); // consume newline
+
+                    // Create maps with just this single room
                     Map<String, Integer> electricUsageMap = new HashMap<>();
                     Map<String, Integer> waterUsageMap = new HashMap<>();
+                    electricUsageMap.put(roomNumber, electricUsage);
+                    waterUsageMap.put(roomNumber, waterUsage);
 
+                    Bill bill1 = new Bill(room, buildingName, floorNumber, rentAmount, electricUsage, waterUsage);
+                    BillDML billDML = new BillDML();
+                    boolean saved = billDML.saveBill(bill1);
 
-                        System.out.print("Room number: ");
-                        String roomNumber = scanner.nextLine();
+                    if (saved) {
+                        System.out.println("\nBill created successfully for room " + roomNumber);
+                        System.out.println(bill1.toString());
 
-                        if (roomNumber.equalsIgnoreCase("done")) {
-                            break;
-                        }
+                    } else {
+                        System.out.println("\nFailed to create bill for room " + roomNumber);
+                    }
 
-                        Room room = landlord.getRoomAcrossAllBuildings(roomNumber);
-                        if (room == null) {
-                            System.out.println("Room not found. Please try again.");
-                            continue;
-                        }
-
-                        if (!room.isOccupied()) {
-                            System.out.println("Room " + roomNumber + " is not occupied. Skipping.");
-                            continue;
-                        }
-
-                        System.out.print("Electric usage for room " + roomNumber + " (kWh): ");
-                        int electricUsage = scanner.nextInt();
-
-                        System.out.print("Water usage for room " + roomNumber + " (m³): ");
-                        int waterUsage = scanner.nextInt();
-                        scanner.nextLine(); // consume newline
-
-                        electricUsageMap.put(roomNumber, electricUsage);
-                        waterUsageMap.put(roomNumber, waterUsage);
-
-
-                    List<Bill> generatedBills = landlord.createBillsForFloor(buildingName, floorNumber,
-                            rentAmount, electricUsageMap, waterUsageMap);
-
-                    System.out.println("\nGenerated " + generatedBills.size() + " bills.");
                     break;
 
                 case 2:

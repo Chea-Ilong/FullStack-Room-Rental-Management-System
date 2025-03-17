@@ -129,7 +129,6 @@ public class Room {
             throw new RoomException("Room " + roomNumber + " is already occupied.");
         } else {
             isOccupied = true;
-            System.out.println("Room " + roomNumber + " is now occupied.");
         }
     }
 

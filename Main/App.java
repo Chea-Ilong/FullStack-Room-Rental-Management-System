@@ -15,11 +15,9 @@ import static Main.Menu.*;
 
 public class App {
 
-
+    //creating bill and room is not real time
     //building floor room need real time config
-    //tenant pay rent and utility
-    //add usage to room and display to each tenant corresponding to the room
-
+   
     // Add a class variable to keep track of the currently logged in tenant
     private static Tenant currentLoggedInTenant = null;
 
