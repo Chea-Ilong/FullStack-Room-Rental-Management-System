@@ -275,7 +275,43 @@ public class FloorDML {
             }
         }
     }
+    public Floor loadFloor(int buildingId, String floorNumber) {
+        Connection conn = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
 
+        try {
+            conn = DataBaseConnection.getConnection();
+            String query = "SELECT floor_id FROM Floors WHERE building_id = ? AND floor_number = ?";
+            ps = conn.prepareStatement(query);
+            ps.setInt(1, buildingId);
+            ps.setString(2, floorNumber);
+
+            rs = ps.executeQuery();
+            if (rs.next()) {
+                int floorId = rs.getInt("floor_id");
+                Floor floor = new Floor(floorNumber);
+
+                // Load rooms for this floor
+                loadRoomsForFloor(floor, floorId, conn);
+
+                return floor;
+            }
+        } catch (SQLException e) {
+            System.out.println("SQL Error loading floor: " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            try {
+                if (rs != null) rs.close();
+                if (ps != null) ps.close();
+                if (conn != null) conn.close();
+            } catch (SQLException e) {
+                System.out.println("Error closing resources: " + e.getMessage());
+            }
+        }
+
+        return null; // Return null if floor not found
+    }
     // Delete floor by building ID and floor number
     public boolean deleteFloorByBuildingAndNumber(int buildingId, String floorNumber) {
         int floorId = getFloorIdByBuildingAndNumber(buildingId, floorNumber);

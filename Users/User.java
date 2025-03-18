@@ -41,6 +41,18 @@ public abstract class User implements Authentication {
         return contact;
     }
 
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setIdCard(String idCard) {
+        IdCard = idCard;
+    }
+
+    public void setContact(String contact) {
+        this.contact = contact;
+    }
+
     // ====================================================================================================
     // Login Method
     // ====================================================================================================
@@ -57,10 +69,12 @@ public abstract class User implements Authentication {
     // ====================================================================================================
     @Override
     public String toString() {
-        return "name='" + name + '\'' +
-                ", IdCard='" + IdCard + '\'' +
-                ", contact='" + contact + '\'' +
-                ", role='" + role + '\'' +
-                '}';
+        StringBuilder sb = new StringBuilder();
+        sb.append("Name: ").append(name).append("\n");
+        sb.append("ID Card: ").append(IdCard).append("\n");
+        sb.append("Contact: ").append(contact).append("\n");
+        sb.append("Role: ").append(role);
+        return sb.toString();
     }
+
 }

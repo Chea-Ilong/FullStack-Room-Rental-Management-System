@@ -87,7 +87,10 @@ public class Bill {
     }
     @Override
     public String toString() {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+            System.out.println("DEBUG - Tenant in bill: " +
+                    (tenant == null ? "null" : tenant.getName() + ", " + tenant.getIdCard()));
+
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
         double lateFee = calculateLateFee();
         double finalTotal = totalAmount + lateFee;
 

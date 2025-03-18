@@ -86,12 +86,12 @@ public class LandlordDML {
 
         return buildings;
     }
-    public void assignRoomToTenant(String tenantIdCard, String roomNumber) {
+    public void assignRoomToTenant(String tenantIdCard, String buildingName, String floorNumber, String roomNumber) {
         RoomDML roomDML = new RoomDML();
-        int roomId = roomDML.getRoomIdByRoomNumber(roomNumber);
+        int roomId = roomDML.getRoomIdByBuildingFloorAndNumber(buildingName, floorNumber, roomNumber);
 
         if (roomId == -1) {
-            System.out.println("Room not found: " + roomNumber);
+            System.out.println("Room not found: Building '" + buildingName + "', Floor " + floorNumber + ", Room " + roomNumber);
             return;
         }
 
@@ -104,7 +104,7 @@ public class LandlordDML {
                 ps.setInt(1, roomId);
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next() && rs.getBoolean("is_occupied")) {
-                        System.out.println("Error: Room " + roomNumber + " is already occupied.");
+                        System.out.println("Error: Room " + roomNumber + " on floor " + floorNumber + " in building '" + buildingName + "' is already occupied.");
                         return;
                     }
                 }
@@ -142,7 +142,7 @@ public class LandlordDML {
 
                 // Commit transaction
                 conn.commit();
-                System.out.println("Tenant assigned to Room " + roomNumber + " successfully.");
+                System.out.println("Tenant assigned to Building '" + buildingName + "', Floor " + floorNumber + ", Room " + roomNumber + " successfully.");
             } catch (SQLException e) {
                 conn.rollback();
                 throw e;
@@ -154,6 +154,7 @@ public class LandlordDML {
             e.printStackTrace();
         }
     }
+
 
     // Helper method to get user_id by ID card
     private int getUserIdByIdCard(Connection conn, String idCard) throws SQLException {

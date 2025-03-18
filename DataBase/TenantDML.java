@@ -45,13 +45,17 @@ public class TenantDML {
     }
 
     // ===== Get All Tenants for Landlord =====
+    // TenantDML.java
     public List<Tenant> getAllTenantsForLandlord() {
         List<Tenant> tenants = new ArrayList<>();
         String query = "SELECT u.user_id, u.name, u.IdCard, u.contact, " +
-                "r.room_number, r.current_electric_counter, r.current_water_counter " +
+                "r.room_number, r.current_electric_counter, r.current_water_counter, " +
+                "f.floor_number, b.building_name " +
                 "FROM Users u " +
                 "JOIN Tenants t ON u.user_id = t.user_id " +
                 "LEFT JOIN Rooms r ON t.assigned_room_id = r.room_id " +
+                "LEFT JOIN Floors f ON r.floor_id = f.floor_id " +
+                "LEFT JOIN Buildings b ON f.building_id = b.building_id " +
                 "WHERE u.role = 'Tenant'";
 
         try (Connection conn = DataBaseConnection.getConnection();
@@ -68,6 +72,29 @@ public class TenantDML {
         }
 
         return tenants;
+    }
+
+    private Tenant createTenantFromResultSet(ResultSet rs) throws SQLException {
+        String name = rs.getString("name");
+        String idCard = rs.getString("IdCard");
+        String contact = rs.getString("contact");
+        Tenant tenant = new Tenant(name, idCard, contact);
+
+        String roomNumber = rs.getString("room_number");
+        if (roomNumber != null) {
+            int electricCounter = rs.getInt("current_electric_counter");
+            int waterCounter = rs.getInt("current_water_counter");
+
+            Room room = new Room(roomNumber, electricCounter, waterCounter);
+
+            try {
+                tenant.assignRoom(room);
+            } catch (RoomException | TenantException e) {
+                System.out.println("Error assigning room to tenant: " + e.getMessage());
+            }
+        }
+
+        return tenant;
     }
 
     // ===== Check if Tenant Exists =====
@@ -142,18 +169,24 @@ public class TenantDML {
     }
 
     // ===== Update Tenant =====
-    public boolean updateTenant(Tenant tenant) {
+    public boolean updateTenant(Tenant tenant, String oldIdCard) {
         String query = "UPDATE Users u " +
                 "JOIN Tenants t ON u.user_id = t.user_id " +
-                "SET u.name = ?, u.contact = ? " +
-                "WHERE u.IdCard = ? AND u.role = 'Tenant'";
+                "SET u.name = ?, u.contact = ?" +
+                (oldIdCard != null ? ", u.IdCard = ?" : "") +
+                " WHERE u.IdCard = ? AND u.role = 'Tenant'";
 
         try (Connection conn = DataBaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(query)) {
 
             ps.setString(1, tenant.getName());
             ps.setString(2, tenant.getContact());
-            ps.setString(3, tenant.getIdCard());
+
+            int paramIndex = 3;
+            if (oldIdCard != null) {
+                ps.setString(paramIndex++, tenant.getIdCard());
+            }
+            ps.setString(paramIndex, oldIdCard != null ? oldIdCard : tenant.getIdCard());
 
             int rowsAffected = ps.executeUpdate();
             if (rowsAffected > 0) {
@@ -163,7 +196,7 @@ public class TenantDML {
                 }
                 return true;
             } else {
-                System.out.println("No tenant found with ID Card: " + tenant.getIdCard());
+                System.out.println("No tenant found with ID Card: " + (oldIdCard != null ? oldIdCard : tenant.getIdCard()));
                 return false;
             }
         } catch (SQLException e) {
@@ -200,42 +233,42 @@ public class TenantDML {
         return null; // Tenant not found
     }
 
-    private Tenant createTenantFromResultSet(ResultSet rs) throws SQLException {
-        String name = rs.getString("name");
-        String idCard = rs.getString("IdCard");
-        String contact = rs.getString("contact");
-        Tenant tenant = new Tenant(name, idCard, contact);
-
-        String roomNumber = rs.getString("room_number");
-        if (roomNumber != null) {
-            int electricCounter = rs.getInt("current_electric_counter");
-            int waterCounter = rs.getInt("current_water_counter");
-
-            Room room = new Room(roomNumber, electricCounter, waterCounter);
-
-            try {
-                tenant.assignRoom(room);
-            } catch (RoomException | TenantException e) {
-                System.out.println("Error assigning room to tenant: " + e.getMessage());
-            }
-        }
-
-        return tenant;
-    }
-
-    private int getRoomIdForTenant(String tenantId, Connection conn) throws SQLException {
-        String query = "SELECT r.room_id FROM Rooms r " +
-                "JOIN Tenants t ON r.room_id = t.assigned_room_id " +
-                "JOIN Users u ON t.user_id = u.user_id " +
-                "WHERE u.IdCard = ?";
-
-        try (PreparedStatement ps = conn.prepareStatement(query)) {
-            ps.setString(1, tenantId);
-            try (ResultSet rs = ps.executeQuery()) {
-                return rs.next() ? rs.getInt("room_id") : -1;
-            }
-        }
-    }
+//    private Tenant createTenantFromResultSet(ResultSet rs) throws SQLException {
+//        String name = rs.getString("name");
+//        String idCard = rs.getString("IdCard");
+//        String contact = rs.getString("contact");
+//        Tenant tenant = new Tenant(name, idCard, contact);
+//
+//        String roomNumber = rs.getString("room_number");
+//        if (roomNumber != null) {
+//            int electricCounter = rs.getInt("current_electric_counter");
+//            int waterCounter = rs.getInt("current_water_counter");
+//
+//            Room room = new Room(roomNumber, electricCounter, waterCounter);
+//
+//            try {
+//                tenant.assignRoom(room);
+//            } catch (RoomException | TenantException e) {
+//                System.out.println("Error assigning room to tenant: " + e.getMessage());
+//            }
+//        }
+//
+//        return tenant;
+//    }
+//
+//    private int getRoomIdForTenant(String tenantId, Connection conn) throws SQLException {
+//        String query = "SELECT r.room_id FROM Rooms r " +
+//                "JOIN Tenants t ON r.room_id = t.assigned_room_id " +
+//                "JOIN Users u ON t.user_id = u.user_id " +
+//                "WHERE u.IdCard = ?";
+//
+//        try (PreparedStatement ps = conn.prepareStatement(query)) {
+//            ps.setString(1, tenantId);
+//            try (ResultSet rs = ps.executeQuery()) {
+//                return rs.next() ? rs.getInt("room_id") : -1;
+//            }
+//        }
+//    }
 
 
     private int insertUser(Connection conn, Tenant tenant) throws SQLException {

@@ -14,10 +14,11 @@ import java.util.Scanner;
 import static Main.Menu.*;
 
 public class App {
-
+    //update tenant not real time
     //creating bill and room is not real time
-    //building floor room need real time config
-   
+    //creating bill duplicate search for roomnumber (need to search for building floor room)
+    //view all floor update all
+
     // Add a class variable to keep track of the currently logged in tenant
     private static Tenant currentLoggedInTenant = null;
 

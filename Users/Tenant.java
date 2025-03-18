@@ -18,7 +18,6 @@ public class Tenant extends User {
     // Fields
     // ====================================================================================================
     private Room assignedRoom;
-    private boolean rentPaid;
     private Map<LocalDate, Boolean> billPaymentStatus;
     private static final double KHR_TO_USD_RATE = 4100.00;
 
@@ -26,7 +25,6 @@ public class Tenant extends User {
     // ====================================================================================================
     public Tenant(String name, String IdCard, String contact) {
         super(name, IdCard, contact, "Tenant");
-        this.rentPaid = false;
         this.billPaymentStatus = new HashMap<>();
     }
 
@@ -109,7 +107,6 @@ public class Tenant extends User {
         System.out.println(name + " is vacating Room " + assignedRoom.getRoomNumber());
         assignedRoom.removeTenant();
         this.assignedRoom = null;
-        this.rentPaid = false;
     }
 
     // ====================================================================================================
@@ -151,10 +148,11 @@ public class Tenant extends User {
     // ====================================================================================================
     @Override
     public String toString() {
-        return super.toString() +
-                "Tenant{" +
-                "assignedRoom=" + (assignedRoom != null ? assignedRoom.getRoomNumber() : "None") +
-                ", rentPaid=" + rentPaid +
-                '}';
+        StringBuilder sb = new StringBuilder();
+        sb.append(super.toString()).append("\n");
+        sb.append("Tenant Details:\n");
+        sb.append("Assigned Room: ").append(assignedRoom != null ? assignedRoom.getRoomNumber() : "None").append("\n");
+        return sb.toString();
     }
+
 }

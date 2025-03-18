@@ -4,6 +4,10 @@ import Properties.Building;
 import Properties.Floor;
 
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class BuildingDML {
 
@@ -86,6 +90,38 @@ public class BuildingDML {
 
         return null; // Building not found
     }
+
+    // Add this method to fix the error
+    public List<Building> getAllBuildings() {
+        List<Building> buildings = new ArrayList<>();
+        String query = "SELECT building_id, building_name, address FROM Buildings";
+
+        try (Connection conn = DataBaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(query);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                int buildingId = rs.getInt("building_id");
+                String buildingName = rs.getString("building_name");
+                String address = rs.getString("address");
+
+                // Create building object
+                Building building = new Building(buildingName, address);
+
+                // Load floors for this building
+                loadFloorsForBuilding(building, buildingId, conn);
+
+                // Add to list
+                buildings.add(building);
+            }
+        } catch (SQLException e) {
+            System.out.println("SQL Error: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return buildings;
+    }
+
     public void addFloorToBuilding(String buildingName, Floor floor) {
         // First, get the building ID by name
         String query = "SELECT building_id FROM Buildings WHERE building_name = ?";
@@ -113,7 +149,7 @@ public class BuildingDML {
             e.printStackTrace();
         }
     }
-    // Add this to your BuildingDML class
+
     public int getBuildingIdByName(String buildingName) {
         String query = "SELECT building_id FROM Buildings WHERE building_name = ?";
 
@@ -134,6 +170,7 @@ public class BuildingDML {
 
         return -1; // Return -1 if building not found
     }
+
     public Building getBuildingByName(String buildingName) {
         String query = "SELECT building_id, building_name, address FROM Buildings WHERE building_name = ?";
 
@@ -162,6 +199,29 @@ public class BuildingDML {
         }
 
         return null; // Building not found
+    }
+    // Add this method to BuildingDML class
+    public List<Map<String, Object>> getAllBuildingsWithIds() {
+        List<Map<String, Object>> buildingsWithIds = new ArrayList<>();
+        String query = "SELECT building_id, building_name, address FROM Buildings";
+
+        try (Connection conn = DataBaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(query);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                Map<String, Object> buildingData = new HashMap<>();
+                buildingData.put("id", rs.getInt("building_id"));
+                buildingData.put("name", rs.getString("building_name"));
+                buildingData.put("address", rs.getString("address"));
+                buildingsWithIds.add(buildingData);
+            }
+        } catch (SQLException e) {
+            System.out.println("SQL Error: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return buildingsWithIds;
     }
     // Helper method to load floors for a building
     private void loadFloorsForBuilding(Building building, int buildingId, Connection conn) throws SQLException {

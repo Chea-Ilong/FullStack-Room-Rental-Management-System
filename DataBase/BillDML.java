@@ -12,7 +12,7 @@ import static DataBase.DataBaseConnection.getConnection;
 
 public class BillDML {
 
-    // Save a new bill to the database
+    // Save a new bill to the database with proper room search
     public boolean saveBill(Bill bill) {
         Connection conn = null;
         PreparedStatement ps = null;
@@ -22,20 +22,26 @@ public class BillDML {
             conn = getConnection();
             conn.setAutoCommit(false); // Start transaction
 
+            // Get the room ID based on building, floor, and room number
+            int roomId = getRoomIdByBuildingFloorAndNumber(
+                    bill.getBuildingName(),
+                    bill.getFloorNumber(),
+                    bill.getRoom().getRoomNumber()
+            );
+
+            if (roomId == -1) {
+                System.out.println("Room not found in building " + bill.getBuildingName() +
+                        ", floor " + bill.getFloorNumber() +
+                        ", room " + bill.getRoom().getRoomNumber());
+                return false;
+            }
+
             String query = "INSERT INTO Bills (room_id, tenant_id, due_date, is_paid, bill_date, " +
                     "electric_amount, water_amount, electric_usage, water_usage, building_name, floor_number, " +
                     "rent_amount, total_amount) " +
                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
             ps = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
-
-            // Get the room ID
-            Room room = bill.getRoom();
-            RoomDML roomDML = new RoomDML();
-            int roomId = roomDML.getRoomIdByRoomNumber(room.getRoomNumber());
-            if (roomId == -1) {
-                return false;
-            }
 
             // Set parameters
             ps.setInt(1, roomId);
@@ -99,6 +105,52 @@ public class BillDML {
         }
     }
 
+    // Get room ID by building name, floor number, and room number
+    public int getRoomIdByBuildingFloorAndNumber(String buildingName, String floorNumber, String roomNumber) {
+        Connection conn = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+
+        try {
+            conn = getConnection();
+
+            // Join all three tables with clear aliases and proper conditions
+            String query = "SELECT r.room_id FROM Rooms r " +
+                    "JOIN Floors f ON r.floor_id = f.floor_id " +
+                    "JOIN Buildings b ON f.building_id = b.building_id " +
+                    "WHERE b.building_name = ? AND f.floor_number = ? AND r.room_number = ?";
+
+            ps = conn.prepareStatement(query);
+            ps.setString(1, buildingName);
+            ps.setString(2, floorNumber);
+            ps.setString(3, roomNumber);
+
+            rs = ps.executeQuery();
+
+            if (rs.next()) {
+                int roomId = rs.getInt("room_id");
+                System.out.println("Found room ID: " + roomId + " for room " + roomNumber +
+                        " in building " + buildingName + ", floor " + floorNumber);
+                return roomId;
+            } else {
+                System.out.println("Room not found: " + roomNumber +
+                        " in building " + buildingName + ", floor " + floorNumber);
+                return -1;
+            }
+        } catch (SQLException e) {
+            System.out.println("Error getting room ID: " + e.getMessage());
+            e.printStackTrace();
+            return -1;
+        } finally {
+            try {
+                if (rs != null) rs.close();
+                if (ps != null) ps.close();
+                if (conn != null) conn.close();
+            } catch (SQLException e) {
+                System.out.println("Error closing resources: " + e.getMessage());
+            }
+        }
+    }
 
     // Update methods to use integer IDs
     public boolean updateBillPaymentStatus(int billID, boolean paid) {
@@ -116,9 +168,6 @@ public class BillDML {
 
             // Execute update and check affected rows
             int affectedRows = pstmt.executeUpdate();
-
-            // Print debug information
-            System.out.println("Bill update affected rows: " + affectedRows + " for bill ID: " + billID);
 
             return affectedRows > 0;
         } catch (SQLException e) {
@@ -204,13 +253,15 @@ public class BillDML {
     public List<Bill> getBillsByTenantId(String tenantIdCard) {
         List<Bill> bills = new ArrayList<>();
 
-        String query = "SELECT b.*, bu.building_name, fl.floor_number, r.current_electric_counter AS electric_usage, r.current_water_counter AS water_usage " +
+        String query = "SELECT b.*, bu.building_name, fl.floor_number, " +
+                "r.current_electric_counter AS electric_usage, r.current_water_counter AS water_usage, " +
+                "u.IdCard AS tenant_id, u.name AS tenant_name, u.contact AS tenant_contact " +
                 "FROM Bills b " +
                 "JOIN Rooms r ON b.room_id = r.room_id " +
                 "JOIN Floors fl ON r.floor_id = fl.floor_id " +
                 "JOIN Buildings bu ON fl.building_id = bu.building_id " +
-                "JOIN Tenants t ON r.room_id = t.assigned_room_id " +
-                "JOIN Users u ON t.user_id = u.user_id " +
+                "LEFT JOIN Tenants t ON b.tenant_id = t.tenant_id " +
+                "LEFT JOIN Users u ON t.user_id = u.user_id " +
                 "WHERE u.IdCard = ? " +
                 "ORDER BY b.bill_date DESC";
 
@@ -303,13 +354,31 @@ public class BillDML {
     private Bill createBillFromResultSet(ResultSet rs, Connection conn) throws SQLException {
         // Get room information
         int roomId = rs.getInt("room_id");
-
         RoomDML roomDML = new RoomDML();
         Room room = roomDML.getRoomById(roomId);
 
         if (room == null) {
             System.out.println("Room with ID " + roomId + " not found.");
             return null;
+        }
+
+        // Get tenant information directly from database
+        String tenantIdCard = rs.getString("tenant_id");
+        TenantDML tenantDML = new TenantDML();
+        Tenant tenant = null;
+
+        if (tenantIdCard != null) {
+            // Create a proper User instance for the tenant
+            String tenantName = rs.getString("tenant_name");
+            String tenantContact = ""; // Get from database if available
+            tenant = new Tenant(tenantName, tenantIdCard, tenantContact);
+
+            // Ensure the room has the correct tenant
+            try {
+                room.assignTenant(tenant);
+            } catch (Exception e) {
+                System.out.println("Warning: Could not assign tenant to room: " + e.getMessage());
+            }
         }
 
         // Create the Bill instance
@@ -347,8 +416,6 @@ public class BillDML {
         }
     }
 
-
-
     // Helper method to create Bill instance
     private Bill createBillInstance(Room room, String buildingName, String floorNumber,
                                     double rentAmount, int electricUsage, int waterUsage) {
@@ -360,12 +427,10 @@ public class BillDML {
         }
     }
 
-
-
     // Create the Bills table if it doesn't exist
     public void createBillsTableIfNotExists() {
         String createTableSQL = "CREATE TABLE IF NOT EXISTS Bills (" +
-                "bill_id VARCHAR(50) PRIMARY KEY, " +  // Changed from INT to VARCHAR
+                "bill_id INT AUTO_INCREMENT PRIMARY KEY, " +  // Changed to INT AUTO_INCREMENT
                 "room_id INT NOT NULL, " +
                 "tenant_id VARCHAR(50), " +
                 "building_name VARCHAR(100), " +
@@ -393,5 +458,4 @@ public class BillDML {
             e.printStackTrace();
         }
     }
-
 }

@@ -41,9 +41,9 @@ public class BillRecord {
         // Store the bill
         billDatabase.get(buildingName).get(floorNumber).get(roomNumber).put(billingPeriod, bill);
 
-        System.out.println("Bill stored successfully for Room " + roomNumber +
-                " in " + buildingName + ", Floor " + floorNumber +
-                " for period " + billingPeriod.getMonth() + " " + billingPeriod.getYear());
+//        System.out.println("Bill stored successfully for Room " + roomNumber +
+//                " in " + buildingName + ", Floor " + floorNumber +
+//                " for period " + billingPeriod.getMonth() + " " + billingPeriod.getYear());
     }
 
     /**

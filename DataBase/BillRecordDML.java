@@ -13,30 +13,7 @@ public class BillRecordDML {
         this.billDML = new BillDML();
     }
 
-    /**
-     * Record a payment for a bill
-     *
-     * @param billId ID of the bill being paid
-     * @param tenantId ID of the tenant making the payment
-     * @param paymentAmount Amount being paid
-     * @param paymentMethod Method of payment (Cash, Bank Transfer, etc.)
-     * @param referenceNumber Reference number for the payment (optional)
-     * @param landlordId ID of the landlord who received the payment
-     * @param notes Additional notes about the payment
-     * @return ID of the newly created payment record
-     */
-    /**
-     * Record a payment for a bill
-     *
-     * @param billId     ID of the bill being paid
-     * @param tenantId   ID of the tenant making the payment
-     * @param landlordId ID of the landlord receiving the payment
-     * @param amount     Amount being paid
-     *                   //     * @param paymentMethod Method of payment
-     *                   //     * @param referenceNumber Reference number for the payment
-     *                   //     * @param notes Additional notes
-     * @return ID of the created payment record, or -1 if recording failed
-     */
+
     public int recordPayment(int billId, int tenantId, int landlordId, double amount) {
         String sql = "INSERT INTO BillRecords (bill_id, tenant_id, landlord_id, payment_amount) " +
                 "VALUES (?, ?, ?, ?)";
@@ -109,7 +86,7 @@ public class BillRecordDML {
      *
      * @param tenantId ID of the tenant
      */
-    private void updateTenantBalanceAfterPayment(int tenantId) throws SQLException {
+    public void updateTenantBalanceAfterPayment(int tenantId) throws SQLException {
         // Recalculate the tenant's balance based on unpaid bills
         double balance = billDML.getTenantBalanceDue(String.valueOf(tenantId));
 

@@ -7,6 +7,8 @@ import Users.Tenant;
 import Exceptions.RoomException;
 import java.sql.*;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 public class RoomDML {
 
@@ -570,6 +572,187 @@ public class RoomDML {
             }
         } catch (SQLException e) {
             System.out.println("SQL Error syncing room with tenant: " + e.getMessage());
+        }
+    }
+    public void deleteRoom(int roomId) {
+        String query = "DELETE FROM Rooms WHERE room_id = ?";
+
+        try (Connection conn = DataBaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(query)) {
+
+            ps.setInt(1, roomId);
+            int rowsAffected = ps.executeUpdate();
+
+            if (rowsAffected > 0) {
+                System.out.println("Room successfully deleted from database.");
+            } else {
+                System.out.println("No room was deleted. Room ID may not exist.");
+            }
+        } catch (SQLException e) {
+            System.out.println("SQL Error deleting room: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    public List<Room> getAllRooms() {
+        List<Room> rooms = new ArrayList<>();
+        String query = "SELECT r.room_id, r.room_number, r.current_electric_counter, " +
+                "r.current_water_counter, r.is_occupied FROM Rooms r " +
+                "ORDER BY r.room_number";
+
+        try (Connection conn = DataBaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(query);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                int roomId = rs.getInt("room_id");
+                String roomNumber = rs.getString("room_number");
+                int electricCounter = rs.getInt("current_electric_counter");
+                int waterCounter = rs.getInt("current_water_counter");
+                boolean isOccupied = rs.getBoolean("is_occupied");
+
+                // Create room
+                Room room = new Room(roomNumber, electricCounter, waterCounter);
+
+                // Set occupancy and tenant if occupied
+                if (isOccupied) {
+                    try {
+                        room.markAsOccupied();
+                        // Load tenant for this room
+                        loadTenantForRoom(room, roomId, conn);
+                    } catch (RoomException e) {
+                        System.out.println("Error marking room as occupied: " + e.getMessage());
+                    }
+                }
+
+                rooms.add(room);
+            }
+        } catch (SQLException e) {
+            System.out.println("SQL Error retrieving all rooms: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return rooms;
+    }
+    // Add these methods to your existing RoomDML class
+
+    public void updateRoom(int roomId, Room room) {
+        String query = "UPDATE Rooms SET room_number = ? WHERE room_id = ?";
+
+        try (Connection conn = DataBaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(query)) {
+
+            ps.setString(1, room.getRoomNumber());
+            ps.setInt(2, roomId);
+
+            int rowsAffected = ps.executeUpdate();
+            if (rowsAffected > 0) {
+                System.out.println("Room updated successfully in database.");
+            } else {
+                System.out.println("No room was updated. Room ID may not exist.");
+            }
+        } catch (SQLException e) {
+            System.out.println("SQL Error updating room: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    public void updateRoomCounters(int roomId, int electricCounter, int waterCounter) {
+        String query = "UPDATE Rooms SET current_electric_counter = ?, current_water_counter = ? WHERE room_id = ?";
+
+        try (Connection conn = DataBaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(query)) {
+
+            ps.setInt(1, electricCounter);
+            ps.setInt(2, waterCounter);
+            ps.setInt(3, roomId);
+
+            int rowsAffected = ps.executeUpdate();
+            if (rowsAffected > 0) {
+                System.out.println("Room counters updated successfully in database.");
+            } else {
+                System.out.println("No room was updated. Room ID may not exist.");
+            }
+        } catch (SQLException e) {
+            System.out.println("SQL Error updating room counters: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    public void updateRoomOccupancy(int roomId, boolean isOccupied) {
+        String query = "UPDATE Rooms SET is_occupied = ? WHERE room_id = ?";
+
+        try (Connection conn = DataBaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(query)) {
+
+            ps.setBoolean(1, isOccupied);
+            ps.setInt(2, roomId);
+
+            int rowsAffected = ps.executeUpdate();
+            if (rowsAffected > 0) {
+                System.out.println("Room occupancy status updated successfully in database.");
+            } else {
+                System.out.println("No room was updated. Room ID may not exist.");
+            }
+        } catch (SQLException e) {
+            System.out.println("SQL Error updating room occupancy: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    public int getRoomIdByBuildingFloorAndNumber(String buildingName, String floorNumber, String roomNumber) {
+        String query = "SELECT r.room_id FROM Rooms r " +
+                "JOIN Floors f ON r.floor_id = f.floor_id " +
+                "JOIN Buildings b ON f.building_id = b.building_id " +
+                "WHERE b.building_name = ? AND f.floor_number = ? AND r.room_number = ?";
+
+        try (Connection conn = DataBaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(query)) {
+
+            ps.setString(1, buildingName);
+            ps.setString(2, floorNumber);
+            ps.setString(3, roomNumber);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("room_id");
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("SQL Error: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return -1; // Room not found
+    }
+    public void loadRoomsForFloor(Floor floor, int floorId) {
+        String query = "SELECT room_id, room_number, current_electric_counter, current_water_counter, is_occupied FROM Rooms WHERE floor_id = ?";
+
+        try (Connection conn = DataBaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(query)) {
+
+            ps.setInt(1, floorId);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    int roomId = rs.getInt("room_id");
+                    String roomNumber = rs.getString("room_number");
+                    int electricCounter = rs.getInt("current_electric_counter");
+                    int waterCounter = rs.getInt("current_water_counter");
+                    boolean isOccupied = rs.getBoolean("is_occupied");
+
+                    // Create the room directly from the query results
+                    Room room = new Room(roomNumber, electricCounter, waterCounter);
+
+                    // Load tenant information if room is occupied
+                    if (isOccupied) {
+                        loadTenantForRoom(room, roomId, conn);
+                    }
+                    // Add room to floor
+                    floor.addRoom(room);
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("SQL Error loading rooms for floor: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 }

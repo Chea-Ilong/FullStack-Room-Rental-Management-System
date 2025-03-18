@@ -12,7 +12,7 @@ public class Floor {
     // ====================================================================================================
     private String floorNumber;
     private List<Room> rooms;
-
+    private Building building;
     // ====================================================================================================
     // Constructor
     // ====================================================================================================
@@ -140,5 +140,9 @@ public class Floor {
     // Setter for floor number
     public void setFloorNumber(String newFloorNumber) {
         this.floorNumber = newFloorNumber;
+    }
+    // In the Room class
+    public Building getBuilding() {
+        return this.building;
     }
 }

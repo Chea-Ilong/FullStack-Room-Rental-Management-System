@@ -21,7 +21,6 @@ public class Landlord extends User {
     // ====================================================================================================
     private List<Tenant> tenants;
     private List<Building> buildings; // Manage multiple buildings
-    // Removed utilityRecords field
     private BillRecord billRecord; // Add BillRecord reference
     private static int landlordPIN = 1234;
     private int failedPinAttempts;
@@ -64,6 +63,10 @@ public class Landlord extends User {
                 rentAmount, electricUsageMap, waterUsageMap);
     }
 
+    public void refreshBuildingList() {
+        BuildingDML buildingDML = new BuildingDML();
+        this.buildings = buildingDML.getAllBuildings();
+    }
     // View bills for a specific month
     public List<Bill> viewBillsForMonth(int year, int month) {
         YearMonth yearMonth = YearMonth.of(year, month);
@@ -348,21 +351,23 @@ public void addTenant(Tenant tenant) {
             System.out.println("---------------------");
         }
     }
-
+    // Display tenant details
     public void displayAllTenants() {
-        System.out.println("\n===== All Tenants =====");
-        if (tenants.isEmpty()) {
-            System.out.println("No tenants registered.");
-            return;
-        }
+        TenantDML tenantDML = new TenantDML();
+        List<Tenant> tenants = tenantDML.getAllTenantsForLandlord();
 
+        System.out.println("===== All Tenants =====");
         for (Tenant tenant : tenants) {
             System.out.println("Name: " + tenant.getName());
             System.out.println("ID: " + tenant.getIdCard());
             System.out.println("Contact: " + tenant.getContact());
             Room room = tenant.getAssignedRoom();
-            System.out.println("Room: " + (room != null ? room.getRoomNumber() : "None"));
-            System.out.println("---------------------");
+            if (room != null) {
+                System.out.println("Room: " + room.getRoomNumber());
+            } else {
+                System.out.println("Room: Not assigned");
+            }
+            System.out.println("-----------------------");
         }
     }
 
