@@ -16,11 +16,24 @@ public class BuildingManagementGUI extends JPanel {
     private JTextField nameField, addressField;
     private JButton addButton, updateButton, deleteButton, clearButton, refreshButton;
     private int selectedBuildingId = -1;
+    private FloorManagementGUI floorManagementGUI;
+    private RoomManagementGUI roomManagementGUI;
+
+    public void setFloorManagementGUI(FloorManagementGUI floorManagementGUI) {
+        this.floorManagementGUI = floorManagementGUI;
+    }
+
+    public void setRoomManagementGUI(RoomManagementGUI roomManagementGUI) {
+        this.roomManagementGUI = roomManagementGUI;
+    }
 
     public BuildingManagementGUI() {
         buildingDML = new BuildingDML();
-        setLayout(new BorderLayout(10, 10));
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        setLayout(new BorderLayout(15, 15)); // Increased spacing
+        setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15)); // Increased padding
+
+        // Set larger default font for the entire panel
+        setFont(new Font("SansSerif", Font.PLAIN, 16));
 
         // Create form panel
         JPanel formPanel = createFormPanel();
@@ -44,19 +57,26 @@ public class BuildingManagementGUI extends JPanel {
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setBorder(BorderFactory.createTitledBorder("Building Details"));
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.insets = new Insets(8, 8, 8, 8); // Increased insets
         gbc.anchor = GridBagConstraints.WEST;
+
+        // Larger font for labels
+        Font labelFont = new Font("SansSerif", Font.PLAIN, 16);
 
         // Building Name components
         gbc.gridx = 0;
         gbc.gridy = 0;
-        panel.add(new JLabel("Building Name:"), gbc);
+        JLabel nameLabel = new JLabel("Building Name:");
+        nameLabel.setFont(labelFont);
+        panel.add(nameLabel, gbc);
 
         gbc.gridx = 1;
         gbc.gridy = 0;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.weightx = 1.0;
         nameField = new JTextField(20);
+        nameField.setFont(new Font("SansSerif", Font.PLAIN, 16)); // Larger font
+        nameField.setPreferredSize(new Dimension(250, 35)); // Slightly larger size
         panel.add(nameField, gbc);
 
         // Building Address components
@@ -64,13 +84,17 @@ public class BuildingManagementGUI extends JPanel {
         gbc.gridy = 1;
         gbc.weightx = 0.0;
         gbc.fill = GridBagConstraints.NONE;
-        panel.add(new JLabel("Address:"), gbc);
+        JLabel addressLabel = new JLabel("Address:");
+        addressLabel.setFont(labelFont);
+        panel.add(addressLabel, gbc);
 
         gbc.gridx = 1;
         gbc.gridy = 1;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.weightx = 1.0;
         addressField = new JTextField(20);
+        addressField.setFont(new Font("SansSerif", Font.PLAIN, 16)); // Larger font
+        addressField.setPreferredSize(new Dimension(250, 35)); // Slightly larger size
         panel.add(addressField, gbc);
 
         return panel;
@@ -82,13 +106,16 @@ public class BuildingManagementGUI extends JPanel {
         tableModel = new DefaultTableModel(columnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return false; // Make cells non-editable
+                return false;
             }
         };
 
         buildingTable = new JTable(tableModel);
+        buildingTable.setFont(new Font("SansSerif", Font.PLAIN, 16)); // Larger font for table
+        buildingTable.getTableHeader().setFont(new Font("SansSerif", Font.BOLD, 16)); // Larger header font
+        buildingTable.setRowHeight(30); // Increased row height
         buildingTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        buildingTable.getColumnModel().getColumn(0).setMaxWidth(50); // Set ID column width
+        buildingTable.getColumnModel().getColumn(0).setMaxWidth(60); // Slightly wider ID column
 
         // Add selection listener
         buildingTable.getSelectionModel().addListSelectionListener(e -> {
@@ -97,8 +124,6 @@ public class BuildingManagementGUI extends JPanel {
                 selectedBuildingId = (int) tableModel.getValueAt(row, 0);
                 nameField.setText((String) tableModel.getValueAt(row, 1));
                 addressField.setText((String) tableModel.getValueAt(row, 2));
-
-                // Enable update and delete buttons
                 updateButton.setEnabled(true);
                 deleteButton.setEnabled(true);
             }
@@ -111,6 +136,8 @@ public class BuildingManagementGUI extends JPanel {
 
         // Add refresh button at the top of the table
         refreshButton = new JButton("Refresh List");
+        refreshButton.setFont(new Font("SansSerif", Font.PLAIN, 16)); // Larger font
+        refreshButton.setPreferredSize(new Dimension(150, 35)); // Slightly larger button
         refreshButton.addActionListener(e -> loadBuildingData());
 
         JPanel refreshPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -123,12 +150,21 @@ public class BuildingManagementGUI extends JPanel {
     }
 
     private JPanel createButtonPanel() {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10)); // Increased spacing
+
+        Font buttonFont = new Font("SansSerif", Font.PLAIN, 16); // Larger font for buttons
+        Dimension buttonSize = new Dimension(150, 35); // Slightly larger button size
 
         addButton = new JButton("Add Building");
         updateButton = new JButton("Update Building");
         deleteButton = new JButton("Delete Building");
         clearButton = new JButton("Clear Form");
+
+        // Apply font and size to buttons
+        for (JButton button : new JButton[]{addButton, updateButton, deleteButton, clearButton}) {
+            button.setFont(buttonFont);
+            button.setPreferredSize(buttonSize);
+        }
 
         // Initial state
         updateButton.setEnabled(false);
@@ -161,18 +197,16 @@ public class BuildingManagementGUI extends JPanel {
         }
 
         try {
-            // Create building object
             Building building = new Building(name, address);
-
-            // Save to database
             buildingDML.saveBuilding(building);
-
-            // Refresh table
             loadBuildingData();
-
-            // Clear form
             clearForm();
-
+            if (floorManagementGUI != null) {
+                floorManagementGUI.refreshAfterBuildingChanges();
+            }
+            if (roomManagementGUI != null) {
+                roomManagementGUI.refreshAfterBuildingChanges();
+            }
             JOptionPane.showMessageDialog(this,
                     "Building added successfully",
                     "Success",
@@ -206,15 +240,15 @@ public class BuildingManagementGUI extends JPanel {
         }
 
         try {
-            // Create building object with updated info
             Building building = new Building(name, address);
-
-            // Update in database
             buildingDML.updateBuilding(selectedBuildingId, building);
-
-            // Refresh table
             loadBuildingData();
-
+            if (floorManagementGUI != null) {
+                floorManagementGUI.refreshAfterBuildingChanges();
+            }
+            if (roomManagementGUI != null) {
+                roomManagementGUI.refreshAfterBuildingChanges();
+            }
             JOptionPane.showMessageDialog(this,
                     "Building updated successfully",
                     "Success",
@@ -244,15 +278,15 @@ public class BuildingManagementGUI extends JPanel {
 
         if (confirm == JOptionPane.YES_OPTION) {
             try {
-                // Delete from database
                 buildingDML.deleteBuilding(selectedBuildingId);
-
-                // Refresh table
                 loadBuildingData();
-
-                // Clear form
                 clearForm();
-
+                if (floorManagementGUI != null) {
+                    floorManagementGUI.refreshAfterBuildingChanges();
+                }
+                if (roomManagementGUI != null) {
+                    roomManagementGUI.refreshAfterBuildingChanges();
+                }
                 JOptionPane.showMessageDialog(this,
                         "Building deleted successfully",
                         "Success",
@@ -277,14 +311,9 @@ public class BuildingManagementGUI extends JPanel {
     }
 
     private void loadBuildingData() {
-        // Clear existing data
         tableModel.setRowCount(0);
-
         try {
-            // Get all buildings with their IDs
             List<Map<String, Object>> buildingsWithIds = buildingDML.getAllBuildingsWithIds();
-
-            // Add buildings to table model
             for (Map<String, Object> buildingData : buildingsWithIds) {
                 tableModel.addRow(new Object[]{
                         buildingData.get("id"),
@@ -300,12 +329,10 @@ public class BuildingManagementGUI extends JPanel {
         }
     }
 
-    // Method to integrate this panel into LandlordGUI
     public static void main(String[] args) {
-        // Test the panel
         JFrame frame = new JFrame("Building Management");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(800, 600);
+        frame.setSize(900, 700); // Slightly larger window
         frame.add(new BuildingManagementGUI());
         frame.setVisible(true);
     }

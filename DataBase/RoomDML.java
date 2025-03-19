@@ -755,4 +755,50 @@ public class RoomDML {
             e.printStackTrace();
         }
     }
+    public List<RoomDetails> getAllRoomsWithDetails() {
+        List<RoomDetails> roomDetailsList = new ArrayList<>();
+        String query = "SELECT r.room_id, r.room_number, r.current_electric_counter, r.current_water_counter, r.is_occupied, " +
+                "b.building_name, f.floor_number, u.name AS tenant_name " +
+                "FROM Rooms r " +
+                "LEFT JOIN Floors f ON r.floor_id = f.floor_id " +
+                "LEFT JOIN Buildings b ON f.building_id = b.building_id " +
+                "LEFT JOIN Tenants t ON t.assigned_room_id = r.room_id " +
+                "LEFT JOIN Users u ON t.user_id = u.user_id " +
+                "ORDER BY b.building_name, f.floor_number, r.room_number";
+
+        try (Connection conn = DataBaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(query);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                RoomDetails details = new RoomDetails();
+                details.roomId = rs.getInt("room_id");
+                details.roomNumber = rs.getString("room_number");
+                details.electricCounter = rs.getInt("current_electric_counter");
+                details.waterCounter = rs.getInt("current_water_counter");
+                details.isOccupied = rs.getBoolean("is_occupied");
+                details.buildingName = rs.getString("building_name");
+                details.floorNumber = rs.getString("floor_number");
+                details.tenantName = rs.getString("tenant_name") != null ? rs.getString("tenant_name") : "N/A";
+                roomDetailsList.add(details);
+            }
+        } catch (SQLException e) {
+            System.err.println("SQL Error retrieving rooms with details: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return roomDetailsList;
+    }
+
+    // Helper class to hold room details with building and floor info
+    public static class RoomDetails {
+        public int roomId;
+        public String roomNumber;
+        public int electricCounter;
+        public int waterCounter;
+        public boolean isOccupied;
+        public String buildingName;
+        public String floorNumber;
+        public String tenantName;
+    }
 }

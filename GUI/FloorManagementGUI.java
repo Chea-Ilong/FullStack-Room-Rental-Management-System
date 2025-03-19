@@ -10,8 +10,6 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
 
 public class FloorManagementGUI extends JPanel {
     private Landlord landlord;
@@ -21,70 +19,72 @@ public class FloorManagementGUI extends JPanel {
     private DefaultTableModel tableModel;
     private JComboBox<String> buildingComboBox;
     private JTextField floorNumberField;
-    private Timer refreshTimer;
+    private JButton addButton, removeButton, updateButton, clearButton;
+    private RoomManagementGUI roomManagementGUI;
 
     public FloorManagementGUI() {
         this.floorDML = new FloorDML();
         this.buildingDML = new BuildingDML();
 
-        setLayout(new BorderLayout());
-        initializeUI();
+        setLayout(new BorderLayout(15, 15)); // Increased spacing
+        setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15)); // Increased padding
 
-        // Start the auto-refresh timer
-//        startAutoRefresh();
+        // Set larger default font for the entire panel
+        setFont(new Font("SansSerif", Font.PLAIN, 16));
+
+        initializeUI();
+    }
+
+    public void setRoomManagementGUI(RoomManagementGUI roomManagementGUI) {
+        this.roomManagementGUI = roomManagementGUI;
     }
 
     public void setLandlord(Landlord landlord) {
         this.landlord = landlord;
         refreshBuildingList();
-        viewFloors(); // Initial load
+        viewFloors(); // Load all floors initially
     }
 
     private void initializeUI() {
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        JPanel formPanel = createFormPanel();
+        JPanel tablePanel = createTablePanel();
+        JPanel buttonPanel = createButtonPanel();
 
-        // Create control panel
-        JPanel controlPanel = new JPanel(new BorderLayout());
+        add(formPanel, BorderLayout.NORTH);
+        add(tablePanel, BorderLayout.CENTER);
+        add(buttonPanel, BorderLayout.SOUTH);
+    }
 
-        // Create building selection panel
-        JPanel buildingPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        buildingPanel.add(new JLabel("Select Building: "));
+    private JPanel createFormPanel() {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10)); // Increased spacing
+        panel.setBorder(BorderFactory.createTitledBorder("Floor Details"));
+
+        Font labelFont = new Font("SansSerif", Font.PLAIN, 16); // Larger font for labels
+
+        JLabel buildingLabel = new JLabel("Select Building:");
+        buildingLabel.setFont(labelFont);
+        panel.add(buildingLabel);
+
         buildingComboBox = new JComboBox<>();
-        buildingComboBox.addActionListener(e -> viewFloors()); // Refresh floors when building changes
-        buildingPanel.add(buildingComboBox);
-        controlPanel.add(buildingPanel, BorderLayout.NORTH);
+        buildingComboBox.addItem("All Buildings"); // Add "All Buildings" option
+        buildingComboBox.setFont(new Font("SansSerif", Font.PLAIN, 16)); // Larger font
+        buildingComboBox.setPreferredSize(new Dimension(200, 35)); // Slightly larger size
+        buildingComboBox.addActionListener(e -> viewFloors());
+        panel.add(buildingComboBox);
 
-        // Create input panel
-        JPanel inputPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        inputPanel.add(new JLabel("Floor Number: "));
+        JLabel floorLabel = new JLabel("Floor Number:");
+        floorLabel.setFont(labelFont);
+        panel.add(floorLabel);
+
         floorNumberField = new JTextField(10);
-        inputPanel.add(floorNumberField);
+        floorNumberField.setFont(new Font("SansSerif", Font.PLAIN, 16)); // Larger font
+        floorNumberField.setPreferredSize(new Dimension(150, 35)); // Slightly larger size
+        panel.add(floorNumberField);
 
-        // Create button panel
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5)); // Adjusted hgap and vgap
-        JButton addButton = new JButton("Add Floor");
-        JButton removeButton = new JButton("Remove Floor");
-        JButton updateButton = new JButton("Update Floor");
+        return panel;
+    }
 
-        // Adjust button sizes to fit content
-        addButton.setMargin(new Insets(2, 5, 2, 5)); // Reduce internal padding
-        removeButton.setMargin(new Insets(2, 5, 2, 5));
-        updateButton.setMargin(new Insets(2, 5, 2, 5));
-
-        addButton.addActionListener(e -> addFloor());
-        removeButton.addActionListener(e -> removeFloor());
-        updateButton.addActionListener(e -> updateFloor());
-
-        buttonPanel.add(addButton);
-        buttonPanel.add(removeButton);
-        buttonPanel.add(updateButton);
-
-        controlPanel.add(inputPanel, BorderLayout.CENTER);
-        controlPanel.add(buttonPanel, BorderLayout.SOUTH);
-
-        add(controlPanel, BorderLayout.NORTH);
-
-        // Create floor table
+    private JPanel createTablePanel() {
         String[] columnNames = {"Floor Number", "Building", "Number of Rooms"};
         tableModel = new DefaultTableModel(columnNames, 0) {
             @Override
@@ -92,53 +92,56 @@ public class FloorManagementGUI extends JPanel {
                 return false;
             }
         };
+
         floorTable = new JTable(tableModel);
+        floorTable.setFont(new Font("SansSerif", Font.PLAIN, 16)); // Larger font for table
+        floorTable.getTableHeader().setFont(new Font("SansSerif", Font.BOLD, 16)); // Larger header font
+        floorTable.setRowHeight(30); // Increased row height
         JScrollPane scrollPane = new JScrollPane(floorTable);
-        add(scrollPane, BorderLayout.CENTER);
 
-        // Create status panel
-        JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JLabel statusLabel = new JLabel("Ready");
-        statusPanel.add(statusLabel);
-        add(statusPanel, BorderLayout.SOUTH);
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBorder(BorderFactory.createTitledBorder("Floors"));
+        panel.add(scrollPane, BorderLayout.CENTER);
+
+        return panel;
     }
 
-    private void startAutoRefresh() {
-        refreshTimer = new Timer();
-        refreshTimer.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                SwingUtilities.invokeLater(() -> {
-                    refreshBuildingList();
-                    viewFloors();
-                });
-            }
-        }, 0, 5000); // Refresh every 5 seconds
-    }
+    private JPanel createButtonPanel() {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10)); // Increased spacing
 
-    @Override
-    public void removeNotify() {
-        super.removeNotify();
-        if (refreshTimer != null) {
-            refreshTimer.cancel(); // Stop timer when panel is removed
+        Font buttonFont = new Font("SansSerif", Font.PLAIN, 16); // Larger font for buttons
+        Dimension buttonSize = new Dimension(150, 35); // Slightly larger button size
+
+        addButton = new JButton("Add Floor");
+        removeButton = new JButton("Remove Floor");
+        updateButton = new JButton("Update Floor");
+        clearButton = new JButton("Clear Form");
+
+        // Apply font and size to buttons
+        for (JButton button : new JButton[]{addButton, removeButton, updateButton, clearButton}) {
+            button.setFont(buttonFont);
+            button.setPreferredSize(buttonSize);
         }
-    }
 
-    private void refreshBuildingList() {
-        buildingComboBox.removeAllItems();
-        if (landlord != null) {
-            for (Building building : landlord.getBuildings()) {
-                buildingComboBox.addItem(building.getName());
-            }
-        }
+        addButton.addActionListener(e -> addFloor());
+        removeButton.addActionListener(e -> removeFloor());
+        updateButton.addActionListener(e -> updateFloor());
+        clearButton.addActionListener(e -> clearForm());
+
+        panel.add(addButton);
+        panel.add(updateButton);
+        panel.add(removeButton);
+        panel.add(clearButton);
+
+        return panel;
     }
 
     private void addFloor() {
         String buildingName = (String) buildingComboBox.getSelectedItem();
         String floorNumber = floorNumberField.getText().trim();
 
-        if (buildingName == null || buildingName.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Please select a building.", "Error", JOptionPane.ERROR_MESSAGE);
+        if (buildingName == null || buildingName.isEmpty() || buildingName.equals("All Buildings")) {
+            JOptionPane.showMessageDialog(this, "Please select a specific building.", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
@@ -156,9 +159,12 @@ public class FloorManagementGUI extends JPanel {
 
                 if (success) {
                     landlord.addFloorToBuilding(buildingName, newFloor);
+                    viewFloors();
+                    if (roomManagementGUI != null) {
+                        roomManagementGUI.refreshAfterFloorChanges();
+                    }
                     JOptionPane.showMessageDialog(this, "Floor added successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
-                    floorNumberField.setText(""); // Clear input
-                    viewFloors(); // Immediate refresh after adding
+                    clearForm();
                 } else {
                     JOptionPane.showMessageDialog(this, "Failed to add floor.", "Error", JOptionPane.ERROR_MESSAGE);
                 }
@@ -193,8 +199,12 @@ public class FloorManagementGUI extends JPanel {
 
                     if (success) {
                         landlord.removeFloorFromBuilding(buildingName, floorNumber);
+                        viewFloors();
+                        if (roomManagementGUI != null) {
+                            roomManagementGUI.refreshAfterFloorChanges();
+                        }
                         JOptionPane.showMessageDialog(this, "Floor removed successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
-                        viewFloors(); // Immediate refresh after removal
+                        clearForm();
                     } else {
                         JOptionPane.showMessageDialog(this, "Failed to remove floor.", "Error", JOptionPane.ERROR_MESSAGE);
                     }
@@ -207,38 +217,6 @@ public class FloorManagementGUI extends JPanel {
         }
     }
 
-    private void viewFloors() {
-        String buildingName = (String) buildingComboBox.getSelectedItem();
-        if (buildingName == null || buildingName.isEmpty()) {
-            tableModel.setRowCount(0); // Clear table if no building selected
-            return;
-        }
-
-        Building building = landlord.getBuildingByName(buildingName);
-        if (building != null) {
-            int buildingId = buildingDML.getBuildingIdByName(buildingName);
-            if (buildingId != -1) {
-                List<Floor> floors = floorDML.getFloorsByBuildingId(buildingId);
-
-                // Clear the table
-                tableModel.setRowCount(0);
-
-                // Add floors to the table
-                for (Floor floor : floors) {
-                    tableModel.addRow(new Object[]{
-                            floor.getFloorNumber(),
-                            buildingName,
-                            floor.getRooms() != null ? floor.getRooms().size() : 0
-                    });
-                }
-            } else {
-                tableModel.setRowCount(0);
-            }
-        } else {
-            tableModel.setRowCount(0);
-        }
-    }
-
     private void updateFloor() {
         int selectedRow = floorTable.getSelectedRow();
         if (selectedRow == -1) {
@@ -248,8 +226,8 @@ public class FloorManagementGUI extends JPanel {
 
         String currentFloorNumber = (String) tableModel.getValueAt(selectedRow, 0);
         String buildingName = (String) tableModel.getValueAt(selectedRow, 1);
-
         String newFloorNumber = floorNumberField.getText().trim();
+
         if (newFloorNumber.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Please enter a new floor number.", "Error", JOptionPane.ERROR_MESSAGE);
             return;
@@ -267,8 +245,11 @@ public class FloorManagementGUI extends JPanel {
 
                     if (success) {
                         JOptionPane.showMessageDialog(this, "Floor updated successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
-                        floorNumberField.setText(""); // Clear input
-                        viewFloors(); // Immediate refresh after update
+                        viewFloors();
+                        if (roomManagementGUI != null) {
+                            roomManagementGUI.refreshAfterFloorChanges();
+                        }
+                        clearForm();
                     } else {
                         JOptionPane.showMessageDialog(this, "Failed to update floor.", "Error", JOptionPane.ERROR_MESSAGE);
                     }
@@ -280,6 +261,81 @@ public class FloorManagementGUI extends JPanel {
             }
         } else {
             JOptionPane.showMessageDialog(this, "Building not found.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void clearForm() {
+        floorNumberField.setText("");
+        floorTable.clearSelection();
+    }
+
+    private void refreshBuildingList() {
+        String currentSelection = (String) buildingComboBox.getSelectedItem();
+        buildingComboBox.removeAllItems();
+        buildingComboBox.addItem("All Buildings"); // Add "All Buildings" option
+
+        if (landlord != null) {
+            landlord.refreshBuildings();
+            for (Building building : landlord.getBuildings()) {
+                buildingComboBox.addItem(building.getBuildingName());
+            }
+        }
+
+        // Default to "All Buildings" if no previous selection, otherwise try to restore it
+        if (currentSelection != null) {
+            for (int i = 0; i < buildingComboBox.getItemCount(); i++) {
+                if (currentSelection.equals(buildingComboBox.getItemAt(i))) {
+                    buildingComboBox.setSelectedIndex(i);
+                    return;
+                }
+            }
+        }
+        buildingComboBox.setSelectedIndex(0); // Default to "All Buildings"
+    }
+
+    public void refreshAfterBuildingChanges() {
+        refreshBuildingList();
+        viewFloors(); // Load all floors after building changes
+    }
+
+    private void viewFloors() {
+        String buildingName = (String) buildingComboBox.getSelectedItem();
+
+        tableModel.setRowCount(0); // Clear the table
+
+        if (buildingName == null || buildingName.equals("All Buildings")) {
+            // Show all floors across all buildings
+            if (landlord != null) {
+                for (Building building : landlord.getBuildings()) {
+                    int buildingId = buildingDML.getBuildingIdByName(building.getBuildingName());
+                    if (buildingId != -1) {
+                        List<Floor> floors = floorDML.getFloorsByBuildingId(buildingId);
+                        for (Floor floor : floors) {
+                            tableModel.addRow(new Object[]{
+                                    floor.getFloorNumber(),
+                                    building.getBuildingName(),
+                                    floor.getRooms() != null ? floor.getRooms().size() : 0
+                            });
+                        }
+                    }
+                }
+            }
+        } else {
+            // Show floors for the selected building
+            Building building = landlord.getBuildingByName(buildingName);
+            if (building != null) {
+                int buildingId = buildingDML.getBuildingIdByName(buildingName);
+                if (buildingId != -1) {
+                    List<Floor> floors = floorDML.getFloorsByBuildingId(buildingId);
+                    for (Floor floor : floors) {
+                        tableModel.addRow(new Object[]{
+                                floor.getFloorNumber(),
+                                buildingName,
+                                floor.getRooms() != null ? floor.getRooms().size() : 0
+                        });
+                    }
+                }
+            }
         }
     }
 }

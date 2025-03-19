@@ -1,6 +1,9 @@
 package DataBase;
 
+import Exceptions.RoomException;
+import Exceptions.TenantException;
 import Properties.Building;
+import Properties.Room;
 import Users.Landlord;
 import Users.Tenant;
 
@@ -30,7 +33,6 @@ public class LandlordDML {
                     List<Tenant> tenants = loadTenantsForLandlord(conn);
 
                     // Load buildings for this landlord
-                    BuildingDML buildingDML = new BuildingDML();
                     List<Building> buildings = loadBuildingsForLandlord(conn);
 
                     // Create and return the landlord
@@ -44,6 +46,71 @@ public class LandlordDML {
 
         return null; // Landlord not found
     }
+
+    public boolean verifyLandlordCredentials(String idCard, String pin) {
+        String query = "SELECT l.landlord_pin FROM Users u " +
+                "JOIN Landlords l ON u.user_id = l.user_id " +
+                "WHERE u.IdCard = ? AND u.role = 'Landlord'";
+
+        try (Connection conn = DataBaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(query)) {
+
+            ps.setString(1, idCard);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    String storedPin = rs.getString("landlord_pin");
+
+                    // Compare with hashed PIN
+                    return storedPin.equals(hashPin(pin));
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("SQL Error: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return false; // Authentication failed
+    }
+
+    private String hashPin(String pin) {
+        try {
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] digest = md.digest(pin.getBytes());
+            StringBuilder sb = new StringBuilder();
+            for (byte b : digest) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            System.out.println("Error hashing PIN: " + e.getMessage());
+            return "";
+        }
+    }
+
+    public boolean updatePIN(String idCard, String newPin) {
+        String query = "UPDATE Landlords l " +
+                "JOIN Users u ON l.user_id = u.user_id " +
+                "SET l.landlord_pin = ? " +
+                "WHERE u.IdCard = ? AND u.role = 'Landlord'";
+
+        try (Connection conn = DataBaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(query)) {
+
+            ps.setString(1, hashPin(newPin));
+            ps.setString(2, idCard);
+
+            int rowsUpdated = ps.executeUpdate();
+            return rowsUpdated > 0;
+
+        } catch (SQLException e) {
+            System.out.println("SQL Error when updating PIN: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+
 
     private List<Users.Tenant> loadTenantsForLandlord(Connection conn) throws SQLException {
         List<Users.Tenant> tenants = new ArrayList<>();
@@ -86,13 +153,14 @@ public class LandlordDML {
 
         return buildings;
     }
-    public void assignRoomToTenant(String tenantIdCard, String buildingName, String floorNumber, String roomNumber) {
+
+    public boolean assignRoomToTenant(String tenantIdCard, String buildingName, String floorNumber, String roomNumber) {
         RoomDML roomDML = new RoomDML();
         int roomId = roomDML.getRoomIdByBuildingFloorAndNumber(buildingName, floorNumber, roomNumber);
 
         if (roomId == -1) {
             System.out.println("Room not found: Building '" + buildingName + "', Floor " + floorNumber + ", Room " + roomNumber);
-            return;
+            return false;
         }
 
         try (Connection conn = DataBaseConnection.getConnection()) {
@@ -105,7 +173,7 @@ public class LandlordDML {
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next() && rs.getBoolean("is_occupied")) {
                         System.out.println("Error: Room " + roomNumber + " on floor " + floorNumber + " in building '" + buildingName + "' is already occupied.");
-                        return;
+                        return false;
                     }
                 }
             }
@@ -114,7 +182,7 @@ public class LandlordDML {
             int userId = getUserIdByIdCard(conn, tenantIdCard);
             if (userId == -1) {
                 System.out.println("Tenant with ID card " + tenantIdCard + " not found");
-                return;
+                return false;
             }
 
             // Update tenant assignment AND mark room as occupied in a single transaction
@@ -133,7 +201,7 @@ public class LandlordDML {
                 if (tenantRowsUpdated <= 0) {
                     System.out.println("Error: Tenant record for ID card " + tenantIdCard + " not found.");
                     conn.rollback();
-                    return;
+                    return false;
                 }
 
                 // Set up and execute room update
@@ -143,6 +211,8 @@ public class LandlordDML {
                 // Commit transaction
                 conn.commit();
                 System.out.println("Tenant assigned to Building '" + buildingName + "', Floor " + floorNumber + ", Room " + roomNumber + " successfully.");
+                return true; // Return true on success
+
             } catch (SQLException e) {
                 conn.rollback();
                 throw e;
@@ -153,9 +223,34 @@ public class LandlordDML {
             System.out.println("SQL Error: " + e.getMessage());
             e.printStackTrace();
         }
+        return false;
     }
+    public void refreshTenant(String tenantId) {
+        // Create a TenantDML instance
+        TenantDML tenantDML = new TenantDML();
 
+        // Get the existing tenant using the correct method name (lowercase 'd')
+        Tenant existingTenant = tenantDML.getTenantById(tenantId);
+        if (existingTenant == null) return;
 
+        // Get the assigned rooms for this tenant
+        List<Room> assignedRooms = tenantDML.getAllAssignedRoomsForTenant(tenantId);
+
+        // Rest of the method stays the same
+        if (!assignedRooms.isEmpty()) {
+            try {
+                // If tenant already has a room, vacate it first
+                if (existingTenant.getAssignedRoom() != null) {
+                    existingTenant.vacateRoom();
+                }
+
+                // Assign the new room
+                existingTenant.assignRoom(assignedRooms.get(0));
+            } catch (TenantException | RoomException ex) {
+                System.out.println("Error refreshing tenant room: " + ex.getMessage());
+            }
+        }
+    }
     // Helper method to get user_id by ID card
     private int getUserIdByIdCard(Connection conn, String idCard) throws SQLException {
         String query = "SELECT user_id FROM Users WHERE IdCard = ?";
@@ -168,47 +263,5 @@ public class LandlordDML {
             }
         }
         return -1; // User not found
-    }
-
-    // Helper method to get tenant_id by user_id
-    private int getTenantIdByUserId(Connection conn, int userId) throws SQLException {
-        String query = "SELECT tenant_id FROM Tenants WHERE user_id = ?";
-        try (PreparedStatement ps = conn.prepareStatement(query)) {
-            ps.setInt(1, userId);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt("tenant_id");
-                }
-            }
-        }
-        return -1; // Tenant not found
-    }
-
-    // Helper method to get room_id by room number
-    private int getRoomIdByRoomNumber(Connection conn, String roomNumber) throws SQLException {
-        String query = "SELECT room_id FROM Rooms WHERE room_number = ?";
-        try (PreparedStatement ps = conn.prepareStatement(query)) {
-            ps.setString(1, roomNumber);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt("room_id");
-                }
-            }
-        }
-        return -1; // Room not found
-    }
-
-    // Helper method to check if a room is occupied
-    private boolean isRoomOccupied(Connection conn, int roomId) throws SQLException {
-        String query = "SELECT is_occupied FROM Rooms WHERE room_id = ?";
-        try (PreparedStatement ps = conn.prepareStatement(query)) {
-            ps.setInt(1, roomId);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getBoolean("is_occupied");
-                }
-            }
-        }
-        return false; // Default to not occupied if room not found
     }
 }

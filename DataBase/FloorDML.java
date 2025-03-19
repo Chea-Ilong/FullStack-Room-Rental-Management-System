@@ -66,7 +66,32 @@ public class FloorDML {
             }
         }
     }
+    /**
+     * Returns a list of floor numbers for a specific building
+     * @param buildingId The ID of the building
+     * @return List<String> containing all floor numbers for the building
+     */
+    public List<String> getFloorNumbersByBuildingId(int buildingId) {
+        List<String> floorNumbers = new ArrayList<>();
 
+        String query = "SELECT floor_number FROM floors WHERE building_id = ?";
+
+        try (Connection conn = DataBaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+
+            pstmt.setInt(1, buildingId);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    floorNumbers.add(rs.getString("floor_number"));
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving floor numbers: " + e.getMessage());
+        }
+
+        return floorNumbers;
+    }
     // Get floor ID by building ID and floor number
     public int getFloorIdByBuildingAndNumber(int buildingId, String floorNumber) {
         Connection conn = null;

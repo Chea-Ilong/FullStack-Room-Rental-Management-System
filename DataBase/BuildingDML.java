@@ -223,6 +223,19 @@ public class BuildingDML {
 
         return buildingsWithIds;
     }
+    public List<String> getAllBuildingNames() {
+        List<String> buildingNames = new ArrayList<>();
+        try (Connection conn = DataBaseConnection.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT building_name FROM Buildings")) {
+            while (rs.next()) {
+                buildingNames.add(rs.getString("building_name"));
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving building names: " + e.getMessage());
+        }
+        return buildingNames;
+    }
     // Helper method to load floors for a building
     private void loadFloorsForBuilding(Building building, int buildingId, Connection conn) throws SQLException {
         String query = "SELECT floor_id, floor_number FROM Floors WHERE building_id = ?";

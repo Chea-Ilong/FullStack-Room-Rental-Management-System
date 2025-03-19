@@ -41,20 +41,27 @@ public class LoginGUI extends JFrame {
 
     private void loadDataFromDatabase() {
         try {
-            // Load landlord
+            // Get the first landlord from database (similar to App.getFirstLandlordIdCard())
             LandlordDML landlordDML = new LandlordDML();
-            landlord = landlordDML.getLandlordByIdCard("123");
+            landlord = landlordDML.getLandlordByIdCard(getFirstLandlordIdCard());
+
             if (landlord == null) {
                 JOptionPane.showMessageDialog(this,
-                        "Could not find landlord in database.",
+                        "Could not find landlord in database. Please create a landlord first.",
                         "Database Error",
                         JOptionPane.ERROR_MESSAGE);
                 System.exit(1);
             }
 
+            System.out.println("Successfully loaded landlord: " + landlord.getName());
+
             // Load tenants
             TenantDML tenantDML = new TenantDML();
             tenants = tenantDML.getAllTenantsForLandlord();
+
+            if (tenants.isEmpty()) {
+                System.out.println("Warning: No tenants found in database.");
+            }
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this,
                     "Database error: " + e.getMessage(),
@@ -63,6 +70,34 @@ public class LoginGUI extends JFrame {
             e.printStackTrace();
             System.exit(1);
         }
+    }
+
+    // Helper method to get the first landlord ID card from the database
+    private String getFirstLandlordIdCard() {
+        try {
+            DataBase.DataBaseConnection conn = new DataBase.DataBaseConnection();
+            java.sql.Connection connection = conn.getConnection();
+            java.sql.PreparedStatement ps = connection.prepareStatement(
+                    "SELECT u.IdCard FROM Users u JOIN Landlords l ON u.user_id = l.user_id WHERE u.role = 'Landlord' LIMIT 1");
+            java.sql.ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                String idCard = rs.getString("IdCard");
+                rs.close();
+                ps.close();
+                connection.close();
+                return idCard;
+            }
+
+            rs.close();
+            ps.close();
+            connection.close();
+        } catch (java.sql.SQLException e) {
+            System.err.println("Error retrieving landlord: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return null;
     }
 
     private void setupMainPanel() {
@@ -80,7 +115,7 @@ public class LoginGUI extends JFrame {
         mainPanel.add(titleLabel, gbc);
 
         // Username field
-        JLabel usernameLabel = new JLabel("Username/Name:");
+        JLabel usernameLabel = new JLabel("Username:");
         gbc.gridx = 0;
         gbc.gridy = 1;
         gbc.gridwidth = 1;
@@ -91,8 +126,8 @@ public class LoginGUI extends JFrame {
         gbc.gridy = 1;
         mainPanel.add(usernameField, gbc);
 
-        // Password/ID Card field
-        JLabel passwordLabel = new JLabel("ID Card Number:");
+        // Password field
+        JLabel passwordLabel = new JLabel("Password:");
         gbc.gridx = 0;
         gbc.gridy = 2;
         mainPanel.add(passwordLabel, gbc);
@@ -166,18 +201,18 @@ public class LoginGUI extends JFrame {
 
     private void handleLogin() {
         String username = usernameField.getText().trim();
-        String idCard = new String(passwordField.getPassword()).trim();
+        String password = new String(passwordField.getPassword()).trim();
 
-        if (username.isEmpty() || idCard.isEmpty()) {
+        if (username.isEmpty() || password.isEmpty()) {
             JOptionPane.showMessageDialog(this,
-                    "Please enter both username and ID Card number.",
+                    "Please enter both username and password.",
                     "Login Error",
                     JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        // Check if landlord login
-        if (landlord.getName().equals(username) && landlord.getIdCard().equals(idCard)) {
+        // Check if landlord login (modified to match App's login method)
+        if (landlord.getName().equals(username) && landlord.getIdCard().equals(password)) {
             // Show PIN verification for landlord
             showPinPanel();
             return;
@@ -185,16 +220,16 @@ public class LoginGUI extends JFrame {
 
         // Check if tenant login
         for (Tenant tenant : tenants) {
-            if (tenant.getName().equals(username) && tenant.getIdCard().equals(idCard)) {
+            if (tenant.getName().equals(username) && tenant.getIdCard().equals(password)) {
                 loginAsTenant(tenant);
                 return;
             }
         }
 
-        // Try to find tenant from database
+        // Try to find tenant from database (similar to App's approach)
         try {
             TenantDML tenantDML = new TenantDML();
-            Tenant databaseTenant = tenantDML.getTenantByCredentials(username, idCard);
+            Tenant databaseTenant = tenantDML.getTenantByCredentials(username, password);
             if (databaseTenant != null) {
                 tenants.add(databaseTenant);
                 loginAsTenant(databaseTenant);
@@ -204,11 +239,20 @@ public class LoginGUI extends JFrame {
             e.printStackTrace();
         }
 
-        // Login failed
-        JOptionPane.showMessageDialog(this,
-                "Invalid username or ID Card number. Please try again.",
+        // Login failed - Offer retry or exit option
+        int option = JOptionPane.showConfirmDialog(this,
+                "Login failed. Would you like to try again?",
                 "Login Failed",
-                JOptionPane.ERROR_MESSAGE);
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE);
+
+        if (option == JOptionPane.NO_OPTION) {
+            System.exit(0);
+        } else {
+            usernameField.setText("");
+            passwordField.setText("");
+            usernameField.requestFocus();
+        }
     }
 
     private void showPinPanel() {
@@ -233,11 +277,13 @@ public class LoginGUI extends JFrame {
     private void verifyPin() {
         String pin = new String(pinField.getPassword()).trim();
 
-        // In your actual app, you'd want to store and check the PIN securely
-        // For this example, let's assume the landlord's PIN is "1234"
-        if (pin.equals("1234")) {
+        // Use the LandlordDML class to verify the PIN
+        LandlordDML landlordDML = new LandlordDML();
+        if (landlordDML.verifyLandlordCredentials(landlord.getIdCard(), pin)) {
+            // PIN is correct
             loginAsLandlord();
         } else {
+            // PIN is incorrect
             JOptionPane.showMessageDialog(this,
                     "Invalid PIN. Please try again.",
                     "PIN Verification Failed",
@@ -245,21 +291,6 @@ public class LoginGUI extends JFrame {
         }
     }
 
-//    private void loginAsLandlord() {
-//        JOptionPane.showMessageDialog(this,
-//                "Login successful as Landlord: " + landlord.getName() + "!",
-//                "Login Successful",
-//                JOptionPane.INFORMATION_MESSAGE);
-//
-//        // Close the login window
-//        dispose();
-//
-//        // Open the landlord menu GUI
-//        SwingUtilities.invokeLater(() -> {
-//            MenuGUI.LandlordGUI landlordGUI = new MenuGUI.LandlordGUI(landlord);
-//            landlordGUI.setVisible(true);
-//        });
-//    }
     private void loginAsLandlord() {
         JOptionPane.showMessageDialog(this,
                 "Login successful as Landlord: " + landlord.getName() + "!",
@@ -275,6 +306,7 @@ public class LoginGUI extends JFrame {
             landlordGUI.setVisible(true);
         });
     }
+
     private void loginAsTenant(Tenant tenant) {
         currentLoggedInTenant = tenant;
 

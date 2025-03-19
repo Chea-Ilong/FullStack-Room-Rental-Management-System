@@ -1,6 +1,7 @@
 package Users;
 
 import DataBase.BuildingDML;
+import DataBase.DataBaseConnection;
 import DataBase.RoomDML;
 import DataBase.TenantDML;
 import Exceptions.LandlordException;
@@ -11,6 +12,10 @@ import Payment.BillRecord;
 import Properties.Building;
 import Properties.Floor;
 import Properties.Room;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.YearMonth;
 import java.util.*;
 
@@ -22,7 +27,6 @@ public class Landlord extends User {
     private List<Tenant> tenants;
     private List<Building> buildings; // Manage multiple buildings
     private BillRecord billRecord; // Add BillRecord reference
-    private static int landlordPIN = 1234;
     private int failedPinAttempts;
     private static final int MAX_PIN_ATTEMPTS = 5;
 
@@ -106,7 +110,8 @@ public class Landlord extends User {
                     int pin = scanner.nextInt();
                     scanner.nextLine(); // Consume the newline left-over
 
-                    if (pin == landlordPIN) {
+                    // Verify PIN against the database
+                    if (verifyPINFromDatabase(pin)) {
                         System.out.println("PIN verified. Login successful as Landlord!");
                         failedPinAttempts = 0;
                         return true;
@@ -137,6 +142,55 @@ public class Landlord extends User {
         return false;
     }
 
+    // Verify PIN against the database
+    private boolean verifyPINFromDatabase(int enteredPin) {
+        String query = "SELECT landlord_pin FROM Landlords l " +
+                "JOIN Users u ON l.user_id = u.user_id " +
+                "WHERE u.IdCard = ?";
+
+        try (Connection conn = DataBaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(query)) {
+
+            ps.setString(1, this.IdCard);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    String storedPin = rs.getString("landlord_pin");
+
+                    // Compare the entered PIN with the stored PIN
+                    // Note: This assumes the PIN is stored as a hash
+                    // You may need to adjust this based on how the PIN is actually stored
+                    return storedPin.equals(String.valueOf(enteredPin)) ||
+                            storedPin.equals(hashPin(enteredPin));
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("Error verifying PIN: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return false;
+    }
+
+    // Hash the PIN for secure comparison
+    private String hashPin(int pin) {
+        // This is a placeholder - in a real implementation,
+        // you would use a proper hashing algorithm like SHA-256
+        // For now, we'll use the same hashing method as in the database schema
+        try {
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("SHA-256");
+            byte[] digest = md.digest(String.valueOf(pin).getBytes());
+            StringBuilder sb = new StringBuilder();
+            for (byte b : digest) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            System.out.println("Error hashing PIN: " + e.getMessage());
+            return "";
+        }
+    }
+
     // ====================================================================================================
     // PIN Reset
     // ====================================================================================================
@@ -152,15 +206,43 @@ public class Landlord extends User {
                 int newPin = scanner.nextInt();
                 scanner.nextLine(); // Consume newline
 
-                this.landlordPIN = newPin;
-                this.failedPinAttempts = 0;
-                System.out.println("PIN reset successful. You can now log in with the new PIN.");
+                // Update PIN in database
+                if (updatePINInDatabase(newPin)) {
+                    this.failedPinAttempts = 0;
+                    System.out.println("PIN reset successful. You can now log in with the new PIN.");
+                } else {
+                    System.out.println("Failed to update PIN in database.");
+                }
             } else {
                 System.out.println("Invalid input. PIN reset failed.");
                 scanner.next(); // Consume the invalid input
             }
         } else {
             System.out.println("Incorrect Landlord ID or Contact Number. PIN reset failed.");
+        }
+    }
+
+    // Update PIN in database
+    private boolean updatePINInDatabase(int newPin) {
+        String query = "UPDATE Landlords l " +
+                "JOIN Users u ON l.user_id = u.user_id " +
+                "SET l.landlord_pin = ?, l.failed_pin_attempts = 0 " +
+                "WHERE u.IdCard = ?";
+
+        try (Connection conn = DataBaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(query)) {
+
+            // Hash the new PIN before storing
+            ps.setString(1, hashPin(newPin));
+            ps.setString(2, this.IdCard);
+
+            int rowsUpdated = ps.executeUpdate();
+            return rowsUpdated > 0;
+
+        } catch (SQLException e) {
+            System.out.println("Error updating PIN: " + e.getMessage());
+            e.printStackTrace();
+            return false;
         }
     }
 
@@ -184,6 +266,7 @@ public class Landlord extends User {
     // ====================================================================================================
     // CRUD Operations for Floor
     // ====================================================================================================
+
     public void removeFloorFromBuilding(String buildingName, String floorNumber) {
         Building building = getBuildingByName(buildingName);
         if (building != null) {
@@ -255,15 +338,15 @@ public class Landlord extends User {
     }
 
     // ====================================================================================================
-// CRUD Operations for Tenant
-// ====================================================================================================
-public void addTenant(Tenant tenant) {
-    TenantDML tenantDML = new TenantDML();
-    if (!tenantDML.tenantExists(tenant.getIdCard())) {
-        tenantDML.saveTenant(tenant);
-        System.out.println("Tenant added: " + tenant.getName());
+    // CRUD Operations for Tenant
+    // ====================================================================================================
+    public void addTenant(Tenant tenant) {
+        TenantDML tenantDML = new TenantDML();
+        if (!tenantDML.tenantExists(tenant.getIdCard())) {
+            tenantDML.saveTenant(tenant);
+            System.out.println("Tenant added: " + tenant.getName());
+        }
     }
-}
 
     public void removeTenant(String tenantID) throws TenantException, RoomException {
         Tenant tenant = getTenantByID(tenantID);
@@ -275,10 +358,13 @@ public void addTenant(Tenant tenant) {
                 System.out.println(tenant.getName() + " has been removed from Room " + assignedRoom.getRoomNumber());
             }
 
-            tenants.remove(tenant);
-            System.out.println("Tenant removed: " + tenant.getName());
+            if (tenants.remove(tenant)) {
+                System.out.println("Tenant removed from Landlord's list: " + tenant.getName());
+            } else {
+                System.out.println("Failed to remove tenant from Landlord's list: " + tenant.getName());
+            }
         } else {
-            throw new TenantException("Tenant not found.");
+            throw new TenantException("Tenant not found with ID: " + tenantID);
         }
     }
 
@@ -350,6 +436,80 @@ public void addTenant(Tenant tenant) {
             }
             System.out.println("---------------------");
         }
+    }
+    // Add these methods to your Landlord class:
+// Add this to the Landlord class if it doesn't exist
+    // Add this to the Landlord class
+    public void refreshBuildings() {
+        // Clear existing buildings
+        buildings.clear();
+
+        // Fetch all buildings from database
+        BuildingDML buildingDML = new BuildingDML();
+        List<Building> allBuildings = buildingDML.getAllBuildings();
+
+        // Add them to the landlord's building list
+        buildings.addAll(allBuildings);
+    }
+    /**
+     * Refreshes data for all tenants from the database
+     */
+    public void refreshAllTenants() {
+        TenantDML tenantDML = new TenantDML();
+        List<Tenant> freshTenants = tenantDML.getAllTenants(this.getIdCard());
+
+        // Update our tenants list
+        this.tenants.clear();
+        if (freshTenants != null) {
+            this.tenants.addAll(freshTenants);
+        }
+    }
+
+    /**
+     * Refreshes data for a specific tenant from the database
+     * @param tenantId The ID of the tenant to refresh
+     * @return true if tenant was found and refreshed, false otherwise
+     */
+    public boolean refreshTenant(String tenantId) {
+        TenantDML tenantDML = new TenantDML();
+        Tenant freshTenant = tenantDML.getTenantById(tenantId, this.getIdCard());
+
+        if (freshTenant != null) {
+            // Find and replace the tenant in our list
+            for (int i = 0; i < this.tenants.size(); i++) {
+                if (this.tenants.get(i).getIdCard().equals(tenantId)) {
+                    this.tenants.set(i, freshTenant);
+                    return true;
+                }
+            }
+            // If not found in our list, add it
+            this.tenants.add(freshTenant);
+            return true;
+        }
+        return false;
+    }
+    public void refreshTenants() {
+        // Clear existing tenants
+        tenants.clear();
+
+        // Reload all tenants from database
+        TenantDML tenantDML = new TenantDML();
+        List<Tenant> loadedTenants = tenantDML.getAllTenants();
+
+        // Add all loaded tenants
+        for (Tenant tenant : loadedTenants) {
+            tenants.add(tenant);
+        }
+    }
+    public void updateTenant(Tenant updatedTenant) {
+        for (int i = 0; i < tenants.size(); i++) {
+            if (tenants.get(i).getIdCard().equals(updatedTenant.getIdCard())) {
+                tenants.set(i, updatedTenant); // Replace the old tenant with the updated one
+                System.out.println("Tenant updated in Landlord's list: " + updatedTenant.getName());
+                return;
+            }
+        }
+        System.out.println("Tenant not found in Landlord's list for update: " + updatedTenant.getIdCard());
     }
     // Display tenant details
     public void displayAllTenants() {

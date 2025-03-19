@@ -906,10 +906,15 @@ public class Menu {
                         }
                         break;
                     case 2:
-                        // Remove Tenant
                         System.out.print("Enter tenant ID to remove: ");
                         tenantID = scanner.nextLine();
-                        landlord.removeTenant(tenantID);
+                        tenantDML = new TenantDML();
+                        if (tenantDML.deleteTenant(tenantID)) { // Delete from database first
+                            landlord.removeTenant(tenantID);    // Then remove from Landlord's in-memory collection
+                            System.out.println("Tenant removed successfully.");
+                        } else {
+                            System.out.println("Failed to remove tenant from database.");
+                        }
                         break;
                     case 3:
                         // Assign tenant to room
@@ -948,7 +953,6 @@ public class Menu {
                         // Update Tenant Information
                         System.out.print("Enter tenant ID to update: ");
                         String updateID = scanner.nextLine();
-
                         Tenant tenantToUpdate = landlord.getTenantByID(updateID);
                         if (tenantToUpdate != null) {
                             System.out.println("Current tenant information:");
@@ -956,39 +960,34 @@ public class Menu {
 
                             System.out.print("Enter new name (leave blank to keep current): ");
                             String newName = scanner.nextLine();
-
                             System.out.print("Enter new contact (leave blank to keep current): ");
                             String newContact = scanner.nextLine();
-
                             System.out.print("Enter new ID card (leave blank to keep current): ");
                             String newIdCard = scanner.nextLine();
 
-                            // Update only if new values are provided
+                            String oldIdCard = tenantToUpdate.getIdCard();
+                            boolean updateIdCard = !newIdCard.trim().isEmpty() && !newIdCard.equals(oldIdCard);
+
+                            // Update tenant object in memory
                             if (!newName.trim().isEmpty()) {
                                 tenantToUpdate.setName(newName);
                             }
-
                             if (!newContact.trim().isEmpty()) {
                                 tenantToUpdate.setContact(newContact);
                             }
-
-                            String oldIdCard = tenantToUpdate.getIdCard(); // Store the old ID card
-                            boolean updateIdCard = !newIdCard.trim().isEmpty() && !newIdCard.equals(oldIdCard);
-
-                            // If ID card is changed, ensure it doesn't already exist
                             if (updateIdCard) {
                                 TenantDML checkDML = new TenantDML();
                                 if (checkDML.tenantExists(newIdCard)) {
                                     System.out.println("Error: Tenant with ID " + newIdCard + " already exists. ID card not updated.");
-                                    updateIdCard = false; // Prevent updating the ID card
                                 } else {
                                     tenantToUpdate.setIdCard(newIdCard);
                                 }
                             }
 
-                            // Update in database using the new combined method
+                            // Persist to database and sync with Landlord
                             tenantDML = new TenantDML();
                             if (tenantDML.updateTenant(tenantToUpdate, updateIdCard ? oldIdCard : null)) {
+                                landlord.updateTenant(tenantToUpdate); // Sync updated tenant back to Landlord
                                 System.out.println("Tenant information updated successfully.");
                             } else {
                                 System.out.println("Failed to update tenant information in database.");
@@ -997,7 +996,6 @@ public class Menu {
                             System.out.println("Tenant not found with ID: " + updateID);
                         }
                         break;
-
                     case 7: // Changed from 6 to 7
                         return; // Back to main menu
                     default:

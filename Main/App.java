@@ -8,18 +8,14 @@ import Users.Landlord;
 import Users.Tenant;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Scanner;
 import static Main.Menu.*;
 
 public class App {
-    //update tenant not real time
-    //creating bill and room is not real time
-    //creating bill duplicate search for roomnumber (need to search for building floor room)
-    //view all floor update all
-
-    // Add a class variable to keep track of the currently logged in tenant
     private static Tenant currentLoggedInTenant = null;
 
     public static void main(String[] args) throws RoomException, TenantException {
@@ -28,20 +24,30 @@ public class App {
                 System.out.println("Database connection successful!");
             } else {
                 System.out.println("Failed to make connection!");
+                return;
             }
         } catch (SQLException e) {
             System.err.println("Connection error: " + e.getMessage());
             e.printStackTrace();
+            return;
+        }
+
+        // Get the first landlord from the database instead of using a hardcoded ID
+        String landlordIdCard = getFirstLandlordIdCard();
+        if (landlordIdCard == null) {
+            System.err.println("No landlords found in database. Please create a landlord first.");
+            return;
         }
 
         // Create a LandlordDML class to fetch the landlord from the database
         LandlordDML landlordDML = new LandlordDML();
-        Landlord landlord = landlordDML.getLandlordByIdCard("123");
+        Landlord landlord = landlordDML.getLandlordByIdCard(landlordIdCard);
         if (landlord == null) {
             System.err.println("Could not find landlord in database. Please check your data.");
             return;
         }
 
+        System.out.println("Successfully loaded landlord: " + landlord.getName());
 
         // Load all tenants for this landlord
         TenantDML tenantDML = new TenantDML();
@@ -70,6 +76,25 @@ public class App {
 
         scanner.close();
         System.out.println("\nExiting... Goodbye!\n");
+    }
+
+    // Helper method to get the first landlord ID card from the database
+    private static String getFirstLandlordIdCard() {
+        String query = "SELECT u.IdCard FROM Users u JOIN Landlords l ON u.user_id = l.user_id WHERE u.role = 'Landlord' LIMIT 1";
+
+        try (Connection conn = DataBaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(query);
+             ResultSet rs = ps.executeQuery()) {
+
+            if (rs.next()) {
+                return rs.getString("IdCard");
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving landlord: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return null;
     }
 
     public static int login(Scanner scanner, Landlord landlord, List<Tenant> tenants) {
