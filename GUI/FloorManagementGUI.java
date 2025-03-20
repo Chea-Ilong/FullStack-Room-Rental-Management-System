@@ -19,18 +19,15 @@ public class FloorManagementGUI extends JPanel {
     private DefaultTableModel tableModel;
     private JComboBox<String> buildingComboBox;
     private JTextField floorNumberField;
-    private JButton addButton, removeButton, updateButton, clearButton;
+    private JButton addButton, removeButton, updateButton, clearButton, refreshButton;
     private RoomManagementGUI roomManagementGUI;
 
     public FloorManagementGUI() {
         this.floorDML = new FloorDML();
         this.buildingDML = new BuildingDML();
 
-        setLayout(new BorderLayout(15, 15)); // Increased spacing
-        setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15)); // Increased padding
-
-        // Set larger default font for the entire panel
-        setFont(new Font("SansSerif", Font.PLAIN, 16));
+        setLayout(new BorderLayout(10, 10));
+        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         initializeUI();
     }
@@ -56,29 +53,17 @@ public class FloorManagementGUI extends JPanel {
     }
 
     private JPanel createFormPanel() {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10)); // Increased spacing
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
         panel.setBorder(BorderFactory.createTitledBorder("Floor Details"));
 
-        Font labelFont = new Font("SansSerif", Font.PLAIN, 16); // Larger font for labels
-
-        JLabel buildingLabel = new JLabel("Select Building:");
-        buildingLabel.setFont(labelFont);
-        panel.add(buildingLabel);
-
+        panel.add(new JLabel("Select Building:"));
         buildingComboBox = new JComboBox<>();
-        buildingComboBox.addItem("All Buildings"); // Add "All Buildings" option
-        buildingComboBox.setFont(new Font("SansSerif", Font.PLAIN, 16)); // Larger font
-        buildingComboBox.setPreferredSize(new Dimension(200, 35)); // Slightly larger size
+        buildingComboBox.addItem("All Buildings");
         buildingComboBox.addActionListener(e -> viewFloors());
         panel.add(buildingComboBox);
 
-        JLabel floorLabel = new JLabel("Floor Number:");
-        floorLabel.setFont(labelFont);
-        panel.add(floorLabel);
-
+        panel.add(new JLabel("Floor Number:"));
         floorNumberField = new JTextField(10);
-        floorNumberField.setFont(new Font("SansSerif", Font.PLAIN, 16)); // Larger font
-        floorNumberField.setPreferredSize(new Dimension(150, 35)); // Slightly larger size
         panel.add(floorNumberField);
 
         return panel;
@@ -94,34 +79,31 @@ public class FloorManagementGUI extends JPanel {
         };
 
         floorTable = new JTable(tableModel);
-        floorTable.setFont(new Font("SansSerif", Font.PLAIN, 16)); // Larger font for table
-        floorTable.getTableHeader().setFont(new Font("SansSerif", Font.BOLD, 16)); // Larger header font
-        floorTable.setRowHeight(30); // Increased row height
+        floorTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         JScrollPane scrollPane = new JScrollPane(floorTable);
 
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(BorderFactory.createTitledBorder("Floors"));
+
+        refreshButton = new JButton("Refresh List");
+        refreshButton.addActionListener(e -> viewFloors());
+
+        JPanel refreshPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        refreshPanel.add(refreshButton);
+
+        panel.add(refreshPanel, BorderLayout.NORTH);
         panel.add(scrollPane, BorderLayout.CENTER);
 
         return panel;
     }
 
     private JPanel createButtonPanel() {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10)); // Increased spacing
-
-        Font buttonFont = new Font("SansSerif", Font.PLAIN, 16); // Larger font for buttons
-        Dimension buttonSize = new Dimension(150, 35); // Slightly larger button size
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 
         addButton = new JButton("Add Floor");
         removeButton = new JButton("Remove Floor");
         updateButton = new JButton("Update Floor");
         clearButton = new JButton("Clear Form");
-
-        // Apply font and size to buttons
-        for (JButton button : new JButton[]{addButton, removeButton, updateButton, clearButton}) {
-            button.setFont(buttonFont);
-            button.setPreferredSize(buttonSize);
-        }
 
         addButton.addActionListener(e -> addFloor());
         removeButton.addActionListener(e -> removeFloor());
@@ -272,7 +254,7 @@ public class FloorManagementGUI extends JPanel {
     private void refreshBuildingList() {
         String currentSelection = (String) buildingComboBox.getSelectedItem();
         buildingComboBox.removeAllItems();
-        buildingComboBox.addItem("All Buildings"); // Add "All Buildings" option
+        buildingComboBox.addItem("All Buildings");
 
         if (landlord != null) {
             landlord.refreshBuildings();
@@ -281,7 +263,6 @@ public class FloorManagementGUI extends JPanel {
             }
         }
 
-        // Default to "All Buildings" if no previous selection, otherwise try to restore it
         if (currentSelection != null) {
             for (int i = 0; i < buildingComboBox.getItemCount(); i++) {
                 if (currentSelection.equals(buildingComboBox.getItemAt(i))) {
@@ -290,21 +271,20 @@ public class FloorManagementGUI extends JPanel {
                 }
             }
         }
-        buildingComboBox.setSelectedIndex(0); // Default to "All Buildings"
+        buildingComboBox.setSelectedIndex(0);
     }
 
     public void refreshAfterBuildingChanges() {
         refreshBuildingList();
-        viewFloors(); // Load all floors after building changes
+        viewFloors();
     }
 
     private void viewFloors() {
         String buildingName = (String) buildingComboBox.getSelectedItem();
 
-        tableModel.setRowCount(0); // Clear the table
+        tableModel.setRowCount(0);
 
         if (buildingName == null || buildingName.equals("All Buildings")) {
-            // Show all floors across all buildings
             if (landlord != null) {
                 for (Building building : landlord.getBuildings()) {
                     int buildingId = buildingDML.getBuildingIdByName(building.getBuildingName());
@@ -321,7 +301,6 @@ public class FloorManagementGUI extends JPanel {
                 }
             }
         } else {
-            // Show floors for the selected building
             Building building = landlord.getBuildingByName(buildingName);
             if (building != null) {
                 int buildingId = buildingDML.getBuildingIdByName(buildingName);

@@ -1,570 +1,366 @@
 //package GUI;
 //
 //import DataBase.BillDML;
-//import DataBase.TenantDML;
-//import Exceptions.RoomException;
-//import Exceptions.TenantException;
-//import Payment.Bill;
+//import Users.Landlord;
 //import Users.Tenant;
+//import Property.Bill;
 //
 //import javax.swing.*;
-//import javax.swing.border.EmptyBorder;
 //import javax.swing.table.DefaultTableModel;
-//
 //import java.awt.*;
-//import java.awt.event.ActionEvent;
-//import java.awt.event.ActionListener;
-//import java.time.LocalDate;
-//import java.time.YearMonth;
-//import java.time.format.DateTimeFormatter;
 //import java.util.List;
 //
 //public class TenantGUI extends JFrame {
-//
 //    private Tenant tenant;
-//    private JPanel contentPane;
+//    private Landlord landlord;
 //    private JTable billsTable;
-//    private DefaultTableModel billTableModel;
-//    private JPanel profilePanel;
-//    private JLabel lblRoomStatus;
-//    private BillDML billDML = new BillDML();
-//    private TenantDML tenantDML = new TenantDML();
+//    private DefaultTableModel billsTableModel;
 //
-//    /**
-//     * Create the frame for Tenant GUI.
-//     */
-//    public TenantGUI(Tenant tenant) {
+//    public TenantGUI(Tenant tenant, Landlord landlord) {
 //        this.tenant = tenant;
-//        initializeUI();
-//        loadTenantData();
-//    }
+//        this.landlord = landlord;
 //
-//    private void initializeUI() {
-//        setTitle("Tenant Management Panel - " + tenant.getName());
+//        // Setup frame
+//        setTitle("Tenant Portal - " + tenant.getName());
+//        setSize(800, 600);
 //        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-//        setBounds(100, 100, 800, 600);
+//        setLocationRelativeTo(null);
 //
-//        contentPane = new JPanel();
-//        contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
-//        contentPane.setLayout(new BorderLayout(0, 0));
-//        setContentPane(contentPane);
+//        // Create tabbed pane for different sections
+//        JTabbedPane tabbedPane = new JTabbedPane();
 //
-//        // Create menu bar
-//        JMenuBar menuBar = new JMenuBar();
-//        setJMenuBar(menuBar);
+//        // Add tabs
+//        tabbedPane.addTab("Dashboard", createDashboardPanel());
+//        tabbedPane.addTab("Bills", createBillsPanel());
+//        tabbedPane.addTab("Profile", createProfilePanel());
 //
-//        JMenu mnProfile = new JMenu("Profile");
-//        menuBar.add(mnProfile);
+//        // Add logout button at bottom
+//        JPanel mainPanel = new JPanel(new BorderLayout());
+//        mainPanel.add(tabbedPane, BorderLayout.CENTER);
+//        mainPanel.add(createLogoutPanel(), BorderLayout.SOUTH);
 //
-//        JMenuItem mntmViewProfile = new JMenuItem("View My Profile");
-//        mntmViewProfile.addActionListener(new ActionListener() {
-//            public void actionPerformed(ActionEvent e) {
-//                showProfilePanel();
-//            }
-//        });
-//        mnProfile.add(mntmViewProfile);
-//
-//        JMenu mnBills = new JMenu("Bills");
-//        menuBar.add(mnBills);
-//
-//        JMenuItem mntmViewBills = new JMenuItem("View My Bills");
-//        mntmViewBills.addActionListener(new ActionListener() {
-//            public void actionPerformed(ActionEvent e) {
-//                showBillsPanel();
-//            }
-//        });
-//        mnBills.add(mntmViewBills);
-//
-//        JMenuItem mntmPayBill = new JMenuItem("Pay Bill");
-//        mntmPayBill.addActionListener(new ActionListener() {
-//            public void actionPerformed(ActionEvent e) {
-//                payBill();
-//            }
-//        });
-//        mnBills.add(mntmPayBill);
-//
-//        JMenu mnRoom = new JMenu("Room");
-//        menuBar.add(mnRoom);
-//
-//        JMenuItem mntmVacateRoom = new JMenuItem("Request to Vacate Room");
-//        mntmVacateRoom.addActionListener(new ActionListener() {
-//            public void actionPerformed(ActionEvent e) {
-//                requestVacateRoom();
-//            }
-//        });
-//        mnRoom.add(mntmVacateRoom);
-//
-//        JMenu mnHelp = new JMenu("Help");
-//        menuBar.add(mnHelp);
-//
-//        JMenuItem mntmContactLandlord = new JMenuItem("Contact Landlord");
-//        mntmContactLandlord.addActionListener(new ActionListener() {
-//            public void actionPerformed(ActionEvent e) {
-//                showContactLandlord();
-//            }
-//        });
-//        mnHelp.add(mntmContactLandlord);
-//
-//        JMenuItem mntmLogout = new JMenuItem("Logout");
-//        mntmLogout.addActionListener(new ActionListener() {
-//            public void actionPerformed(ActionEvent e) {
-//                logout();
-//            }
-//        });
-//        menuBar.add(mntmLogout);
-//
-//        // Create welcome panel (initial panel)
-//        JPanel welcomePanel = new JPanel();
-//        welcomePanel.setLayout(new BorderLayout());
-//
-//        JLabel lblWelcome = new JLabel("Welcome, " + tenant.getName() + "!");
-//        lblWelcome.setFont(new Font("Tahoma", Font.BOLD, 20));
-//        lblWelcome.setHorizontalAlignment(SwingConstants.CENTER);
-//        welcomePanel.add(lblWelcome, BorderLayout.NORTH);
-//
-//        JPanel quickInfoPanel = new JPanel();
-//        quickInfoPanel.setLayout(new GridLayout(3, 1, 10, 10));
-//
-//        // Room status info
-//        JPanel roomPanel = new JPanel();
-//        roomPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
-//        roomPanel.setBorder(BorderFactory.createTitledBorder("Room Information"));
-//
-//        lblRoomStatus = new JLabel("Loading room information...");
-//        roomPanel.add(lblRoomStatus);
-//        quickInfoPanel.add(roomPanel);
-//
-//        // Bill status info
-//        JPanel billPanel = new JPanel();
-//        billPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
-//        billPanel.setBorder(BorderFactory.createTitledBorder("Recent Bill Information"));
-//
-//        JLabel lblRecentBill = new JLabel("Loading recent bill information...");
-//        billPanel.add(lblRecentBill);
-//        quickInfoPanel.add(billPanel);
-//
-//        welcomePanel.add(quickInfoPanel, BorderLayout.CENTER);
-//
-//        // Add welcome panel to content pane
-//        contentPane.add(welcomePanel, BorderLayout.CENTER);
-//
-//        // Initialize other panels but don't show them yet
-//        initProfilePanel();
-//        initBillsPanel();
+//        // Add to frame
+//        add(mainPanel);
 //    }
 //
-//    private void initProfilePanel() {
-//        profilePanel = new JPanel();
-//        profilePanel.setLayout(new BorderLayout());
+//    private JPanel createDashboardPanel() {
+//        JPanel panel = new JPanel(new BorderLayout(10, 10));
+//        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 //
-//        JPanel infoPanel = new JPanel();
-//        infoPanel.setLayout(new GridLayout(5, 2, 10, 10));
-//        infoPanel.setBorder(new EmptyBorder(20, 20, 20, 20));
+//        // Welcome header
+//        JPanel headerPanel = new JPanel(new BorderLayout());
+//        JLabel welcomeLabel = new JLabel("Welcome, " + tenant.getName() + "!");
+//        welcomeLabel.setFont(new Font("Arial", Font.BOLD, 24));
+//        headerPanel.add(welcomeLabel, BorderLayout.NORTH);
 //
-//        infoPanel.add(new JLabel("Name:"));
-//        infoPanel.add(new JLabel(tenant.getName()));
+//        // Sub-header with tenant information
+//        JLabel infoLabel = new JLabel("Tenant ID: " + tenant.getIdCard());
+//        infoLabel.setFont(new Font("Arial", Font.ITALIC, 14));
+//        headerPanel.add(infoLabel, BorderLayout.SOUTH);
 //
-//        infoPanel.add(new JLabel("ID Card:"));
-//        infoPanel.add(new JLabel(tenant.getIdCard()));
+//        panel.add(headerPanel, BorderLayout.NORTH);
 //
-//        infoPanel.add(new JLabel("Contact:"));
-//        infoPanel.add(new JLabel(tenant.getContact()));
+//        // Quick summary panel (center)
+//        JPanel summaryPanel = new JPanel(new GridLayout(3, 1, 10, 10));
+//        summaryPanel.setBorder(BorderFactory.createTitledBorder("Account Summary"));
 //
-//        infoPanel.add(new JLabel("Role:"));
-//        infoPanel.add(new JLabel("Tenant"));
+//        // Would normally fetch these from the database
+//        int pendingBills = 2; // Placeholder - replace with actual data
+//        double totalDue = 1250.00; // Placeholder - replace with actual data
+//        String roomInfo = "Building A, Floor 2, Room 205"; // Placeholder - replace with actual data
 //
-//        infoPanel.add(new JLabel("Room Assigned:"));
-//        if (tenant.getAssignedRoom() != null) {
-//            infoPanel.add(new JLabel(tenant.getAssignedRoom().getRoomNumber()));
-//        } else {
-//            infoPanel.add(new JLabel("Not assigned"));
-//        }
+//        summaryPanel.add(new JLabel("Pending Bills: " + pendingBills));
+//        summaryPanel.add(new JLabel("Total Amount Due: $" + totalDue));
+//        summaryPanel.add(new JLabel("Room: " + roomInfo));
 //
-//        profilePanel.add(infoPanel, BorderLayout.NORTH);
+//        panel.add(summaryPanel, BorderLayout.CENTER);
 //
-//        JButton btnBack = new JButton("Back to Dashboard");
-//        btnBack.addActionListener(new ActionListener() {
-//            public void actionPerformed(ActionEvent e) {
-//                showWelcomePanel();
-//            }
+//        // Quick actions panel (bottom)
+//        JPanel actionsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
+//        actionsPanel.setBorder(BorderFactory.createTitledBorder("Quick Actions"));
+//
+//        JButton payBillsButton = new JButton("Pay Bills");
+//        JButton contactLandlordButton = new JButton("Contact Landlord");
+//        JButton maintenanceRequestButton = new JButton("Submit Maintenance Request");
+//
+//        // Add action listeners
+//        payBillsButton.addActionListener(e -> {
+//            // Switch to bills tab and maybe highlight pay button
+//            JOptionPane.showMessageDialog(this, "Pay Bills feature coming soon!");
 //        });
 //
-//        JPanel buttonPanel = new JPanel();
-//        buttonPanel.add(btnBack);
-//        profilePanel.add(buttonPanel, BorderLayout.SOUTH);
+//        contactLandlordButton.addActionListener(e -> {
+//            JOptionPane.showMessageDialog(this,
+//                    "Landlord Contact Information:\nName: " + landlord.getName() +
+//                            "\nPhone: " + landlord.getPhone() + "\nEmail: [landlord email]");
+//        });
+//
+//        maintenanceRequestButton.addActionListener(e -> {
+//            JOptionPane.showMessageDialog(this, "Maintenance Request feature coming soon!");
+//        });
+//
+//        actionsPanel.add(payBillsButton);
+//        actionsPanel.add(contactLandlordButton);
+//        actionsPanel.add(maintenanceRequestButton);
+//
+//        panel.add(actionsPanel, BorderLayout.SOUTH);
+//
+//        return panel;
 //    }
 //
-//    private void initBillsPanel() {
-//        JPanel billsPanel = new JPanel();
-//        billsPanel.setLayout(new BorderLayout());
+//    private JPanel createBillsPanel() {
+//        JPanel panel = new JPanel(new BorderLayout(10, 10));
+//        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 //
-//        // Create table model for bills
-//        billTableModel = new DefaultTableModel(
-//                new Object[][] {},
-//                new String[] {"Bill ID", "Date", "Rent", "Electric", "Water", "Total", "Status"}
-//        ) {
+//        // Table for bills
+//        String[] columns = {"Bill ID", "Date", "Amount", "Due Date", "Status", "Description"};
+//        billsTableModel = new DefaultTableModel(columns, 0) {
 //            @Override
 //            public boolean isCellEditable(int row, int column) {
-//                return false;
+//                return false; // Make table non-editable
 //            }
 //        };
 //
-//        billsTable = new JTable(billTableModel);
+//        billsTable = new JTable(billsTableModel);
 //        JScrollPane scrollPane = new JScrollPane(billsTable);
-//        billsPanel.add(scrollPane, BorderLayout.CENTER);
+//        panel.add(scrollPane, BorderLayout.CENTER);
 //
-//        JPanel buttonPanel = new JPanel();
-//        JButton btnPayBill = new JButton("Pay Selected Bill");
-//        btnPayBill.addActionListener(new ActionListener() {
-//            public void actionPerformed(ActionEvent e) {
-//                paySelectedBill();
+//        // Load bills data - You would replace this with actual database queries
+//        loadBillsData();
+//
+//        // Buttons panel
+//        JPanel buttonsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+//        JButton refreshButton = new JButton("Refresh");
+//        JButton paySelectedButton = new JButton("Pay Selected");
+//        JButton viewDetailsButton = new JButton("View Details");
+//
+//        refreshButton.addActionListener(e -> loadBillsData());
+//
+//        paySelectedButton.addActionListener(e -> {
+//            int selectedRow = billsTable.getSelectedRow();
+//            if (selectedRow == -1) {
+//                JOptionPane.showMessageDialog(this,
+//                        "Please select a bill to pay.",
+//                        "No Selection",
+//                        JOptionPane.WARNING_MESSAGE);
+//                return;
 //            }
+//
+//            String status = (String) billsTableModel.getValueAt(selectedRow, 4);
+//            if ("Paid".equals(status)) {
+//                JOptionPane.showMessageDialog(this,
+//                        "This bill has already been paid.",
+//                        "Payment Error",
+//                        JOptionPane.INFORMATION_MESSAGE);
+//                return;
+//            }
+//
+//            // Process payment
+//            JOptionPane.showMessageDialog(this,
+//                    "Payment processing will be implemented in the full version.",
+//                    "Payment Processing",
+//                    JOptionPane.INFORMATION_MESSAGE);
 //        });
-//        buttonPanel.add(btnPayBill);
 //
-//        JButton btnBack = new JButton("Back to Dashboard");
-//        btnBack.addActionListener(new ActionListener() {
-//            public void actionPerformed(ActionEvent e) {
-//                showWelcomePanel();
+//        viewDetailsButton.addActionListener(e -> {
+//            int selectedRow = billsTable.getSelectedRow();
+//            if (selectedRow == -1) {
+//                JOptionPane.showMessageDialog(this,
+//                        "Please select a bill to view.",
+//                        "No Selection",
+//                        JOptionPane.WARNING_MESSAGE);
+//                return;
 //            }
+//
+//            // Show bill details
+//            String billId = (String) billsTableModel.getValueAt(selectedRow, 0);
+//            JOptionPane.showMessageDialog(this,
+//                    "Bill details for Bill #" + billId + " will be shown here.",
+//                    "Bill Details",
+//                    JOptionPane.INFORMATION_MESSAGE);
 //        });
-//        buttonPanel.add(btnBack);
 //
-//        billsPanel.add(buttonPanel, BorderLayout.SOUTH);
+//        buttonsPanel.add(refreshButton);
+//        buttonsPanel.add(viewDetailsButton);
+//        buttonsPanel.add(paySelectedButton);
+//
+//        panel.add(buttonsPanel, BorderLayout.SOUTH);
+//
+//        return panel;
 //    }
 //
-//    private void loadTenantData() {
-//        // Update room status label
-//        if (tenant.getAssignedRoom() != null) {
-//            StringBuilder roomInfo = new StringBuilder();
-//            roomInfo.append("Room Number: ").append(tenant.getAssignedRoom().getRoomNumber());
-//
-//            // Add building and floor information if available
-//            if (tenant.getAssignedRoom().getFloor() != null) {
-//                roomInfo.append(" | Floor: ").append(tenant.getAssignedRoom().getFloor().getFloorNumber());
-//
-//                if (tenant.getAssignedRoom().getFloor().getBuilding() != null) {
-//                    roomInfo.append(" | Building: ").append(tenant.getAssignedRoom().getFloor().getBuilding().getBuildingName());
-//                }
-//            }
-//
-//            lblRoomStatus.setText(roomInfo.toString());
-//        } else {
-//            lblRoomStatus.setText("No room currently assigned");
-//        }
-//    }
-//
-//    private void showWelcomePanel() {
-//        contentPane.removeAll();
-//
-//        JPanel welcomePanel = new JPanel();
-//        welcomePanel.setLayout(new BorderLayout());
-//
-//        JLabel lblWelcome = new JLabel("Welcome, " + tenant.getName() + "!");
-//        lblWelcome.setFont(new Font("Tahoma", Font.BOLD, 20));
-//        lblWelcome.setHorizontalAlignment(SwingConstants.CENTER);
-//        welcomePanel.add(lblWelcome, BorderLayout.NORTH);
-//
-//        JPanel quickInfoPanel = new JPanel();
-//        quickInfoPanel.setLayout(new GridLayout(3, 1, 10, 10));
-//
-//        // Room status info
-//        JPanel roomPanel = new JPanel();
-//        roomPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
-//        roomPanel.setBorder(BorderFactory.createTitledBorder("Room Information"));
-//        roomPanel.add(lblRoomStatus);
-//        quickInfoPanel.add(roomPanel);
-//
-//        // Bill status info
-//        JPanel billPanel = new JPanel();
-//        billPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
-//        billPanel.setBorder(BorderFactory.createTitledBorder("Recent Bill Information"));
-//
-//        // Get latest bill info
-//        List<Bill> bills = billDML.getBillsByTenantId(tenant.getIdCard());
-//        JLabel lblRecentBill;
-//        if (!bills.isEmpty()) {
-//            // Sort bills by date, most recent first
-//            bills.sort((b1, b2) -> b2.getBillDate().compareTo(b1.getBillDate()));
-//            Bill recentBill = bills.get(0);
-//
-//            String status = recentBill.isPaid() ? "PAID" : "UNPAID";
-//            String date = recentBill.getBillDate().format(DateTimeFormatter.ofPattern("MMMM yyyy"));
-//
-//            lblRecentBill = new JLabel("Latest bill (" + date + "): $" +
-//                    String.format("%.2f", recentBill.getTotalAmount()) + " - " + status);
-//        } else {
-//            lblRecentBill = new JLabel("No bills found");
-//        }
-//
-//        billPanel.add(lblRecentBill);
-//        quickInfoPanel.add(billPanel);
-//
-//        welcomePanel.add(quickInfoPanel, BorderLayout.CENTER);
-//
-//        contentPane.add(welcomePanel, BorderLayout.CENTER);
-//        contentPane.revalidate();
-//        contentPane.repaint();
-//    }
-//
-//    private void showProfilePanel() {
-//        contentPane.removeAll();
-//        contentPane.add(profilePanel, BorderLayout.CENTER);
-//        contentPane.revalidate();
-//        contentPane.repaint();
-//    }
-//
-//    private void showBillsPanel() {
+//    private void loadBillsData() {
 //        // Clear existing data
-//        while (billTableModel.getRowCount() > 0) {
-//            billTableModel.removeRow(0);
-//        }
+//        billsTableModel.setRowCount(0);
 //
-//        // Load bills from database
-//        List<Bill> bills = billDML.getBillsByTenantId(tenant.getIdCard());
-//        for (Bill bill : bills) {
-//            billTableModel.addRow(new Object[] {
-//                    bill.getBillId(),
-//                    bill.getBillDate().format(DateTimeFormatter.ofPattern("MMMM yyyy")),
-//                    String.format("$%.2f", bill.getRentAmount()),
-//                    String.format("$%.2f", bill.getElectricityAmount()),
-//                    String.format("$%.2f", bill.getWaterAmount()),
-//                    String.format("$%.2f", bill.getTotalAmount()),
-//                    bill.isPaid() ? "PAID" : "UNPAID"
-//            });
-//        }
+//        try {
+//            // Get bills from database using BillDML
+//            BillDML billDML = new BillDML();
+//            List<Bill> bills = billDML.getBillsForTenant(tenant.getIdCard());
 //
-//        JPanel billsPanel = new JPanel(new BorderLayout());
-//        billsPanel.add(new JScrollPane(billsTable), BorderLayout.CENTER);
-//
-//        JPanel buttonPanel = new JPanel();
-//        JButton btnPayBill = new JButton("Pay Selected Bill");
-//        btnPayBill.addActionListener(new ActionListener() {
-//            public void actionPerformed(ActionEvent e) {
-//                paySelectedBill();
-//            }
-//        });
-//        buttonPanel.add(btnPayBill);
-//
-//        JButton btnBack = new JButton("Back to Dashboard");
-//        btnBack.addActionListener(new ActionListener() {
-//            public void actionPerformed(ActionEvent e) {
-//                showWelcomePanel();
-//            }
-//        });
-//        buttonPanel.add(btnBack);
-//
-//        billsPanel.add(buttonPanel, BorderLayout.SOUTH);
-//
-//        contentPane.removeAll();
-//        contentPane.add(billsPanel, BorderLayout.CENTER);
-//        contentPane.revalidate();
-//        contentPane.repaint();
-//    }
-//
-//    private void paySelectedBill() {
-//        int selectedRow = billsTable.getSelectedRow();
-//        if (selectedRow == -1) {
-//            JOptionPane.showMessageDialog(this, "Please select a bill to pay", "No Selection", JOptionPane.WARNING_MESSAGE);
-//            return;
-//        }
-//
-//        String status = (String) billTableModel.getValueAt(selectedRow, 6);
-//        if (status.equals("PAID")) {
-//            JOptionPane.showMessageDialog(this, "This bill has already been paid", "Already Paid", JOptionPane.INFORMATION_MESSAGE);
-//            return;
-//        }
-//
-//        int billId = (int) billTableModel.getValueAt(selectedRow, 0);
-//        String amount = (String) billTableModel.getValueAt(selectedRow, 5);
-//
-//        int confirm = JOptionPane.showConfirmDialog(this,
-//                "Are you sure you want to pay this bill?\nAmount: " + amount,
-//                "Confirm Payment", JOptionPane.YES_NO_OPTION);
-//
-//        if (confirm == JOptionPane.YES_OPTION) {
-//            // Process payment - In real implementation, this would connect to a payment gateway
-//            // For now, we'll just mark it as paid
-//            if (billDML.markBillAsPaid(billId)) {
-//                JOptionPane.showMessageDialog(this, "Payment successful!", "Success", JOptionPane.INFORMATION_MESSAGE);
-//
-//                // Update the table
-//                billTableModel.setValueAt("PAID", selectedRow, 6);
-//
-//                // If tenant object has local payment tracking, update that too
-//                String date = (String) billTableModel.getValueAt(selectedRow, 1);
-//                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM yyyy");
-//                YearMonth yearMonth = YearMonth.parse(date, formatter);
-//                tenant.markBillAsPaid(LocalDate.of(yearMonth.getYear(), yearMonth.getMonth(), 1));
-//            } else {
-//                JOptionPane.showMessageDialog(this, "Payment failed. Please try again later.", "Error", JOptionPane.ERROR_MESSAGE);
-//            }
-//        }
-//    }
-//
-//    private void payBill() {
-//        // Show dialog to select month and year
-//        JPanel panel = new JPanel(new GridLayout(3, 2));
-//
-//        String[] months = {"January", "February", "March", "April", "May", "June",
-//                "July", "August", "September", "October", "November", "December"};
-//        JComboBox<String> monthComboBox = new JComboBox<>(months);
-//
-//        int currentYear = LocalDate.now().getYear();
-//        String[] years = new String[3]; // Current year and 2 previous years
-//        for (int i = 0; i < 3; i++) {
-//            years[i] = String.valueOf(currentYear - i);
-//        }
-//        JComboBox<String> yearComboBox = new JComboBox<>(years);
-//
-//        panel.add(new JLabel("Select Month:"));
-//        panel.add(monthComboBox);
-//        panel.add(new JLabel("Select Year:"));
-//        panel.add(yearComboBox);
-//
-//        int result = JOptionPane.showConfirmDialog(
-//                this, panel, "Select Bill Period",
-//                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-//
-//        if (result == JOptionPane.OK_OPTION) {
-//            int month = monthComboBox.getSelectedIndex() + 1; // Months are 1-based
-//            int year = Integer.parseInt((String) yearComboBox.getSelectedItem());
-//
-//            // Check if there's a bill for this period
-//            List<Bill> bills = billDML.getBillsByTenantId(tenant.getIdCard());
+//            // Add bills to table
 //            for (Bill bill : bills) {
-//                if (bill.getBillDate().getYear() == year && bill.getBillDate().getMonthValue() == month) {
-//                    if (bill.isPaid()) {
-//                        JOptionPane.showMessageDialog(this,
-//                                "The bill for " + months[month-1] + " " + year + " has already been paid.",
-//                                "Already Paid", JOptionPane.INFORMATION_MESSAGE);
-//                    } else {
-//                        int confirm = JOptionPane.showConfirmDialog(this,
-//                                "Bill for " + months[month-1] + " " + year + "\n" +
-//                                        "Rent: $" + String.format("%.2f", bill.getRentAmount()) + "\n" +
-//                                        "Electricity: $" + String.format("%.2f", bill.getElectricityAmount()) + "\n" +
-//                                        "Water: $" + String.format("%.2f", bill.getWaterAmount()) + "\n" +
-//                                        "Total: $" + String.format("%.2f", bill.getTotalAmount()) + "\n\n" +
-//                                        "Do you want to pay this bill now?",
-//                                "Confirm Payment", JOptionPane.YES_NO_OPTION);
-//
-//                        if (confirm == JOptionPane.YES_OPTION) {
-//                            if (billDML.markBillAsPaid(bill.getBillId())) {
-//                                JOptionPane.showMessageDialog(this, "Payment successful!", "Success", JOptionPane.INFORMATION_MESSAGE);
-//
-//                                // Update tenant's local bill payment status
-//                                tenant.markBillAsPaid(bill.getBillDate());
-//                            } else {
-//                                JOptionPane.showMessageDialog(this, "Payment failed. Please try again later.", "Error", JOptionPane.ERROR_MESSAGE);
-//                            }
-//                        }
-//                    }
-//                    return;
-//                }
+//                billsTableModel.addRow(new Object[]{
+//                        bill.getBillId(),
+//                        bill.getDate(),
+//                        bill.getAmount(),
+//                        bill.getDueDate(),
+//                        bill.isPaid() ? "Paid" : "Unpaid",
+//                        bill.getDescription()
+//                });
 //            }
 //
+//            // If no bills were found, add sample data for demo
+//            if (bills.isEmpty()) {
+//                // Add sample data for demonstration
+//                billsTableModel.addRow(new Object[]{"B001", "2025-03-01", "$850.00", "2025-03-15", "Unpaid", "March Rent"});
+//                billsTableModel.addRow(new Object[]{"B002", "2025-03-01", "$50.00", "2025-03-15", "Unpaid", "Water Bill"});
+//                billsTableModel.addRow(new Object[]{"B003", "2025-02-01", "$850.00", "2025-02-15", "Paid", "February Rent"});
+//            }
+//        } catch (Exception e) {
 //            JOptionPane.showMessageDialog(this,
-//                    "No bill found for " + months[month-1] + " " + year,
-//                    "No Bill", JOptionPane.INFORMATION_MESSAGE);
+//                    "Error loading bills: " + e.getMessage(),
+//                    "Database Error",
+//                    JOptionPane.ERROR_MESSAGE);
+//            e.printStackTrace();
 //        }
 //    }
 //
-//    private void requestVacateRoom() {
-//        if (tenant.getAssignedRoom() == null) {
-//            JOptionPane.showMessageDialog(this, "You are not currently assigned to any room.",
-//                    "No Room Assigned", JOptionPane.INFORMATION_MESSAGE);
-//            return;
-//        }
+//    private JPanel createProfilePanel() {
+//        JPanel panel = new JPanel(new BorderLayout(10, 10));
+//        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 //
-//        int confirm = JOptionPane.showConfirmDialog(this,
-//                "Are you sure you want to request to vacate your current room?\n" +
-//                        "Room: " + tenant.getAssignedRoom().getRoomNumber(),
-//                "Confirm Vacate Request", JOptionPane.YES_NO_OPTION);
+//        // Profile form
+//        JPanel formPanel = new JPanel(new GridLayout(5, 2, 10, 10));
+//        formPanel.setBorder(BorderFactory.createTitledBorder("Personal Information"));
 //
-//        if (confirm == JOptionPane.YES_OPTION) {
-//            try {
-//                // First check if there are any unpaid bills
-//                List<Bill> unpaidBills = billDML.getUnpaidBillsByTenantId(tenant.getIdCard());
-//                if (!unpaidBills.isEmpty()) {
-//                    int payBills = JOptionPane.showConfirmDialog(this,
-//                            "You have " + unpaidBills.size() + " unpaid bills. You must pay all bills before vacating.\n" +
-//                                    "Would you like to view your bills now?",
-//                            "Unpaid Bills", JOptionPane.YES_NO_OPTION);
+//        // Name field
+//        formPanel.add(new JLabel("Name:"));
+//        JTextField nameField = new JTextField(tenant.getName());
+//        nameField.setEditable(false);
+//        formPanel.add(nameField);
 //
-//                    if (payBills == JOptionPane.YES_OPTION) {
-//                        showBillsPanel();
-//                    }
+//        // ID Card field
+//        formPanel.add(new JLabel("ID Card:"));
+//        JTextField idCardField = new JTextField(tenant.getIdCard());
+//        idCardField.setEditable(false);
+//        formPanel.add(idCardField);
+//
+//        // Phone field
+//        formPanel.add(new JLabel("Phone:"));
+//        JTextField phoneField = new JTextField(tenant.getContact());
+//        formPanel.add(phoneField);
+//
+//        // Email field
+//        formPanel.add(new JLabel("Email:"));
+//        JTextField emailField = new JTextField("tenant@example.com"); // Replace with actual data
+//        formPanel.add(emailField);
+//
+//        // Lease details
+//        formPanel.add(new JLabel("Lease Expiry:"));
+//        JTextField leaseField = new JTextField("2025-12-31"); // Replace with actual data
+//        leaseField.setEditable(false);
+//        formPanel.add(leaseField);
+//
+//        panel.add(formPanel, BorderLayout.NORTH);
+//
+//        // Change password panel
+//        JPanel passwordPanel = new JPanel(new GridLayout(3, 2, 10, 10));
+//        passwordPanel.setBorder(BorderFactory.createTitledBorder("Change Password"));
+//
+//        passwordPanel.add(new JLabel("Current Password:"));
+//        JPasswordField currentPasswordField = new JPasswordField();
+//        passwordPanel.add(currentPasswordField);
+//
+//        passwordPanel.add(new JLabel("New Password:"));
+//        JPasswordField newPasswordField = new JPasswordField();
+//        passwordPanel.add(newPasswordField);
+//
+//        passwordPanel.add(new JLabel("Confirm New Password:"));
+//        JPasswordField confirmPasswordField = new JPasswordField();
+//        passwordPanel.add(confirmPasswordField);
+//
+//        panel.add(passwordPanel, BorderLayout.CENTER);
+//
+//        // Save button
+//        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+//        JButton saveButton = new JButton("Save Changes");
+//
+//        saveButton.addActionListener(e -> {
+//            // Validate password change
+//            String currentPassword = new String(currentPasswordField.getPassword());
+//            String newPassword = new String(newPasswordField.getPassword());
+//            String confirmPassword = new String(confirmPasswordField.getPassword());
+//
+//            if (!currentPassword.isEmpty() || !newPassword.isEmpty() || !confirmPassword.isEmpty()) {
+//                if (currentPassword.isEmpty() || newPassword.isEmpty() || confirmPassword.isEmpty()) {
+//                    JOptionPane.showMessageDialog(this,
+//                            "All password fields must be filled to change password.",
+//                            "Validation Error",
+//                            JOptionPane.WARNING_MESSAGE);
 //                    return;
 //                }
 //
-//                // Proceed with vacating room
-//                tenant.vacateRoom();
-//                JOptionPane.showMessageDialog(this,
-//                        "Your request to vacate has been submitted successfully.\n" +
-//                                "Please contact the landlord for final inspection.",
-//                        "Request Submitted", JOptionPane.INFORMATION_MESSAGE);
+//                if (!newPassword.equals(confirmPassword)) {
+//                    JOptionPane.showMessageDialog(this,
+//                            "New password and confirmation do not match.",
+//                            "Validation Error",
+//                            JOptionPane.WARNING_MESSAGE);
+//                    return;
+//                }
 //
-//                // Update room status label
-//                lblRoomStatus.setText("No room currently assigned");
-//
-//            } catch (TenantException | RoomException e) {
+//                // Implement password change
 //                JOptionPane.showMessageDialog(this,
-//                        "Error: " + e.getMessage(),
-//                        "Error", JOptionPane.ERROR_MESSAGE);
+//                        "Password change will be implemented in the full version.",
+//                        "Password Change",
+//                        JOptionPane.INFORMATION_MESSAGE);
 //            }
-//        }
-//    }
 //
-//    private void showContactLandlord() {
-//        JPanel panel = new JPanel(new BorderLayout());
+//            // Update profile info
+//            tenant.get(phoneField.getText());
+//            // Would also update email in a full implementation
 //
-//        JPanel infoPanel = new JPanel(new GridLayout(0, 1));
-//        infoPanel.add(new JLabel("Contact your landlord for any assistance:"));
-//        infoPanel.add(new JLabel(" "));
-//        infoPanel.add(new JLabel("Phone: [Landlord Phone]"));
-//        infoPanel.add(new JLabel("Email: [Landlord Email]"));
-//        infoPanel.add(new JLabel(" "));
-//        infoPanel.add(new JLabel("Office Hours:"));
-//        infoPanel.add(new JLabel("Monday - Friday: 9:00 AM - 5:00 PM"));
-//        infoPanel.add(new JLabel(" "));
-//
-//        panel.add(infoPanel, BorderLayout.CENTER);
-//
-//        JTextArea messageArea = new JTextArea(5, 30);
-//        messageArea.setLineWrap(true);
-//        messageArea.setWrapStyleWord(true);
-//        panel.add(new JScrollPane(messageArea), BorderLayout.SOUTH);
-//
-//        int result = JOptionPane.showConfirmDialog(
-//                this, panel, "Contact Landlord",
-//                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-//
-//        if (result == JOptionPane.OK_OPTION && !messageArea.getText().trim().isEmpty()) {
 //            JOptionPane.showMessageDialog(this,
-//                    "Your message has been sent to the landlord.",
-//                    "Message Sent", JOptionPane.INFORMATION_MESSAGE);
-//        }
+//                    "Profile updated successfully!",
+//                    "Profile Update",
+//                    JOptionPane.INFORMATION_MESSAGE);
+//        });
+//
+//        buttonPanel.add(saveButton);
+//        panel.add(buttonPanel, BorderLayout.SOUTH);
+//
+//        return panel;
 //    }
 //
-//    private void logout() {
-//        int confirm = JOptionPane.showConfirmDialog(this,
-//                "Are you sure you want to logout?",
-//                "Confirm Logout", JOptionPane.YES_NO_OPTION);
+//    private JPanel createLogoutPanel() {
+//        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+//        panel.setBorder(BorderFactory.createEmptyBorder(5, 20, 10, 20));
 //
-//        if (confirm == JOptionPane.YES_OPTION) {
-//            this.dispose();
-//            // In a real application, you'd show the login screen or similar
-//            JOptionPane.showMessageDialog(null, "You have been logged out successfully.",
-//                    "Logout Successful", JOptionPane.INFORMATION_MESSAGE);
+//        JLabel statusLabel = new JLabel("Logged in as: " + tenant.getName());
+//        statusLabel.setForeground(new Color(0, 128, 0));
+//        panel.add(statusLabel);
 //
-//            // Show login screen again
-//            LoginGUI loginGUI = new LoginGUI();
-//            loginGUI.setVisible(true);
-//        }
+//        panel.add(Box.createHorizontalStrut(20)); // Add space
+//
+//        JButton logoutButton = new JButton("Logout");
+//        logoutButton.addActionListener(e -> {
+//            int confirm = JOptionPane.showConfirmDialog(this,
+//                    "Are you sure you want to logout?",
+//                    "Confirm Logout",
+//                    JOptionPane.YES_NO_OPTION);
+//
+//            if (confirm == JOptionPane.YES_OPTION) {
+//                dispose(); // Close this window
+//                // Return to login screen
+//                SwingUtilities.invokeLater(() -> {
+//                    LoginGUI loginGUI = new LoginGUI();
+//                    loginGUI.setVisible(true);
+//                });
+//            }
+//        });
+//
+//        panel.add(logoutButton);
+//
+//        return panel;
 //    }
-//
-//    /**
-//     * Launch the GUI for testing
-//     */
-//
 //}

@@ -1,16 +1,13 @@
 package Payment;
 
 import Properties.Room;
-import Properties.Building;
-import Properties.Floor;
 import Users.Tenant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.UUID;
 
 public class Bill {
     // Constants
-    private static final double KHR_TO_USD_RATE = 4100.00;
+    public static final double KHR_TO_USD_RATE = 4100.00;
     private static final double ELECTRIC_RATE = 620.00;
     private static final double WATER_RATE = 2500.00;
 
@@ -38,13 +35,9 @@ public class Bill {
                 floorNumber == null || floorNumber.isEmpty()) {
             throw new IllegalArgumentException("Invalid room, building name, or floor number.");
         }
-        if (!room.isOccupied() || room.getTenant() == null) {
-            throw new IllegalArgumentException("Cannot create bill for a vacant room.");
-        }
 
-        // Don't set billID here, it will be set after database insert
         this.room = room;
-        this.tenant = room.getTenant();
+        this.tenant = room.getTenant(); // Get tenant from room if exists
         this.buildingName = buildingName;
         this.floorNumber = floorNumber;
         this.billDate = LocalDate.now();
@@ -53,13 +46,15 @@ public class Bill {
         this.electricUsage = electricUsage;
         this.waterUsage = waterUsage;
 
+        if (this.tenant == null) {
+            System.out.println("Warning: Creating bill for room " + room.getRoomNumber() +
+                    " with no tenant assigned");
+        }
+
         calculateBill(rentAmount, electricUsage, waterUsage);
     }
 
-    private String generateBillID() {
-        return "BILL-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-    }
-
+    // Private method to calculate bill amounts
     private void calculateBill(double rentAmount, int electricUsage, int waterUsage) {
         this.rentAmount = rentAmount;
         this.electricAmount = electricUsage * ELECTRIC_RATE;
@@ -67,7 +62,7 @@ public class Bill {
         this.totalAmount = rentAmount + electricAmount + waterAmount;
     }
 
-    // In the Bill class
+    // Mark bill as paid
     public void markAsPaid(double paymentAmount) {
         if (isPaid) {
             throw new IllegalStateException("Bill is already paid");
@@ -81,16 +76,19 @@ public class Bill {
         this.paymentDate = LocalDate.now();
     }
 
+    // Calculate late fee if applicable
     public double calculateLateFee() {
-        return isPaid || !LocalDate.now().isAfter(dueDate) ? 0
-                : totalAmount * 0.01 * (LocalDate.now().toEpochDay() - dueDate.toEpochDay());
+        if (isPaid || !LocalDate.now().isAfter(dueDate)) {
+            return 0;
+        }
+        long daysLate = LocalDate.now().toEpochDay() - dueDate.toEpochDay();
+        return totalAmount * 0.01 * daysLate; // 1% per day late
     }
+
+    // String representation of the bill
     @Override
     public String toString() {
-            System.out.println("DEBUG - Tenant in bill: " +
-                    (tenant == null ? "null" : tenant.getName() + ", " + tenant.getIdCard()));
-
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
         double lateFee = calculateLateFee();
         double finalTotal = totalAmount + lateFee;
 
@@ -102,8 +100,8 @@ public class Bill {
                 .append("Building           : ").append(buildingName).append("\n")
                 .append("Floor              : ").append(floorNumber).append("\n")
                 .append("Room Number        : ").append(room.getRoomNumber()).append("\n")
-                .append("Tenant ID          : ").append(tenant.getIdCard()).append("\n")
-                .append("Tenant Name        : ").append(tenant.getName()).append("\n")
+                .append("Tenant ID          : ").append(tenant != null ? tenant.getIdCard() : "N/A").append("\n")
+                .append("Tenant Name        : ").append(tenant != null ? tenant.getName() : "N/A").append("\n")
                 .append("-----------------------------------------------\n")
                 .append("Bill Date          : ").append(billDate.format(formatter)).append("\n")
                 .append("Due Date           : ").append(dueDate.format(formatter)).append("\n")
@@ -122,7 +120,6 @@ public class Bill {
                 .append("Subtotal           : ").append(formatKHR(totalAmount))
                 .append(" (").append(formatUSD(convertToUSD(totalAmount))).append(")\n");
 
-        // Append late fee only if applicable
         if (lateFee > 0) {
             sb.append("Late Fee           : ").append(formatKHR(lateFee))
                     .append(" (").append(formatUSD(convertToUSD(lateFee))).append(")\n")
@@ -131,13 +128,16 @@ public class Bill {
         }
 
         sb.append("-----------------------------------------------\n")
-                .append("Status             : ").append(isPaid ? "PAID" : "UNPAID").append("\n")
-                .append("===============================================\n");
+                .append("Status             : ").append(isPaid ? "PAID" : "UNPAID").append("\n");
+        if (isPaid && paymentDate != null) {
+            sb.append("Payment Date       : ").append(paymentDate.format(formatter)).append("\n");
+        }
+        sb.append("===============================================\n");
 
         return sb.toString();
     }
 
-
+    // Currency conversion and formatting methods
     private double convertToUSD(double amount) {
         return amount / KHR_TO_USD_RATE;
     }
@@ -150,6 +150,7 @@ public class Bill {
         return String.format("%.2fUSD", amount);
     }
 
+    // Getters
     public Room getRoom() {
         return room;
     }
@@ -206,7 +207,11 @@ public class Bill {
         return waterUsage;
     }
 
+    public LocalDate getPaymentDate() {
+        return paymentDate;
+    }
 
+    // Setters
     public void setBillID(int billID) {
         this.billID = billID;
     }
@@ -219,8 +224,37 @@ public class Bill {
         this.dueDate = dueDate;
     }
 
-//    public void setPaid(boolean paid) {
-//        this.isPaid = paid;
-//    }
+    public void setTenant(Tenant tenant) {
+        this.tenant = tenant;
+    }
 
+    public void setRoom(Room room) {
+        this.room = room;
+        if (room != null) {
+            this.tenant = room.getTenant();
+        }
+    }
+
+    public void setBuildingName(String buildingName) {
+        this.buildingName = buildingName;
+    }
+
+    public void setFloorNumber(String floorNumber) {
+        this.floorNumber = floorNumber;
+    }
+
+    public void setRentAmount(double rentAmount) {
+        this.rentAmount = rentAmount;
+        calculateBill(rentAmount, electricUsage, waterUsage);
+    }
+
+    public void setElectricUsage(int electricUsage) {
+        this.electricUsage = electricUsage;
+        calculateBill(rentAmount, electricUsage, waterUsage);
+    }
+
+    public void setWaterUsage(int waterUsage) {
+        this.waterUsage = waterUsage;
+        calculateBill(rentAmount, electricUsage, waterUsage);
+    }
 }

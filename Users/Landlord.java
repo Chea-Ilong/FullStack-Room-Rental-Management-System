@@ -1,9 +1,6 @@
 package Users;
 
-import DataBase.BuildingDML;
-import DataBase.DataBaseConnection;
-import DataBase.RoomDML;
-import DataBase.TenantDML;
+import DataBase.*;
 import Exceptions.LandlordException;
 import Exceptions.RoomException;
 import Exceptions.TenantException;
@@ -72,26 +69,7 @@ public class Landlord extends User {
         this.buildings = buildingDML.getAllBuildings();
     }
     // View bills for a specific month
-    public List<Bill> viewBillsForMonth(int year, int month) {
-        YearMonth yearMonth = YearMonth.of(year, month);
-        return billRecord.getBillsForMonth(yearMonth);
-    }
 
-    // View bills for a specific tenant
-    public List<Bill> viewBillsForTenant(String tenantId) {
-        return billRecord.getBillHistoryForTenant(tenantId);
-    }
-
-    // View unpaid bills
-    public List<Bill> viewUnpaidBills() {
-        return billRecord.getUnpaidBills();
-    }
-
-    // Generate monthly billing report
-    public String generateMonthlyBillingReport(int year, int month) {
-        YearMonth yearMonth = YearMonth.of(year, month);
-        return billRecord.generateMonthlyReport(yearMonth);
-    }
 
     // ====================================================================================================
     // Login & Authentication
@@ -464,7 +442,99 @@ public class Landlord extends User {
             this.tenants.addAll(freshTenants);
         }
     }
+    public List<Bill> viewBillsForMonth(int year, int month) {
+        BillDML billDML = new BillDML();
+        return billDML.getBillsByMonth(year, month);
+    }
 
+    // Function to view bills for a specific tenant
+    public List<Bill> viewBillsForTenant(String tenantId) {
+        BillDML billDML = new BillDML();
+        return billDML.getBillsByTenantId(tenantId);
+    }
+
+    // Function to view all unpaid bills
+    public List<Bill> viewUnpaidBills() {
+        BillDML billDML = new BillDML();
+        return billDML.getUnpaidBills();
+    }
+
+    // Function to generate a monthly billing report
+    public String generateMonthlyBillingReport(int year, int month) {
+        BillDML billDML = new BillDML();
+        List<Bill> bills = billDML.getBillsByMonth(year, month);
+
+        StringBuilder report = new StringBuilder();
+        report.append("\n===== Monthly Billing Report: ").append(month).append("/").append(year).append(" =====\n\n");
+
+        if (bills.isEmpty()) {
+            report.append("No bills found for ").append(month).append("/").append(year);
+            return report.toString();
+        }
+
+        report.append(String.format("%-12s | %-8s | %-8s | %-20s | %14s | %14s | %14s | %14s | %-8s\n",
+                "Building", "Floor", "Room", "Tenant", "Rent (KHR)", "Electric (KHR)", "Water (KHR)", "Total (KHR)", "Status"));
+        report.append("----------------------------------------------------------------------------------------------------------------------\n");
+
+        double totalRent = 0;
+        double totalElectric = 0;
+        double totalWater = 0;
+        double totalAmount = 0;
+        int totalPaid = 0;
+        int totalUnpaid = 0;
+
+        for (Bill bill : bills) {
+            String tenantName = bill.getTenant() != null ? bill.getTenant().getName() : "N/A";
+            if (tenantName.length() > 20) {
+                tenantName = tenantName.substring(0, 17) + "...";
+            }
+
+            report.append(String.format("%-12s | %-8s | %-8s | %-20s | %,14.2f | %,14.2f | %,14.2f | %,14.2f | %-8s\n",
+                    truncate(bill.getBuildingName(), 12),
+                    truncate(bill.getFloorNumber(), 8),
+                    truncate(bill.getRoom().getRoomNumber(), 8),
+                    tenantName,
+                    bill.getRentAmount(),
+                    bill.getElectricAmount(),
+                    bill.getWaterAmount(),
+                    bill.getTotalAmount(),
+                    bill.isPaid() ? "PAID" : "UNPAID"));
+
+            totalRent += bill.getRentAmount();
+            totalElectric += bill.getElectricAmount();
+            totalWater += bill.getWaterAmount();
+            totalAmount += bill.getTotalAmount();
+            if (bill.isPaid()) totalPaid++; else totalUnpaid++;
+        }
+
+        report.append("----------------------------------------------------------------------------------------------------------------------\n");
+        report.append(String.format("%-44s | %,14.2f | %,14.2f | %,14.2f | %,14.2f |\n",
+                "TOTALS:", totalRent, totalElectric, totalWater, totalAmount));
+
+        report.append("\nSUMMARY:\n");
+        report.append("Total Bills: ").append(bills.size()).append("\n");
+        report.append("Paid Bills: ").append(totalPaid).append("\n");
+        report.append("Unpaid Bills: ").append(totalUnpaid).append("\n");
+        if (totalPaid + totalUnpaid > 0) {
+            report.append("Collection Rate: ").append(String.format("%.1f%%", (double)totalPaid / (totalPaid + totalUnpaid) * 100)).append("\n");
+        }
+
+        return report.toString();
+    }
+
+    // Helper method to truncate strings for table formatting
+    private String truncate(String text, int maxLength) {
+        if (text == null) {
+            return "N/A";
+        }
+        return text.length() <= maxLength ? text : text.substring(0, maxLength - 3) + "...";
+    }
+
+    // Additional helper function to mark a bill as paid
+    public boolean payBill(int billId) {
+        BillDML billDML = new BillDML();
+        return billDML.markBillAsPaid(billId);
+    }
     /**
      * Refreshes data for a specific tenant from the database
      * @param tenantId The ID of the tenant to refresh

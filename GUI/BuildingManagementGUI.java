@@ -29,11 +29,8 @@ public class BuildingManagementGUI extends JPanel {
 
     public BuildingManagementGUI() {
         buildingDML = new BuildingDML();
-        setLayout(new BorderLayout(15, 15)); // Increased spacing
-        setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15)); // Increased padding
-
-        // Set larger default font for the entire panel
-        setFont(new Font("SansSerif", Font.PLAIN, 16));
+        setLayout(new BorderLayout(10, 10));
+        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         // Create form panel
         JPanel formPanel = createFormPanel();
@@ -54,48 +51,16 @@ public class BuildingManagementGUI extends JPanel {
     }
 
     private JPanel createFormPanel() {
-        JPanel panel = new JPanel(new GridBagLayout());
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
         panel.setBorder(BorderFactory.createTitledBorder("Building Details"));
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(8, 8, 8, 8); // Increased insets
-        gbc.anchor = GridBagConstraints.WEST;
 
-        // Larger font for labels
-        Font labelFont = new Font("SansSerif", Font.PLAIN, 16);
+        panel.add(new JLabel("Building Name:"));
+        nameField = new JTextField(15);
+        panel.add(nameField);
 
-        // Building Name components
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        JLabel nameLabel = new JLabel("Building Name:");
-        nameLabel.setFont(labelFont);
-        panel.add(nameLabel, gbc);
-
-        gbc.gridx = 1;
-        gbc.gridy = 0;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.weightx = 1.0;
-        nameField = new JTextField(20);
-        nameField.setFont(new Font("SansSerif", Font.PLAIN, 16)); // Larger font
-        nameField.setPreferredSize(new Dimension(250, 35)); // Slightly larger size
-        panel.add(nameField, gbc);
-
-        // Building Address components
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        gbc.weightx = 0.0;
-        gbc.fill = GridBagConstraints.NONE;
-        JLabel addressLabel = new JLabel("Address:");
-        addressLabel.setFont(labelFont);
-        panel.add(addressLabel, gbc);
-
-        gbc.gridx = 1;
-        gbc.gridy = 1;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.weightx = 1.0;
-        addressField = new JTextField(20);
-        addressField.setFont(new Font("SansSerif", Font.PLAIN, 16)); // Larger font
-        addressField.setPreferredSize(new Dimension(250, 35)); // Slightly larger size
-        panel.add(addressField, gbc);
+        panel.add(new JLabel("Address:"));
+        addressField = new JTextField(15);
+        panel.add(addressField);
 
         return panel;
     }
@@ -111,11 +76,7 @@ public class BuildingManagementGUI extends JPanel {
         };
 
         buildingTable = new JTable(tableModel);
-        buildingTable.setFont(new Font("SansSerif", Font.PLAIN, 16)); // Larger font for table
-        buildingTable.getTableHeader().setFont(new Font("SansSerif", Font.BOLD, 16)); // Larger header font
-        buildingTable.setRowHeight(30); // Increased row height
         buildingTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        buildingTable.getColumnModel().getColumn(0).setMaxWidth(60); // Slightly wider ID column
 
         // Add selection listener
         buildingTable.getSelectionModel().addListSelectionListener(e -> {
@@ -136,8 +97,6 @@ public class BuildingManagementGUI extends JPanel {
 
         // Add refresh button at the top of the table
         refreshButton = new JButton("Refresh List");
-        refreshButton.setFont(new Font("SansSerif", Font.PLAIN, 16)); // Larger font
-        refreshButton.setPreferredSize(new Dimension(150, 35)); // Slightly larger button
         refreshButton.addActionListener(e -> loadBuildingData());
 
         JPanel refreshPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -150,21 +109,12 @@ public class BuildingManagementGUI extends JPanel {
     }
 
     private JPanel createButtonPanel() {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10)); // Increased spacing
-
-        Font buttonFont = new Font("SansSerif", Font.PLAIN, 16); // Larger font for buttons
-        Dimension buttonSize = new Dimension(150, 35); // Slightly larger button size
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 
         addButton = new JButton("Add Building");
         updateButton = new JButton("Update Building");
         deleteButton = new JButton("Delete Building");
         clearButton = new JButton("Clear Form");
-
-        // Apply font and size to buttons
-        for (JButton button : new JButton[]{addButton, updateButton, deleteButton, clearButton}) {
-            button.setFont(buttonFont);
-            button.setPreferredSize(buttonSize);
-        }
 
         // Initial state
         updateButton.setEnabled(false);
@@ -332,7 +282,7 @@ public class BuildingManagementGUI extends JPanel {
     public static void main(String[] args) {
         JFrame frame = new JFrame("Building Management");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(900, 700); // Slightly larger window
+        frame.setSize(800, 600);
         frame.add(new BuildingManagementGUI());
         frame.setVisible(true);
     }

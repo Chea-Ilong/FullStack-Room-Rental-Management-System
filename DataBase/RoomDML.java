@@ -160,48 +160,7 @@ public class RoomDML {
     }
 
     // Updated to use new schema - removed rent field references
-    public Room getRoomByRoomNumber(String roomNumber) {
-        String query = "SELECT r.room_id, r.room_number, r.current_electric_counter, " +
-                "r.current_water_counter, r.is_occupied FROM Rooms r WHERE r.room_number = ?";
 
-        try (Connection conn = DataBaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(query)) {
-
-            ps.setString(1, roomNumber);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    int roomId = rs.getInt("room_id");
-                    int electricCounter = rs.getInt("current_electric_counter");
-                    int waterCounter = rs.getInt("current_water_counter");
-                    boolean isOccupied = rs.getBoolean("is_occupied");
-
-                    // Create room object
-                    Room room = new Room(roomNumber, electricCounter, waterCounter);
-
-
-
-                    // Set occupancy state if needed
-                    if (isOccupied) {
-                        try {
-                            room.markAsOccupied();
-                            // Load tenant data
-                            loadTenantForRoom(room, roomId, conn);
-                        } catch (RoomException e) {
-                            System.out.println("Error marking room as occupied: " + e.getMessage());
-                        }
-                    }
-
-                    return room;
-                }
-            }
-        } catch (SQLException e) {
-            System.out.println("SQL Error retrieving room: " + e.getMessage());
-            e.printStackTrace();
-        }
-
-        return null;
-    }
 
 //    // New method to load rent from Bills table
 //    private void loadRentForRoom(Room room, int roomId, Connection conn) throws SQLException {
@@ -221,7 +180,12 @@ public class RoomDML {
 
     // Updated to use new schema - removed rent field references
     public Room getRoomById(int roomId) {
-        String query = "SELECT room_number, current_electric_counter, current_water_counter, is_occupied FROM Rooms WHERE room_id = ?";
+        String query = "SELECT r.room_number, r.current_electric_counter, r.current_water_counter, r.is_occupied, " +
+                "u.name, u.IdCard, u.contact " +
+                "FROM Rooms r " +
+                "LEFT JOIN Tenants t ON t.assigned_room_id = r.room_id " +
+                "LEFT JOIN Users u ON t.user_id = u.user_id " +
+                "WHERE r.room_id = ?";
 
         try (Connection conn = DataBaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(query)) {
@@ -234,22 +198,19 @@ public class RoomDML {
                     int currentElectricCounter = rs.getInt("current_electric_counter");
                     int currentWaterCounter = rs.getInt("current_water_counter");
 
-                    // Create room
                     Room room = new Room(roomNumber, currentElectricCounter, currentWaterCounter);
-
-
-                    // Set occupancy state
                     boolean isOccupied = rs.getBoolean("is_occupied");
+
                     if (isOccupied) {
-                        try {
-                            room.markAsOccupied();
-                            // Load tenant information
-                            loadTenantForRoom(room, roomId, conn);
-                        } catch (RoomException e) {
-                            System.out.println("Error marking room as occupied: " + e.getMessage());
+                        String tenantName = rs.getString("name");
+                        String tenantIdCard = rs.getString("IdCard");
+                        String tenantContact = rs.getString("contact");
+
+                        if (tenantIdCard != null) {
+                            Tenant tenant = new Tenant(tenantName, tenantIdCard, tenantContact != null ? tenantContact : "");
+                            room.assignTenant(tenant);
                         }
                     }
-
                     return room;
                 }
             }
@@ -257,8 +218,7 @@ public class RoomDML {
             System.out.println("SQL Error: " + e.getMessage());
             e.printStackTrace();
         }
-
-        return null; // Room not found
+        return null;
     }
 
     public int getRoomIdByRoomNumber(String roomNumber) {
@@ -319,7 +279,64 @@ public class RoomDML {
             System.out.println("Error listing room numbers: " + e.getMessage());
         }
     }
+    public void displayRoomDetails(String buildingName, String floorNumber, String roomNumber) {
+        try {
+            // Get building, floor, and room IDs
+            BuildingDML buildingDML = new BuildingDML();
+            int buildingId = buildingDML.getBuildingIdByName(buildingName);
 
+            if (buildingId == -1) {
+                System.out.println("Building not found: " + buildingName);
+                return;
+            }
+
+            FloorDML floorDML = new FloorDML();
+            int floorId = floorDML.getFloorIdByBuildingAndNumber(buildingId, floorNumber);
+
+            if (floorId == -1) {
+                System.out.println("Floor not found: " + floorNumber + " in building: " + buildingName);
+                return;
+            }
+
+            int roomId = getRoomIdByFloorAndNumber(floorId, roomNumber);
+
+            if (roomId == -1) {
+                System.out.println("Room not found: " + roomNumber + " on floor: " + floorNumber);
+                return;
+            }
+
+            // Get room details
+            Room room = getRoomById(roomId);
+
+            if (room == null) {
+                System.out.println("Failed to retrieve room details for room: " + roomNumber);
+                return;
+            }
+
+            // Display room details
+            System.out.println("\n  ======= Room Details =======");
+            System.out.println("  Building: " + buildingName);
+            System.out.println("  Floor: " + floorNumber);
+            System.out.println("  Room Number: " + room.getRoomNumber());
+            System.out.println("  Status: " + (room.isOccupied() ? "Occupied" : "Vacant"));
+            System.out.println("  Electric Counter: " + room.getCurrentElectricCounter());
+            System.out.println("  Water Counter: " + room.getCurrentWaterCounter());
+
+            // Display tenant information if room is occupied
+            if (room.isOccupied() && room.getTenant() != null) {
+                System.out.println("  Tenant Information:");
+                System.out.println("    Name: " + room.getTenant().getName());
+                System.out.println("    ID Card: " + room.getTenant().getIdCard());
+                System.out.println("    Contact: " + room.getTenant().getContact());
+            }
+
+            System.out.println("  ============================");
+
+        } catch (Exception e) {
+            System.out.println("An error occurred while displaying room details: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
     public int getRoomIdByFloorAndNumber(int floorId, String roomNumber) {
         String query = "SELECT room_id FROM Rooms WHERE floor_id = ? AND room_number = ?";
 
@@ -442,6 +459,28 @@ public class RoomDML {
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next() && rs.getBoolean("is_occupied")) {
                         System.out.println("Room " + roomNumber + " is already occupied");
+                        return;
+                    }
+                }
+            }
+
+            // Check if tenant is already assigned to another room
+            // Check if tenant is already assigned to another room
+            String checkTenantQuery = "SELECT r.room_number FROM Tenants t " +
+                    "JOIN Users u ON t.user_id = u.user_id " +
+                    "JOIN Rooms r ON t.assigned_room_id = r.room_id " +
+                    "WHERE u.IdCard = ? AND t.assigned_room_id IS NOT NULL";
+
+            try (PreparedStatement ps = conn.prepareStatement(checkTenantQuery)) {
+                ps.setString(1, tenant.getIdCard());
+
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        String existingRoom = rs.getString("room_number");
+                        System.out.println("Tenant " + tenant.getName() + " is already assigned to room " + existingRoom);
+                        System.out.println("Do you want to reassign this tenant? (y/n)");
+                        // In a real application, you'd handle user input here
+                        // For now, we'll just return
                         return;
                     }
                 }
@@ -800,5 +839,51 @@ public class RoomDML {
         public String buildingName;
         public String floorNumber;
         public String tenantName;
+    }
+    public Room getRoomByRoomNumber(String roomNumber) {
+        String query = "SELECT r.room_id, r.room_number, r.current_electric_counter, " +
+                "r.current_water_counter, r.is_occupied FROM Rooms r WHERE r.room_number = ?";
+
+        try (Connection conn = DataBaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(query)) {
+
+            ps.setString(1, roomNumber);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    int roomId = rs.getInt("room_id");
+                    int electricCounter = rs.getInt("current_electric_counter");
+                    int waterCounter = rs.getInt("current_water_counter");
+                    boolean isOccupied = rs.getBoolean("is_occupied");
+
+                    // Create room object
+                    Room room = new Room(roomNumber, electricCounter, waterCounter);
+
+                    // Set occupancy state if needed
+                    if (isOccupied) {
+                        try {
+                            room.markAsOccupied();
+                            // Load tenant data
+                            loadTenantForRoom(room, roomId, conn);
+                        } catch (RoomException e) {
+                            System.out.println("Error marking room as occupied: " + e.getMessage());
+                        }
+                    }
+
+                    return room;
+                } else {
+                    System.out.println("No room found with number: " + roomNumber);
+                    return null;
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("SQL Error retrieving room: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        } catch (Exception e) {
+            System.out.println("Unexpected error retrieving room: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
     }
 }

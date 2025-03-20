@@ -31,11 +31,8 @@ public class RoomManagementGUI extends JPanel {
         this.buildingDML = new BuildingDML();
         this.floorDML = new FloorDML();
 
-        setLayout(new BorderLayout(15, 15)); // Increased spacing
-        setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15)); // Increased padding
-
-        // Set larger default font for the entire panel
-        setFont(new Font("SansSerif", Font.PLAIN, 16));
+        setLayout(new BorderLayout(10, 10));
+        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         JPanel formPanel = createFormPanel();
         JPanel tablePanel = createTablePanel();
@@ -52,19 +49,12 @@ public class RoomManagementGUI extends JPanel {
     }
 
     private JPanel createFormPanel() {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10)); // Increased spacing
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
         panel.setBorder(BorderFactory.createTitledBorder("Room Details"));
 
-        Font labelFont = new Font("SansSerif", Font.PLAIN, 16); // Larger font for labels
-
-        JLabel buildingLabel = new JLabel("Building:");
-        buildingLabel.setFont(labelFont);
-        panel.add(buildingLabel);
-
+        panel.add(new JLabel("Building:"));
         buildingComboBox = new JComboBox<>();
         buildingComboBox.addItem("All Buildings"); // Add "All Buildings" option
-        buildingComboBox.setFont(new Font("SansSerif", Font.PLAIN, 16)); // Larger font
-        buildingComboBox.setPreferredSize(new Dimension(200, 35)); // Slightly larger size
         buildingComboBox.setEditable(true);
         buildingComboBox.addActionListener(e -> {
             loadFloors();
@@ -72,43 +62,23 @@ public class RoomManagementGUI extends JPanel {
         });
         panel.add(buildingComboBox);
 
-        JLabel floorLabel = new JLabel("Floor:");
-        floorLabel.setFont(labelFont);
-        panel.add(floorLabel);
-
+        panel.add(new JLabel("Floor:"));
         floorComboBox = new JComboBox<>();
         floorComboBox.addItem("All Floors"); // Add "All Floors" option
-        floorComboBox.setFont(new Font("SansSerif", Font.PLAIN, 16)); // Larger font
-        floorComboBox.setPreferredSize(new Dimension(200, 35)); // Slightly larger size
         floorComboBox.setEditable(true);
         floorComboBox.addActionListener(e -> filterRoomsByBuildingAndFloor());
         panel.add(floorComboBox);
 
-        JLabel roomLabel = new JLabel("Room Number:");
-        roomLabel.setFont(labelFont);
-        panel.add(roomLabel);
-
+        panel.add(new JLabel("Room Number:"));
         roomNumberField = new JTextField(10);
-        roomNumberField.setFont(new Font("SansSerif", Font.PLAIN, 16)); // Larger font
-        roomNumberField.setPreferredSize(new Dimension(150, 35)); // Slightly larger size
         panel.add(roomNumberField);
 
-        JLabel electricLabel = new JLabel("Electric Counter:");
-        electricLabel.setFont(labelFont);
-        panel.add(electricLabel);
-
+        panel.add(new JLabel("Electric Counter:"));
         electricCounterField = new JTextField(10);
-        electricCounterField.setFont(new Font("SansSerif", Font.PLAIN, 16)); // Larger font
-        electricCounterField.setPreferredSize(new Dimension(150, 35)); // Slightly larger size
         panel.add(electricCounterField);
 
-        JLabel waterLabel = new JLabel("Water Counter:");
-        waterLabel.setFont(labelFont);
-        panel.add(waterLabel);
-
+        panel.add(new JLabel("Water Counter:"));
         waterCounterField = new JTextField(10);
-        waterCounterField.setFont(new Font("SansSerif", Font.PLAIN, 16)); // Larger font
-        waterCounterField.setPreferredSize(new Dimension(150, 35)); // Slightly larger size
         panel.add(waterCounterField);
 
         return panel;
@@ -124,11 +94,7 @@ public class RoomManagementGUI extends JPanel {
         };
 
         roomTable = new JTable(tableModel);
-        roomTable.setFont(new Font("SansSerif", Font.PLAIN, 16)); // Larger font for table
-        roomTable.getTableHeader().setFont(new Font("SansSerif", Font.BOLD, 16)); // Larger header font
-        roomTable.setRowHeight(30); // Increased row height
         roomTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        roomTable.getColumnModel().getColumn(0).setMaxWidth(60); // Slightly wider ID column
 
         roomTable.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting() && roomTable.getSelectedRow() != -1) {
@@ -155,8 +121,6 @@ public class RoomManagementGUI extends JPanel {
         panel.setBorder(BorderFactory.createTitledBorder("Rooms"));
 
         refreshButton = new JButton("Refresh List");
-        refreshButton.setFont(new Font("SansSerif", Font.PLAIN, 16)); // Larger font
-        refreshButton.setPreferredSize(new Dimension(150, 35)); // Slightly larger button
         refreshButton.addActionListener(e -> loadRoomsData());
 
         JPanel refreshPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -169,21 +133,12 @@ public class RoomManagementGUI extends JPanel {
     }
 
     private JPanel createButtonPanel() {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10)); // Increased spacing
-
-        Font buttonFont = new Font("SansSerif", Font.PLAIN, 16); // Larger font for buttons
-        Dimension buttonSize = new Dimension(150, 35); // Slightly larger button size
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 
         addButton = new JButton("Add Room");
         updateButton = new JButton("Update Room");
         removeButton = new JButton("Remove Room");
         clearButton = new JButton("Clear Form");
-
-        // Apply font and size to buttons
-        for (JButton button : new JButton[]{addButton, updateButton, removeButton, clearButton}) {
-            button.setFont(buttonFont);
-            button.setPreferredSize(buttonSize);
-        }
 
         updateButton.setEnabled(false);
         removeButton.setEnabled(false);
@@ -425,7 +380,7 @@ public class RoomManagementGUI extends JPanel {
     public static void showRoomManagement(Landlord landlord) {
         JFrame frame = new JFrame("Room Management");
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        frame.setSize(900, 700); // Slightly larger window
+        frame.setSize(900, 700);
         frame.add(new RoomManagementGUI(landlord));
         frame.setVisible(true);
     }

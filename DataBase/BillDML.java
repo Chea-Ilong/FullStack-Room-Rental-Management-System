@@ -20,9 +20,8 @@ public class BillDML {
 
         try {
             conn = getConnection();
-            conn.setAutoCommit(false); // Start transaction
+            conn.setAutoCommit(false);
 
-            // Get the room ID based on building, floor, and room number
             int roomId = getRoomIdByBuildingFloorAndNumber(
                     bill.getBuildingName(),
                     bill.getFloorNumber(),
@@ -30,22 +29,42 @@ public class BillDML {
             );
 
             if (roomId == -1) {
-                System.out.println("Room not found in building " + bill.getBuildingName() +
-                        ", floor " + bill.getFloorNumber() +
-                        ", room " + bill.getRoom().getRoomNumber());
+                System.out.println("Room not found.");
                 return false;
+            }
+
+            // Fetch the tenant's IdCard assigned to this room
+            String tenantQuery = "SELECT u.IdCard, u.name, u.contact " +
+                    "FROM Tenants t " +
+                    "JOIN Users u ON t.user_id = u.user_id " +
+                    "WHERE t.assigned_room_id = ?";
+            Tenant tenant = null;
+            String tenantIdCard = null;
+            try (PreparedStatement tenantPs = conn.prepareStatement(tenantQuery)) {
+                tenantPs.setInt(1, roomId);
+                ResultSet rs = tenantPs.executeQuery();
+                if (rs.next()) {
+                    tenantIdCard = rs.getString("IdCard"); // Get the IdCard (e.g., "02")
+                    tenant = new Tenant(
+                            rs.getString("name"),
+                            tenantIdCard,
+                            rs.getString("contact") != null ? rs.getString("contact") : ""
+                    );
+                    bill.setTenant(tenant);
+                    System.out.println("Saving bill for tenant: " + tenant.getName() + " (ID Card: " + tenantIdCard + ")");
+                } else {
+                    System.out.println("Warning: No tenant assigned to room ID " + roomId);
+                }
             }
 
             String query = "INSERT INTO Bills (room_id, tenant_id, due_date, is_paid, bill_date, " +
                     "electric_amount, water_amount, electric_usage, water_usage, building_name, floor_number, " +
                     "rent_amount, total_amount) " +
                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
             ps = conn.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
 
-            // Set parameters
             ps.setInt(1, roomId);
-            ps.setString(2, bill.getTenant().getIdCard());
+            ps.setString(2, tenantIdCard); // Save the IdCard string (e.g., "02")
             ps.setDate(3, java.sql.Date.valueOf(bill.getDueDate()));
             ps.setBoolean(4, bill.isPaid());
             ps.setDate(5, java.sql.Date.valueOf(bill.getBillDate()));
@@ -58,29 +77,32 @@ public class BillDML {
             ps.setDouble(12, bill.getRentAmount());
             ps.setDouble(13, bill.getTotalAmount());
 
-            // Execute the insert
             int rowsAffected = ps.executeUpdate();
 
-            // Verify rows affected
             if (rowsAffected > 0) {
-                // Retrieve the generated bill_id
                 generatedKeys = ps.getGeneratedKeys();
                 if (generatedKeys.next()) {
-                    int generatedBillId = generatedKeys.getInt(1);
-                    bill.setBillID(generatedBillId);
+                    bill.setBillID(generatedKeys.getInt(1));
+                    // Verify what was saved
+                    String verifyQuery = "SELECT tenant_id FROM Bills WHERE bill_id = ?";
+                    try (PreparedStatement verifyPs = conn.prepareStatement(verifyQuery)) {
+                        verifyPs.setInt(1, bill.getBillID());
+                        ResultSet rs = verifyPs.executeQuery();
+                        if (rs.next()) {
+                            String savedTenantId = rs.getString("tenant_id");
+                            System.out.println("Bill saved with ID: " + bill.getBillID() + ", tenant_id in DB: " + savedTenantId);
+                        }
+                    }
                 }
-                conn.commit(); // Commit the transaction
+                conn.commit();
                 return true;
             } else {
-                conn.rollback(); // Rollback on failure
+                conn.rollback();
                 return false;
             }
-
         } catch (SQLException e) {
             System.out.println("SQL Error in saveBill method: " + e.getMessage());
             e.printStackTrace();
-
-            // Try to rollback on error
             try {
                 if (conn != null) {
                     conn.rollback();
@@ -88,15 +110,13 @@ public class BillDML {
             } catch (SQLException ex) {
                 System.out.println("Failed to rollback transaction: " + ex.getMessage());
             }
-
             return false;
         } finally {
-            // Close resources properly
             try {
                 if (generatedKeys != null) generatedKeys.close();
                 if (ps != null) ps.close();
                 if (conn != null) {
-                    conn.setAutoCommit(true); // Reset auto-commit
+                    conn.setAutoCommit(true);
                     conn.close();
                 }
             } catch (SQLException e) {
@@ -104,7 +124,6 @@ public class BillDML {
             }
         }
     }
-
     // Get room ID by building name, floor number, and room number
     public int getRoomIdByBuildingFloorAndNumber(String buildingName, String floorNumber, String roomNumber) {
         Connection conn = null;
@@ -252,22 +271,19 @@ public class BillDML {
     // Get bills by tenant ID
     public List<Bill> getBillsByTenantId(String tenantIdCard) {
         List<Bill> bills = new ArrayList<>();
-
         String query = "SELECT b.*, bu.building_name, fl.floor_number, " +
                 "r.current_electric_counter AS electric_usage, r.current_water_counter AS water_usage, " +
+                "r.room_number, " + // Ensure room_number is included
                 "u.IdCard AS tenant_id, u.name AS tenant_name, u.contact AS tenant_contact " +
                 "FROM Bills b " +
                 "JOIN Rooms r ON b.room_id = r.room_id " +
                 "JOIN Floors fl ON r.floor_id = fl.floor_id " +
                 "JOIN Buildings bu ON fl.building_id = bu.building_id " +
-                "LEFT JOIN Tenants t ON b.tenant_id = t.tenant_id " +
-                "LEFT JOIN Users u ON t.user_id = u.user_id " +
-                "WHERE u.IdCard = ? " +
+                "LEFT JOIN Users u ON b.tenant_id = u.IdCard " +
+                "WHERE b.tenant_id = ? " +
                 "ORDER BY b.bill_date DESC";
-
         try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(query)) {
-
             ps.setString(1, tenantIdCard);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -277,30 +293,29 @@ public class BillDML {
                     }
                 }
             }
-
         } catch (SQLException e) {
-            System.out.println("SQL Error: " + e.getMessage());
+            System.out.println("SQL Error in getBillsByTenantId: " + e.getMessage());
             e.printStackTrace();
         }
-
         return bills;
     }
 
     // Get bills for a specific month
     public List<Bill> getBillsByMonth(int year, int month) {
         List<Bill> bills = new ArrayList<>();
-
-        String query = "SELECT b.*, bu.building_name, fl.floor_number, r.current_electric_counter AS electric_usage, r.current_water_counter AS water_usage " +
+        String query = "SELECT b.*, bu.building_name, fl.floor_number, " +
+                "r.current_electric_counter AS electric_usage, r.current_water_counter AS water_usage, " +
+                "r.room_number, " +
+                "u.IdCard AS tenant_id, u.name AS tenant_name, u.contact AS tenant_contact " +
                 "FROM Bills b " +
                 "JOIN Rooms r ON b.room_id = r.room_id " +
                 "JOIN Floors fl ON r.floor_id = fl.floor_id " +
                 "JOIN Buildings bu ON fl.building_id = bu.building_id " +
+                "LEFT JOIN Users u ON b.tenant_id = u.IdCard " + // Join with Users on IdCard
                 "WHERE YEAR(b.bill_date) = ? AND MONTH(b.bill_date) = ? " +
-                "ORDER BY b.bill_date";
-
+                "ORDER BY bu.building_name, fl.floor_number, r.room_number";
         try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(query)) {
-
             ps.setInt(1, year);
             ps.setInt(2, month);
             try (ResultSet rs = ps.executeQuery()) {
@@ -311,42 +326,39 @@ public class BillDML {
                     }
                 }
             }
-
         } catch (SQLException e) {
-            System.out.println("SQL Error: " + e.getMessage());
+            System.out.println("SQL Error in getBillsByMonth: " + e.getMessage());
             e.printStackTrace();
         }
-
         return bills;
     }
-
     // Get unpaid bills
     public List<Bill> getUnpaidBills() {
         List<Bill> bills = new ArrayList<>();
-
-        String query = "SELECT b.*, bu.building_name, fl.floor_number, r.current_electric_counter AS electric_usage, r.current_water_counter AS water_usage " +
+        String query = "SELECT b.*, bu.building_name, fl.floor_number, " +
+                "r.current_electric_counter AS electric_usage, r.current_water_counter AS water_usage, " +
+                "r.room_number, " +
+                "u.IdCard AS tenant_id, u.name AS tenant_name, u.contact AS tenant_contact " +
                 "FROM Bills b " +
                 "JOIN Rooms r ON b.room_id = r.room_id " +
                 "JOIN Floors fl ON r.floor_id = fl.floor_id " +
                 "JOIN Buildings bu ON fl.building_id = bu.building_id " +
-                "WHERE b.is_paid = false ORDER BY b.due_date";
-
+                "LEFT JOIN Users u ON b.tenant_id = u.IdCard " +
+                "WHERE b.is_paid = false " +
+                "ORDER BY bu.building_name, fl.floor_number, r.room_number";
         try (Connection conn = getConnection();
              PreparedStatement ps = conn.prepareStatement(query);
              ResultSet rs = ps.executeQuery()) {
-
             while (rs.next()) {
                 Bill bill = createBillFromResultSet(rs, conn);
                 if (bill != null) {
                     bills.add(bill);
                 }
             }
-
         } catch (SQLException e) {
             System.out.println("SQL Error: " + e.getMessage());
             e.printStackTrace();
         }
-
         return bills;
     }
 
@@ -363,27 +375,24 @@ public class BillDML {
         }
 
         // Get tenant information directly from database
-        String tenantIdCard = rs.getString("tenant_id");
-        TenantDML tenantDML = new TenantDML();
+        String tenantIdCard = rs.getString("tenant_id"); // This is the IdCard from Users
         Tenant tenant = null;
-
-        if (tenantIdCard != null) {
-            // Create a proper User instance for the tenant
+        if (tenantIdCard != null && !tenantIdCard.isEmpty()) {
             String tenantName = rs.getString("tenant_name");
-            String tenantContact = ""; // Get from database if available
-            tenant = new Tenant(tenantName, tenantIdCard, tenantContact);
-
-            // Ensure the room has the correct tenant
-            try {
-                room.assignTenant(tenant);
-            } catch (Exception e) {
-                System.out.println("Warning: Could not assign tenant to room: " + e.getMessage());
+            String tenantContact = rs.getString("tenant_contact");
+            if (tenantName != null && !tenantName.isEmpty()) {
+                tenant = new Tenant(tenantName, tenantIdCard, tenantContact != null ? tenantContact : "");
+                room.assignTenant(tenant); // Assign tenant to room (optional, depends on your logic)
+            } else {
+                System.out.println("Warning: Tenant with IdCard " + tenantIdCard + " has no name.");
             }
+        } else {
+            System.out.println("Warning: No tenant associated with bill ID " + rs.getInt("bill_id"));
         }
 
         // Create the Bill instance
         try {
-            Bill bill = createBillInstance(
+            Bill bill = new Bill(
                     room,
                     rs.getString("building_name"),
                     rs.getString("floor_number"),
@@ -394,15 +403,11 @@ public class BillDML {
 
             // Set additional fields
             bill.setBillID(rs.getInt("bill_id"));
-
-            // Set the payment status from the database
+            bill.setTenant(tenant); // Explicitly set the tenant
             boolean isPaid = rs.getBoolean("is_paid");
             if (isPaid) {
-                // Mark the bill as paid with the total amount
                 bill.markAsPaid(rs.getDouble("total_amount"));
             }
-
-            // Set other bill properties if needed
             LocalDate billDate = rs.getDate("bill_date").toLocalDate();
             LocalDate dueDate = rs.getDate("due_date").toLocalDate();
             bill.setBillDate(billDate);

@@ -25,6 +25,9 @@ public class LandlordGUI extends JFrame {
         FloorManagementGUI floorManagementGUI = new FloorManagementGUI();
         RoomManagementGUI roomManagementGUI = new RoomManagementGUI(landlord);
 
+        BillManagementGUI billManagementGUI = new BillManagementGUI();
+        billManagementGUI.setLandlord(landlord);
+
         // Set landlord in FloorManagementGUI
         floorManagementGUI.setLandlord(landlord);
 
@@ -40,79 +43,9 @@ public class LandlordGUI extends JFrame {
 
         // Tenant and Bill tabs
         tabbedPane.addTab("Tenants", new TenantManagementGUI(landlord));
-        tabbedPane.addTab("Bills", createBillPanel());
+        tabbedPane.addTab("Bills", billManagementGUI); // Use BillManagementGUI instead of createBillPanel()
 
         // Add tabbed pane to frame
         getContentPane().add(tabbedPane);
     }
-
-
-    private JPanel createBillPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-
-        // Create button panel
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
-
-        // Create buttons with icons
-        JButton createButton = createButton("Create Bill", "icons/create.png");
-        JButton viewMonthButton = createButton("View by Month", "icons/calendar.png");
-        JButton viewTenantButton = createButton("View by Tenant", "icons/tenant.png");
-        JButton viewUnpaidButton = createButton("View Unpaid", "icons/unpaid.png");
-        JButton reportButton = createButton("Generate Report", "icons/report.png");
-
-        // Add action listeners
-        createButton.addActionListener(e -> createBill());
-        viewMonthButton.addActionListener(e -> viewBillsByMonth());
-        viewTenantButton.addActionListener(e -> viewBillsByTenant());
-        viewUnpaidButton.addActionListener(e -> viewUnpaidBills());
-        reportButton.addActionListener(e -> generateReport());
-
-        // Add buttons to panel
-        buttonPanel.add(createButton);
-        buttonPanel.add(viewMonthButton);
-        buttonPanel.add(viewTenantButton);
-        buttonPanel.add(viewUnpaidButton);
-        buttonPanel.add(reportButton);
-
-        // Add bill table placeholder
-        JTable billTable = new JTable(); // Populate with bill data in real implementation
-        JScrollPane scrollPane = new JScrollPane(billTable);
-
-        panel.add(buttonPanel, BorderLayout.NORTH);
-        panel.add(scrollPane, BorderLayout.CENTER);
-
-        return panel;
-    }
-
-    // Helper method to create buttons with icons and ensure text fits
-    private JButton createButton(String text, String iconPath) {
-        JButton button = new JButton(text, new ImageIcon(iconPath));
-        button.setPreferredSize(new Dimension(150, 30)); // Adjust size to fit text and icon
-        button.setHorizontalAlignment(SwingConstants.LEFT); // Align text/icon left
-        return button;
-    }
-
-
-    private void createBill() {
-        JOptionPane.showMessageDialog(this, "Create Bill functionality not implemented yet.");
-    }
-
-    private void viewBillsByMonth() {
-        JOptionPane.showMessageDialog(this, "View Bills by Month functionality not implemented yet.");
-    }
-
-    private void viewBillsByTenant() {
-        JOptionPane.showMessageDialog(this, "View Bills by Tenant functionality not implemented yet.");
-    }
-
-    private void viewUnpaidBills() {
-        JOptionPane.showMessageDialog(this, "View Unpaid Bills functionality not implemented yet.");
-    }
-
-    private void generateReport() {
-        JOptionPane.showMessageDialog(this, "Generate Report functionality not implemented yet.");
-    }
-
-    // Main method for testing
-
 }

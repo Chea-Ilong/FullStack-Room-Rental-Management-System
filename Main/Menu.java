@@ -44,7 +44,7 @@ public class Menu {
                 scanner.nextLine(); // Consume newline
 
                 switch (choice) {
-                    case 1:
+                    case 1: // Pay Bill as Tenant
                         if (tenant.getAssignedRoom() == null) {
                             System.out.println("You are not assigned to any room.");
                         } else {
@@ -57,7 +57,7 @@ public class Menu {
                             if (tenant.isBillPaid(today)) {
                                 System.out.println("You have already paid your bill for this month.");
                             } else {
-                                // Use a PrintStream to suppress unwanted output
+                                // Use a PrintStream to suppress unwanted output during bill retrieval
                                 PrintStream originalOut = System.out;
                                 ByteArrayOutputStream devNull = new ByteArrayOutputStream();
                                 PrintStream nullPrintStream = new PrintStream(devNull);
@@ -71,6 +71,7 @@ public class Menu {
                                 // Restore original System.out
                                 System.setOut(originalOut);
 
+                                // Filter unpaid bills
                                 List<Bill> unpaidBills = tenantBills.stream()
                                         .filter(bill -> !bill.isPaid())
                                         .collect(Collectors.toList());
@@ -105,61 +106,61 @@ public class Menu {
                                         if (selection >= 1 && selection <= unpaidBills.size()) {
                                             Bill selectedBill = unpaidBills.get(selection - 1);
 
-                                            System.out.println("\n" + selectedBill);
+                                            // Display the full invoice before payment confirmation
+                                            System.out.println("\nSelected Bill Details:");
+                                            System.out.println(selectedBill.toString()); // Ensure full invoice is shown
+
                                             System.out.print("Confirm payment (Y/N)? ");
                                             String confirm = scanner.nextLine().trim().toUpperCase();
 
-                                            // In the tenant menu case for bill payment
                                             if (confirm.equals("Y")) {
                                                 try {
-                                                    // Redirect System.out to suppress messages during these operations
+                                                    // Suppress output during database operations
                                                     System.setOut(nullPrintStream);
 
-                                                    // Mark bill as paid in memory (output suppressed)
+                                                    // Mark bill as paid in memory
                                                     selectedBill.markAsPaid(selectedBill.getTotalAmount());
                                                     tenant.markBillAsPaid(selectedBill.getBillDate());
 
-                                                    // Restore original System.out
+                                                    // Restore System.out for database confirmation messages
                                                     System.setOut(originalOut);
 
                                                     // Get tenant and landlord database IDs
                                                     int tenantDbId = 0;
                                                     int landlordDbId = 0;
 
-                                                    // Create connection
-                                                    Connection conn = DataBaseConnection.getConnection();
-
-                                                    try {
+                                                    try (Connection conn = DataBaseConnection.getConnection()) {
                                                         // Get tenant ID from database using IdCard
                                                         String tenantQuery = "SELECT tenant_id FROM Tenants t JOIN Users u ON t.user_id = u.user_id WHERE u.IdCard = ?";
-                                                        PreparedStatement tenantStmt = conn.prepareStatement(tenantQuery);
-                                                        tenantStmt.setString(1, tenant.getIdCard());
-                                                        ResultSet tenantRs = tenantStmt.executeQuery();
-                                                        if (tenantRs.next()) {
-                                                            tenantDbId = tenantRs.getInt("tenant_id");
-                                                        } else {
-                                                            throw new SQLException("Tenant not found in database");
+                                                        try (PreparedStatement tenantStmt = conn.prepareStatement(tenantQuery)) {
+                                                            tenantStmt.setString(1, tenant.getIdCard());
+                                                            try (ResultSet tenantRs = tenantStmt.executeQuery()) {
+                                                                if (tenantRs.next()) {
+                                                                    tenantDbId = tenantRs.getInt("tenant_id");
+                                                                } else {
+                                                                    throw new SQLException("Tenant not found in database");
+                                                                }
+                                                            }
                                                         }
 
-                                                        // Get landlord ID from database
+                                                        // Get landlord ID from database (assuming landlord user_id is known)
                                                         String landlordQuery = "SELECT landlord_id FROM Landlords WHERE user_id = ?";
-                                                        PreparedStatement landlordStmt = conn.prepareStatement(landlordQuery);
-                                                        landlordStmt.setInt(1, 1); // Assuming landlord has a userId
-                                                        ResultSet landlordRs = landlordStmt.executeQuery();
-                                                        if (landlordRs.next()) {
-                                                            landlordDbId = landlordRs.getInt("landlord_id");
-                                                        } else {
-                                                            throw new SQLException("Landlord not found in database");
+                                                        try (PreparedStatement landlordStmt = conn.prepareStatement(landlordQuery)) {
+                                                            landlordStmt.setInt(1, 1); // Replace with actual landlord user ID
+                                                            try (ResultSet landlordRs = landlordStmt.executeQuery()) {
+                                                                if (landlordRs.next()) {
+                                                                    landlordDbId = landlordRs.getInt("landlord_id");
+                                                                } else {
+                                                                    throw new SQLException("Landlord not found in database");
+                                                                }
+                                                            }
                                                         }
 
-                                                        // Close resources
-                                                        tenantRs.close();
-                                                        tenantStmt.close();
-                                                        landlordRs.close();
-                                                        landlordStmt.close();
-
-                                                        // Use the existing recordPayment method for recording the payment
+                                                        // Record payment and update bill status in database
                                                         BillRecordDML billRecordDML = new BillRecordDML();
+                                                        BillDML billDML = new BillDML();
+
+                                                        // Record payment in BillRecordDML
                                                         int recordId = billRecordDML.recordPayment(
                                                                 selectedBill.getBillID(),
                                                                 tenantDbId,
@@ -168,28 +169,29 @@ public class Menu {
                                                         );
 
                                                         if (recordId > 0) {
-                                                            // Redirect System.out to suppress messages during this operation
-                                                            System.setOut(nullPrintStream);
+                                                            // Update bill status in Bills table
+                                                            boolean updated = billDML.markBillAsPaid(selectedBill.getBillID());
+                                                            if (updated) {
+                                                                // Update in-memory BillRecord
+                                                                System.setOut(nullPrintStream);
+                                                                landlord.getBillRecord().updateBill(selectedBill);
+                                                                System.setOut(originalOut);
 
-                                                            // Update the bill in the BillRecord (output suppressed)
-                                                            landlord.getBillRecord().updateBill(selectedBill);
+                                                                System.out.println("Bill payment for " + selectedBill.getBillDate() + " marked as paid.");
+                                                                System.out.println("Payment successful! Thank you.");
 
-                                                            // Restore original System.out
-                                                            System.setOut(originalOut);
-
-                                                            System.out.println("Bill payment for " + selectedBill.getBillDate() + " marked as paid.");
-                                                            System.out.println("Payment successful! Thank you.");
+                                                                // Display updated invoice after payment
+                                                                System.out.println("\nUpdated Bill Details:");
+                                                                System.out.println(selectedBill.toString());
+                                                            } else {
+                                                                System.out.println("Failed to update bill status in database.");
+                                                            }
                                                         } else {
-                                                            System.out.println("Payment failed. Please try again later.");
-                                                        }
-                                                    } finally {
-                                                        if (conn != null) {
-                                                            conn.close();
+                                                            System.out.println("Payment recording failed. Please try again later.");
                                                         }
                                                     }
                                                 } catch (SQLException | IllegalArgumentException | IllegalStateException e) {
-                                                    // Ensure System.out is restored in case of exceptions
-                                                    System.setOut(originalOut);
+                                                    System.setOut(originalOut); // Restore output in case of error
                                                     System.out.println("Payment error: " + e.getMessage());
                                                     e.printStackTrace();
                                                 }
@@ -664,6 +666,7 @@ public class Menu {
                             floorDML = new FloorDML();
                             roomDML = new RoomDML();
 
+                            // Get IDs
                             buildingId = buildingDML.getBuildingIdByName(buildingName);
                             if (buildingId == -1) {
                                 System.out.println("Building not found: " + buildingName);
@@ -682,70 +685,108 @@ public class Menu {
                                 break;
                             }
 
-                            Room room = roomDML.getRoomById(roomId);
-                            if (room != null) {
-                                System.out.println("\n======= Room Details =======");
-                                System.out.println("Building: " + buildingName);
-                                System.out.println("Floor: " + floorNumber);
-                                System.out.println("Room Number: " + room.getRoomNumber());
-                                System.out.println("Status: " + (room.isOccupied() ? "Occupied" : "Vacant"));
-                                System.out.println("Electric Counter: " + room.getCurrentElectricCounter());
-                                System.out.println("Water Counter: " + room.getCurrentWaterCounter());
+                            // Get room details using the RoomDetails class similar to case 4
+                            String query = "SELECT r.room_id, r.room_number, r.current_electric_counter, r.current_water_counter, r.is_occupied, " +
+                                    "b.building_name, f.floor_number, u.name AS tenant_name " +
+                                    "FROM Rooms r " +
+                                    "LEFT JOIN Floors f ON r.floor_id = f.floor_id " +
+                                    "LEFT JOIN Buildings b ON f.building_id = b.building_id " +
+                                    "LEFT JOIN Tenants t ON t.assigned_room_id = r.room_id " +
+                                    "LEFT JOIN Users u ON t.user_id = u.user_id " +
+                                    "WHERE r.room_id = ?";
 
-                                // Display tenant information if room is occupied
-                                if (room.isOccupied() && room.getTenant() != null) {
-                                    Tenant tenant = room.getTenant();
-                                    System.out.println("\nTenant Information:");
-                                    System.out.println("Name: " + tenant.getName());
-                                    System.out.println("ID Card: " + tenant.getIdCard());
-                                    System.out.println("Contact: " + tenant.getContact());
+                            try (Connection conn = DataBaseConnection.getConnection();
+                                 PreparedStatement ps = conn.prepareStatement(query)) {
+
+                                ps.setInt(1, roomId);
+
+                                try (ResultSet rs = ps.executeQuery()) {
+                                    if (rs.next()) {
+                                        RoomDML.RoomDetails details = new RoomDML.RoomDetails();
+                                        details.roomId = rs.getInt("room_id");
+                                        details.roomNumber = rs.getString("room_number");
+                                        details.electricCounter = rs.getInt("current_electric_counter");
+                                        details.waterCounter = rs.getInt("current_water_counter");
+                                        details.isOccupied = rs.getBoolean("is_occupied");
+                                        details.buildingName = rs.getString("building_name");
+                                        details.floorNumber = rs.getString("floor_number");
+                                        details.tenantName = rs.getString("tenant_name") != null ? rs.getString("tenant_name") : "N/A";
+
+                                        // Display the room details in a format similar to case 4
+                                        System.out.println("\n======= Room Details =======");
+                                        System.out.println("Room ID: " + details.roomId);
+                                        System.out.println("Room Number: " + details.roomNumber);
+                                        System.out.println("Electric Counter: " + details.electricCounter);
+                                        System.out.println("Water Counter: " + details.waterCounter);
+                                        System.out.println("Occupied: " + (details.isOccupied ? "Yes" : "No"));
+                                        System.out.println("Building Name: " + details.buildingName);
+                                        System.out.println("Floor Number: " + details.floorNumber);
+                                        System.out.println("Tenant Name: " + details.tenantName);
+                                        System.out.println("============================");
+                                    } else {
+                                        System.out.println("Error retrieving room details.");
+                                    }
                                 }
-                                System.out.println("============================");
-                            } else {
-                                System.out.println("Error retrieving room details.");
+                            } catch (SQLException e) {
+                                System.out.println("SQL Error retrieving room details: " + e.getMessage());
+                                e.printStackTrace();
                             }
                             break;
 
                         case 4:
                             // View All Rooms with building and floor information
-                            buildingDML = new BuildingDML();
+                            RoomDML roomDML1 = new RoomDML();
+                            List<RoomDML.RoomDetails> roomDetailsList = roomDML1.getAllRoomsWithDetails();
 
-                            // Get all buildings
-                            List<Building> buildings = buildingDML.getAllBuildings();
-
-                            if (buildings.isEmpty()) {
-                                System.out.println("No buildings found in database.");
-                            } else {
-                                System.out.println("\n======= All Rooms =======");
-                                for (Building building : buildings) {
-                                    System.out.println("\nBuilding: " + building.getName());
-
-                                    // Get floors for this building
-                                    List<Floor> floors = building.getFloors();
-                                    if (floors.isEmpty()) {
-                                        System.out.println("  No floors in this building.");
-                                        continue;
-                                    }
-
-                                    for (Floor floor : floors) {
-                                        System.out.println("  Floor: " + floor.getFloorNumber());
-
-                                        // Get rooms for this floor
-                                        List<Room> rooms = floor.getRooms();
-                                        if (rooms.isEmpty()) {
-                                            System.out.println("    No rooms on this floor.");
-                                            continue;
-                                        }
-
-                                        for (Room r : rooms) {
-                                            System.out.println("    Room: " + r.getRoomNumber() +
-                                                    " | Status: " + (r.isOccupied() ? "Occupied" : "Vacant") +
-                                                    " | Tenant: " + (r.getTenant() != null ? r.getTenant().getName() : "None"));
-                                        }
-                                    }
-                                }
-                                System.out.println("=========================");
+                            for (RoomDML.RoomDetails details : roomDetailsList) {
+                                System.out.println("Room ID: " + details.roomId);
+                                System.out.println("Room Number: " + details.roomNumber);
+                                System.out.println("Electric Counter: " + details.electricCounter);
+                                System.out.println("Water Counter: " + details.waterCounter);
+                                System.out.println("Occupied: " + (details.isOccupied ? "Yes" : "No"));
+                                System.out.println("Building Name: " + details.buildingName);
+                                System.out.println("Floor Number: " + details.floorNumber);
+                                System.out.println("Tenant Name: " + details.tenantName);
+                                System.out.println("-----------------------------");
                             }
+//                            buildingDML = new BuildingDML();
+//
+//                            // Get all buildings
+//                            List<Building> buildings = buildingDML.getAllBuildings();
+//
+//                            if (buildings.isEmpty()) {
+//                                System.out.println("No buildings found in database.");
+//                            } else {
+//                                System.out.println("\n======= All Rooms =======");
+//                                for (Building building : buildings) {
+//                                    System.out.println("\nBuilding: " + building.getName());
+//
+//                                    // Get floors for this building
+//                                    List<Floor> floors = building.getFloors();
+//                                    if (floors.isEmpty()) {
+//                                        System.out.println("  No floors in this building.");
+//                                        continue;
+//                                    }
+//
+//                                    for (Floor floor : floors) {
+//                                        System.out.println("  Floor: " + floor.getFloorNumber());
+//
+//                                        // Get rooms for this floor
+//                                        List<Room> rooms = floor.getRooms();
+//                                        if (rooms.isEmpty()) {
+//                                            System.out.println("    No rooms on this floor.");
+//                                            continue;
+//                                        }
+//
+//                                        for (Room r : rooms) {
+//                                            System.out.println("    Room: " + r.getRoomNumber() +
+//                                                    " | Status: " + (r.isOccupied() ? "Occupied" : "Vacant") +
+//                                                    " | Tenant: " + (r.getTenant() != null ? r.getTenant().getName() : "None"));
+//                                        }
+//                                    }
+//                                }
+//                                System.out.println("=========================");
+//                            }
                             break;
 
                         case 5:
@@ -1011,7 +1052,7 @@ public class Menu {
 
     public static void billManagementMenu(Scanner scanner, Landlord landlord) {
         boolean running = true;
-
+        BillDML billDML = new BillDML();
         while (running) {
             System.out.println("\n===== Bill Management =====");
             System.out.println("1. Create Bill for Room");
@@ -1033,69 +1074,56 @@ public class Menu {
             }
 
             switch (choice) {
-                case 1:
+                case 1: // Create Bill for Room
                     System.out.print("Enter building name: ");
                     String buildingName = scanner.nextLine();
-
                     System.out.print("Enter floor number: ");
                     String floorNumber = scanner.nextLine();
-
                     System.out.print("Enter room number: ");
                     String roomNumber = scanner.nextLine();
 
-                    // Validate that the room exists in the specific building and floor
-                    Room room = null;
-                    Building building = landlord.getBuildingByName(buildingName);
-                    if (building != null) {
-                        Floor floor = building.getFloorByNumber(floorNumber);
-                        if (floor != null) {
-                            room = floor.getRoomByNumber(roomNumber);
-                        }
+                    // Initialize DML objects
+                    RoomDML roomDML = new RoomDML();
+
+                    // Get room ID
+                    int roomId = billDML.getRoomIdByBuildingFloorAndNumber(buildingName, floorNumber, roomNumber);
+                    if (roomId == -1) {
+                        System.out.println("Room not found.");
+                        break;
                     }
 
+                    // Fetch the room with its current tenant from the database
+                    Room room = roomDML.getRoomById(roomId);
                     if (room == null) {
-                        System.out.println("Room not found in " + buildingName + ", Floor " + floorNumber + ". Please try again.");
+                        System.out.println("Error retrieving room details.");
                         break;
                     }
 
-                    // Check if room is occupied
-                    if (!room.isOccupied()) {
-                        System.out.println("Room " + roomNumber + " in " + buildingName + ", Floor " + floorNumber + " is not occupied. Cannot create a bill.");
+                    // Check if the room is occupied and has a tenant
+                    if (!room.isOccupied() || room.getTenant() == null) {
+                        System.out.println("Cannot create bill: Room " + roomNumber + " is vacant.");
                         break;
                     }
 
+                    // Get billing details from user
                     System.out.print("Enter base rent amount (KHR): ");
-                    double rentAmount = scanner.nextDouble();
-                    scanner.nextLine(); // consume newline
-
+                    double rentAmount = Double.parseDouble(scanner.nextLine());
                     System.out.print("Electric usage for room " + roomNumber + " (kWh): ");
-                    int electricUsage = scanner.nextInt();
-
+                    int electricUsage = Integer.parseInt(scanner.nextLine());
                     System.out.print("Water usage for room " + roomNumber + " (m³): ");
-                    int waterUsage = scanner.nextInt();
-                    scanner.nextLine(); // consume newline
+                    int waterUsage = Integer.parseInt(scanner.nextLine());
 
-                    // Create maps with just this single room
-                    Map<String, Integer> electricUsageMap = new HashMap<>();
-                    Map<String, Integer> waterUsageMap = new HashMap<>();
-                    electricUsageMap.put(roomNumber, electricUsage);
-                    waterUsageMap.put(roomNumber, waterUsage);
-
-                    Bill bill1 = new Bill(room, buildingName, floorNumber, rentAmount, electricUsage, waterUsage);
-                    BillDML billDML = new BillDML();
-                    boolean saved = billDML.saveBill(bill1);
-
-                    if (saved) {
-                        System.out.println("\nBill created successfully for room " + roomNumber);
-                        System.out.println(bill1.toString());
-
+                    // Create and save the bill
+                    Bill bill = new Bill(room, buildingName, floorNumber, rentAmount, electricUsage, waterUsage);
+                    if (billDML.saveBill(bill)) {
+                        System.out.println("Bill created successfully for room " + roomNumber);
+                        System.out.println(bill.toString());
                     } else {
-                        System.out.println("\nFailed to create bill for room " + roomNumber);
+                        System.out.println("Failed to create bill.");
                     }
-
                     break;
 
-                case 2:
+                case 2: // View Bills for Month
                     System.out.print("Enter year (YYYY): ");
                     int year = scanner.nextInt();
 
@@ -1103,21 +1131,21 @@ public class Menu {
                     int month = scanner.nextInt();
                     scanner.nextLine(); // consume newline
 
-                    List<Bill> bills = landlord.viewBillsForMonth(year, month);
+                    List<Bill> monthlyBills = landlord.viewBillsForMonth(year, month);
 
-                    if (bills.isEmpty()) {
+                    if (monthlyBills.isEmpty()) {
                         System.out.println("No bills found for " + month + "/" + year);
                     } else {
                         System.out.println("\n===== Bills for " + month + "/" + year + " =====");
-                        for (Bill bill : bills) {
-                            System.out.println(bill);
+                        for (Bill monthBill : monthlyBills) {
+                            System.out.println(monthBill);
                             System.out.println("-----------------------------------");
                         }
-                        System.out.println("Total bills: " + bills.size());
+                        System.out.println("Total bills: " + monthlyBills.size());
                     }
                     break;
 
-                case 3:
+                case 3: // View Bills for Tenant
                     System.out.print("Enter tenant ID: ");
                     String tenantId = scanner.nextLine();
 
@@ -1127,30 +1155,30 @@ public class Menu {
                         System.out.println("No bills found for tenant with ID: " + tenantId);
                     } else {
                         System.out.println("\n===== Bills for Tenant ID: " + tenantId + " =====");
-                        for (Bill bill : tenantBills) {
-                            System.out.println(bill);
+                        for (Bill tenantBill : tenantBills) {
+                            System.out.println(tenantBill);
                             System.out.println("-----------------------------------");
                         }
                         System.out.println("Total bills: " + tenantBills.size());
                     }
                     break;
 
-                case 4:
+                case 4: // View Unpaid Bills
                     List<Bill> unpaidBills = landlord.viewUnpaidBills();
 
                     if (unpaidBills.isEmpty()) {
                         System.out.println("No unpaid bills found.");
                     } else {
                         System.out.println("\n===== Unpaid Bills =====");
-                        for (Bill bill : unpaidBills) {
-                            System.out.println(bill);
+                        for (Bill unpaidBill : unpaidBills) {
+                            System.out.println(unpaidBill);
                             System.out.println("-----------------------------------");
                         }
                         System.out.println("Total unpaid bills: " + unpaidBills.size());
                     }
                     break;
 
-                case 5:
+                case 5: // Generate Monthly Report
                     System.out.print("Enter year (YYYY): ");
                     year = scanner.nextInt();
 

@@ -1,11 +1,17 @@
 package Payment;
 
 import DataBase.BillDML;
+import DataBase.DataBaseConnection;
+import DataBase.RoomDML;
 import Properties.Building;
 import Properties.Floor;
 import Properties.Room;
 import Users.Tenant;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
@@ -159,14 +165,51 @@ public class BillRecord {
         // Get bills from the database
         List<Bill> tenantBills = billDML.getBillsByTenantId(tenantId);
 
-        // Store each bill in the billDatabase structure
+        // Ensure each bill has all necessary data populated
+        RoomDML roomDML = new RoomDML();
         for (Bill bill : tenantBills) {
-            String buildingName = bill.getBuildingName();
-            String floorNumber = bill.getFloorNumber();
+            // Verify and fetch room details if missing
+            if (bill.getRoom() == null || bill.getBuildingName() == null || bill.getFloorNumber() == null) {
+                int roomId = billDML.getRoomIdByBuildingFloorAndNumber(
+                        bill.getBuildingName(),
+                        bill.getFloorNumber(),
+                        bill.getRoom() != null ? bill.getRoom().getRoomNumber() : null
+                );
+                if (roomId != -1) {
+                    Room room = roomDML.getRoomById(roomId);
+                    if (room != null) {
+                        bill.setRoom(room);
+                        // Ensure tenant is set from room if available
+                        if (room.getTenant() != null) {
+                            bill.setTenant(room.getTenant());
+                        }
+                    }
+                }
+            }
 
-            // Only store if we have the necessary information
-            if (buildingName != null && floorNumber != null && bill.getRoom() != null) {
-                updateBill(bill);
+            // If tenant is still null, try to fetch it directly from the database
+            if (bill.getTenant() == null && tenantId != null) {
+                try (Connection conn = DataBaseConnection.getConnection()) {
+                    String tenantQuery = "SELECT u.name, u.IdCard, u.contact " +
+                            "FROM Users u " +
+                            "JOIN Tenants t ON t.user_id = u.user_id " +
+                            "WHERE u.IdCard = ?";
+                    PreparedStatement ps = conn.prepareStatement(tenantQuery);
+                    ps.setString(1, tenantId);
+                    ResultSet rs = ps.executeQuery();
+                    if (rs.next()) {
+                        Tenant tenant = new Tenant(
+                                rs.getString("name"),
+                                rs.getString("IdCard"),
+                                rs.getString("contact") != null ? rs.getString("contact") : ""
+                        );
+                        bill.setTenant(tenant);
+                    }
+                    rs.close();
+                    ps.close();
+                } catch (SQLException e) {
+                    System.err.println("Error fetching tenant data: " + e.getMessage());
+                }
             }
         }
 
