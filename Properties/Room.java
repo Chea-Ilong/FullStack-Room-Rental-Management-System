@@ -15,6 +15,9 @@ public class Room {
     private Tenant tenant;
     private int currentElectricCounter;
     private int currentWaterCounter;
+    private double rent;
+    private int size; // Add as class field
+    private int floor; // Add as class field
 
     // ====================================================================================================
     // Constructor
@@ -53,7 +56,13 @@ public class Room {
     public int getCurrentWaterCounter() {
         return currentWaterCounter;
     }
+    public double getRent() {
+        return rent;
+    }
 
+    public void setRent(double rent) {
+        this.rent = rent;
+    }
     // ====================================================================================================
     // Utility Management
     // ====================================================================================================
@@ -152,6 +161,23 @@ public class Room {
                 ", currentWaterCounter=" + currentWaterCounter +
                 '}';
     }
+    public int getSize() {
+        return size;
+    }
+
+    public int getFloor() {
+        return floor;
+    }
+
+    // Add setters if needed
+    public void setSize(int size) {
+        this.size = size;
+    }
+
+    public void setFloor(int floor) {
+        this.floor = floor;
+    }
+
 
 
 

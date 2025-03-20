@@ -66,6 +66,24 @@ public class FloorDML {
             }
         }
     }
+    // In FloorDML class
+    public boolean floorExistsByBuildingAndNumber(int buildingId, String floorNumber) {
+        String query = "SELECT COUNT(*) FROM Floors WHERE building_id = ? AND floor_number = ?";
+        try (Connection conn = DataBaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setInt(1, buildingId);
+            stmt.setString(2, floorNumber);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("SQL Error checking floor existence: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return false;
+    }
     /**
      * Returns a list of floor numbers for a specific building
      * @param buildingId The ID of the building

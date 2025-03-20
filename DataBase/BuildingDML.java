@@ -170,7 +170,45 @@ public class BuildingDML {
 
         return -1; // Return -1 if building not found
     }
+    // In BuildingDML class
 
+    // Check if a building with the given name already exists
+    public boolean buildingExistsByName(String name) {
+        String query = "SELECT COUNT(*) FROM Buildings WHERE building_name = ?";
+        try (Connection conn = DataBaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setString(1, name);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("SQL Error checking building name: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    // Check if a building with the given name and address exists, excluding a specific ID
+    public boolean buildingExistsByNameAndAddress(String name, String address, int excludeId) {
+        String query = "SELECT COUNT(*) FROM Buildings WHERE building_name = ? AND address = ? AND building_id != ?";
+        try (Connection conn = DataBaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setString(1, name);
+            stmt.setString(2, address);
+            stmt.setInt(3, excludeId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("SQL Error checking building name and address: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return false;
+    }
     public Building getBuildingByName(String buildingName) {
         String query = "SELECT building_id, building_name, address FROM Buildings WHERE building_name = ?";
 

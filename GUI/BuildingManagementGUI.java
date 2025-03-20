@@ -19,6 +19,16 @@ public class BuildingManagementGUI extends JPanel {
     private FloorManagementGUI floorManagementGUI;
     private RoomManagementGUI roomManagementGUI;
 
+    // In BuildingManagementGUI class, add a field for BillManagementGUI
+    private BillManagementGUI billManagementGUI;
+
+    // Add a setter method
+    public void setBillManagementGUI(BillManagementGUI billManagementGUI) {
+        this.billManagementGUI = billManagementGUI;
+    }
+
+// Then, after any building operation (add, update, delete), add:
+
     public void setFloorManagementGUI(FloorManagementGUI floorManagementGUI) {
         this.floorManagementGUI = floorManagementGUI;
     }
@@ -147,6 +157,15 @@ public class BuildingManagementGUI extends JPanel {
         }
 
         try {
+            // Check if a building with the same name already exists
+            if (buildingDML.buildingExistsByName(name)) {
+                JOptionPane.showMessageDialog(this,
+                        "A building with the name '" + name + "' already exists",
+                        "Duplicate Error",
+                        JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
             Building building = new Building(name, address);
             buildingDML.saveBuilding(building);
             loadBuildingData();
@@ -156,6 +175,9 @@ public class BuildingManagementGUI extends JPanel {
             }
             if (roomManagementGUI != null) {
                 roomManagementGUI.refreshAfterBuildingChanges();
+            }
+            if (billManagementGUI != null) {
+                billManagementGUI.refreshAfterBuildingChanges();
             }
             JOptionPane.showMessageDialog(this,
                     "Building added successfully",
@@ -168,7 +190,6 @@ public class BuildingManagementGUI extends JPanel {
                     JOptionPane.ERROR_MESSAGE);
         }
     }
-
     private void updateBuilding() {
         if (selectedBuildingId == -1) {
             JOptionPane.showMessageDialog(this,
@@ -190,14 +211,27 @@ public class BuildingManagementGUI extends JPanel {
         }
 
         try {
+            // Check if another building with the same name exists (excluding the current one)
+            if (buildingDML.buildingExistsByNameAndAddress(name, address, selectedBuildingId)) {
+                JOptionPane.showMessageDialog(this,
+                        "Another building with the name '" + name + "' and address '" + address + "' already exists",
+                        "Duplicate Error",
+                        JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
             Building building = new Building(name, address);
             buildingDML.updateBuilding(selectedBuildingId, building);
             loadBuildingData();
+            clearForm(); // Clear form after successful update
             if (floorManagementGUI != null) {
                 floorManagementGUI.refreshAfterBuildingChanges();
             }
             if (roomManagementGUI != null) {
                 roomManagementGUI.refreshAfterBuildingChanges();
+            }
+            if (billManagementGUI != null) {
+                billManagementGUI.refreshAfterBuildingChanges();
             }
             JOptionPane.showMessageDialog(this,
                     "Building updated successfully",
@@ -236,6 +270,9 @@ public class BuildingManagementGUI extends JPanel {
                 }
                 if (roomManagementGUI != null) {
                     roomManagementGUI.refreshAfterBuildingChanges();
+                }
+                if (billManagementGUI != null) {
+                    billManagementGUI.refreshAfterBuildingChanges();
                 }
                 JOptionPane.showMessageDialog(this,
                         "Building deleted successfully",

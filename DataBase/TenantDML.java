@@ -557,6 +557,7 @@ public class TenantDML {
             }
         }
     }
+
     public int getTenantIdByIdCard(String idCard) {
         String query = "SELECT t.tenant_id FROM Tenants t " +
                 "JOIN Users u ON t.user_id = u.user_id " +

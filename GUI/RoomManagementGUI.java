@@ -55,7 +55,7 @@ public class RoomManagementGUI extends JPanel {
         panel.add(new JLabel("Building:"));
         buildingComboBox = new JComboBox<>();
         buildingComboBox.addItem("All Buildings"); // Add "All Buildings" option
-        buildingComboBox.setEditable(true);
+        buildingComboBox.setEditable(false); // Make it selection-only
         buildingComboBox.addActionListener(e -> {
             loadFloors();
             filterRoomsByBuildingAndFloor();
@@ -65,7 +65,7 @@ public class RoomManagementGUI extends JPanel {
         panel.add(new JLabel("Floor:"));
         floorComboBox = new JComboBox<>();
         floorComboBox.addItem("All Floors"); // Add "All Floors" option
-        floorComboBox.setEditable(true);
+        floorComboBox.setEditable(false); // Make it selection-only
         floorComboBox.addActionListener(e -> filterRoomsByBuildingAndFloor());
         panel.add(floorComboBox);
 
@@ -250,8 +250,17 @@ public class RoomManagementGUI extends JPanel {
         }
 
         try {
-            int electricCounter = electricCounterField.getText().trim().isEmpty() ? 0 : Integer.parseInt(electricCounterField.getText().trim());
-            int waterCounter = waterCounterField.getText().trim().isEmpty() ? 0 : Integer.parseInt(waterCounterField.getText().trim());
+            String electricText = electricCounterField.getText().trim();
+            String waterText = waterCounterField.getText().trim();
+
+            int electricCounter = electricText.isEmpty() ? 0 : Integer.parseInt(electricText);
+            int waterCounter = waterText.isEmpty() ? 0 : Integer.parseInt(waterText);
+
+            // Check for negative numbers
+            if (electricCounter < 0 || waterCounter < 0) {
+                JOptionPane.showMessageDialog(this, "Counter values cannot be negative", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
 
             int buildingId = buildingDML.getBuildingIdByName(selectedBuilding);
             if (buildingId == -1) {
@@ -289,7 +298,7 @@ public class RoomManagementGUI extends JPanel {
             clearForm();
             JOptionPane.showMessageDialog(this, "Room added successfully", "Success", JOptionPane.INFORMATION_MESSAGE);
         } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Counter values must be numbers", "Validation Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Counter values must be valid numbers", "Validation Error", JOptionPane.ERROR_MESSAGE);
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Error adding room: " + e.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
         }
@@ -312,8 +321,17 @@ public class RoomManagementGUI extends JPanel {
         }
 
         try {
-            int electricCounter = electricCounterField.getText().trim().isEmpty() ? 0 : Integer.parseInt(electricCounterField.getText().trim());
-            int waterCounter = waterCounterField.getText().trim().isEmpty() ? 0 : Integer.parseInt(waterCounterField.getText().trim());
+            String electricText = electricCounterField.getText().trim();
+            String waterText = waterCounterField.getText().trim();
+
+            int electricCounter = electricText.isEmpty() ? 0 : Integer.parseInt(electricText);
+            int waterCounter = waterText.isEmpty() ? 0 : Integer.parseInt(waterText);
+
+            // Check for negative numbers
+            if (electricCounter < 0 || waterCounter < 0) {
+                JOptionPane.showMessageDialog(this, "Counter values cannot be negative", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
 
             Room existingRoom = roomDML.getRoomById(selectedRoomId);
             if (existingRoom == null) {
@@ -335,7 +353,7 @@ public class RoomManagementGUI extends JPanel {
             clearForm();
             JOptionPane.showMessageDialog(this, "Room updated successfully", "Success", JOptionPane.INFORMATION_MESSAGE);
         } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Counter values must be numbers", "Validation Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Counter values must be valid numbers", "Validation Error", JOptionPane.ERROR_MESSAGE);
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Error updating room: " + e.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
         }

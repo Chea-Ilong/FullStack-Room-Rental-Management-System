@@ -8,8 +8,8 @@ import java.time.format.DateTimeFormatter;
 public class Bill {
     // Constants
     public static final double KHR_TO_USD_RATE = 4100.00;
-    private static final double ELECTRIC_RATE = 620.00;
-    private static final double WATER_RATE = 2500.00;
+    public static final double ELECTRIC_RATE = 620.00;
+    public static final double WATER_RATE = 2500.00;
 
     // Fields
     private int billID;

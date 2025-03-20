@@ -136,6 +136,15 @@ public class FloorManagementGUI extends JPanel {
         if (building != null) {
             int buildingId = buildingDML.getBuildingIdByName(building.getName());
             if (buildingId != -1) {
+                // Check if the floor number already exists for this building
+                if (floorDML.floorExistsByBuildingAndNumber(buildingId, floorNumber)) {
+                    JOptionPane.showMessageDialog(this,
+                            "Floor '" + floorNumber + "' already exists in " + buildingName + ".",
+                            "Duplicate Error",
+                            JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
                 Floor newFloor = new Floor(floorNumber);
                 boolean success = floorDML.saveFloor(newFloor, buildingId);
 
@@ -148,7 +157,7 @@ public class FloorManagementGUI extends JPanel {
                     JOptionPane.showMessageDialog(this, "Floor added successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
                     clearForm();
                 } else {
-                    JOptionPane.showMessageDialog(this, "Failed to add floor.", "Error", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(this, "Failed to add floor due to a database error.", "Error", JOptionPane.ERROR_MESSAGE);
                 }
             } else {
                 JOptionPane.showMessageDialog(this, "Building not found in database.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -222,6 +231,15 @@ public class FloorManagementGUI extends JPanel {
                 int floorId = floorDML.getFloorIdByBuildingAndNumber(buildingId, currentFloorNumber);
 
                 if (floorId != -1) {
+                    // Check if the new floor number already exists (excluding the current floor)
+                    if (!newFloorNumber.equals(currentFloorNumber) && floorDML.floorExistsByBuildingAndNumber(buildingId, newFloorNumber)) {
+                        JOptionPane.showMessageDialog(this,
+                                "Floor '" + newFloorNumber + "' already exists in " + buildingName + ".",
+                                "Duplicate Error",
+                                JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+
                     Floor updatedFloor = new Floor(newFloorNumber);
                     boolean success = floorDML.updateFloor(floorId, updatedFloor);
 
@@ -233,7 +251,7 @@ public class FloorManagementGUI extends JPanel {
                         }
                         clearForm();
                     } else {
-                        JOptionPane.showMessageDialog(this, "Failed to update floor.", "Error", JOptionPane.ERROR_MESSAGE);
+                        JOptionPane.showMessageDialog(this, "Failed to update floor due to a database error.", "Error", JOptionPane.ERROR_MESSAGE);
                     }
                 } else {
                     JOptionPane.showMessageDialog(this, "Floor not found in database.", "Error", JOptionPane.ERROR_MESSAGE);

@@ -6,7 +6,9 @@ import Users.Tenant;
 import java.sql.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static DataBase.DataBaseConnection.getConnection;
 
@@ -431,7 +433,75 @@ public class BillDML {
             return null;
         }
     }
+    // Add this method to the BillDML class
+    public Map<String, Object> getCurrentBill(String tenantIdCard) {
+        Map<String, Object> billDetails = new HashMap<>();
+        String query = "SELECT b.*, bu.building_name, fl.floor_number, " +
+                "r.current_electric_counter AS electric_usage, r.current_water_counter AS water_usage, " +
+                "r.room_number " +
+                "FROM Bills b " +
+                "JOIN Rooms r ON b.room_id = r.room_id " +
+                "JOIN Floors fl ON r.floor_id = fl.floor_id " +
+                "JOIN Buildings bu ON fl.building_id = bu.building_id " +
+                "WHERE b.tenant_id = ? AND b.is_paid = false " +
+                "ORDER BY b.bill_date DESC LIMIT 1";
 
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(query)) {
+
+            ps.setString(1, tenantIdCard);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    billDetails.put("bill_id", rs.getInt("bill_id"));
+                    billDetails.put("room_id", rs.getInt("room_id"));
+                    billDetails.put("bill_date", rs.getDate("bill_date").toLocalDate());
+                    billDetails.put("due_date", rs.getDate("due_date").toLocalDate());
+                    billDetails.put("rent_amount", rs.getDouble("rent_amount"));
+                    billDetails.put("electric_amount", rs.getDouble("electric_amount"));
+                    billDetails.put("water_amount", rs.getDouble("water_amount"));
+                    billDetails.put("total_amount", rs.getDouble("total_amount"));
+                    billDetails.put("building_name", rs.getString("building_name"));
+                    billDetails.put("floor_number", rs.getString("floor_number"));
+                    billDetails.put("room_number", rs.getString("room_number"));
+                    return billDetails;
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("SQL Error in getCurrentBill: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return null; // Return null if no current bill is found
+    }
+    // Get all bills (not just unpaid)
+    public List<Bill> getAllBills() {
+        List<Bill> bills = new ArrayList<>();
+        String query = "SELECT b.*, bu.building_name, fl.floor_number, " +
+                "r.current_electric_counter AS electric_usage, r.current_water_counter AS water_usage, " +
+                "r.room_number, " +
+                "u.IdCard AS tenant_id, u.name AS tenant_name, u.contact AS tenant_contact " +
+                "FROM Bills b " +
+                "JOIN Rooms r ON b.room_id = r.room_id " +
+                "JOIN Floors fl ON r.floor_id = fl.floor_id " +
+                "JOIN Buildings bu ON fl.building_id = bu.building_id " +
+                "LEFT JOIN Users u ON b.tenant_id = u.IdCard " +
+                "ORDER BY bu.building_name, fl.floor_number, r.room_number";
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(query);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                Bill bill = createBillFromResultSet(rs, conn);
+                if (bill != null) {
+                    bills.add(bill);
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("SQL Error in getAllBills: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return bills;
+    }
     // Create the Bills table if it doesn't exist
     public void createBillsTableIfNotExists() {
         String createTableSQL = "CREATE TABLE IF NOT EXISTS Bills (" +

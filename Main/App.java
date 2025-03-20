@@ -18,6 +18,7 @@ import static Main.Menu.*;
 public class App {
     private static Tenant currentLoggedInTenant = null;
 
+//    how do i make it that when in bill i add the electric and water usage and i also want the current water and electric counter to increment to the usage amount and that is the new current
     public static void main(String[] args) throws RoomException, TenantException {
         try (Connection connection = DataBaseConnection.getConnection()) {
             if (connection != null) {

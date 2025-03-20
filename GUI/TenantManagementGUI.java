@@ -70,6 +70,16 @@ public class TenantManagementGUI extends JPanel {
 
         panel.add(new JLabel("Contact:"));
         contactField = new JTextField(15);
+        // Add KeyListener to restrict input to numbers only
+        contactField.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyTyped(java.awt.event.KeyEvent evt) {
+                char c = evt.getKeyChar();
+                if (!Character.isDigit(c) && c != java.awt.event.KeyEvent.VK_BACK_SPACE &&
+                        c != java.awt.event.KeyEvent.VK_DELETE) {
+                    evt.consume();  // Ignore the input if it's not a digit
+                }
+            }
+        });
         panel.add(contactField);
 
         return panel;
@@ -288,7 +298,6 @@ public class TenantManagementGUI extends JPanel {
 
         JPanel assignPanel = new JPanel(new GridLayout(4, 2, 5, 5));
 
-        // Dropdowns for building, floor, and room
         JLabel buildingLabel = new JLabel("Building:");
         JComboBox<String> buildingComboBox = new JComboBox<>();
         JLabel floorLabel = new JLabel("Floor:");
@@ -296,7 +305,6 @@ public class TenantManagementGUI extends JPanel {
         JLabel roomLabel = new JLabel("Room:");
         JComboBox<String> roomComboBox = new JComboBox<>();
 
-        // Populate building dropdown
         BuildingDML buildingDML = new BuildingDML();
         List<String> buildings = buildingDML.getAllBuildingNames();
         buildingComboBox.addItem("Select Building");
@@ -304,7 +312,6 @@ public class TenantManagementGUI extends JPanel {
             buildingComboBox.addItem(building);
         }
 
-        // Listener to update floors based on selected building
         buildingComboBox.addActionListener(e -> {
             floorComboBox.removeAllItems();
             roomComboBox.removeAllItems();
@@ -312,7 +319,6 @@ public class TenantManagementGUI extends JPanel {
             if (selectedBuilding != null && !selectedBuilding.equals("Select Building")) {
                 FloorDML floorDML = new FloorDML();
                 int buildingId = buildingDML.getBuildingIdByName(selectedBuilding);
-                // Use getFloorNumbersByBuildingId from your FloorDML
                 List<String> floors = floorDML.getFloorNumbersByBuildingId(buildingId);
                 floorComboBox.addItem("Select Floor");
                 for (String floor : floors) {
@@ -321,7 +327,6 @@ public class TenantManagementGUI extends JPanel {
             }
         });
 
-        // Listener to update rooms based on selected floor
         floorComboBox.addActionListener(e -> {
             roomComboBox.removeAllItems();
             String selectedBuilding = (String) buildingComboBox.getSelectedItem();
@@ -336,7 +341,7 @@ public class TenantManagementGUI extends JPanel {
                 for (RoomDML.RoomDetails room : allRooms) {
                     if (room.buildingName.equals(selectedBuilding) &&
                             room.floorNumber.equals(selectedFloor) &&
-                            !room.isOccupied) { // Only add unoccupied rooms
+                            !room.isOccupied) {
                         roomComboBox.addItem(room.roomNumber);
                     }
                 }

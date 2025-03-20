@@ -23,7 +23,6 @@ public class LoginGUI extends JFrame {
         // Load data from database
         loadDataFromDatabase();
 
-        // Setup the main frame
         setTitle("House Rental System");
         setSize(400, 300);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -307,6 +306,34 @@ public class LoginGUI extends JFrame {
         });
     }
 
+    // Update the handleMenuOption method in the TenantGUI class
+    private void handleMenuOption(int option) {
+        switch (option) {
+            case 1: // Pay Bill
+                // Create and show the bill payment GUI
+                SwingUtilities.invokeLater(() -> {
+                    TenantGUI tenantGUI = new TenantGUI( currentLoggedInTenant, landlord);
+                    tenantGUI.setVisible(true);
+                });
+                break;
+
+            case 2: // Logout
+                int confirm = JOptionPane.showConfirmDialog(this,
+                        "Are you sure you want to logout?",
+                        "Confirm Logout",
+                        JOptionPane.YES_NO_OPTION);
+
+                if (confirm == JOptionPane.YES_OPTION) {
+                    dispose(); // Close this window
+                    // Return to login screen
+                    SwingUtilities.invokeLater(() -> {
+                        LoginGUI loginGUI = new LoginGUI();
+                        loginGUI.setVisible(true);
+                    });
+                }
+                break;
+        }
+    }
     private void loginAsTenant(Tenant tenant) {
         currentLoggedInTenant = tenant;
 
@@ -320,9 +347,8 @@ public class LoginGUI extends JFrame {
 
         // Open the tenant menu GUI
         SwingUtilities.invokeLater(() -> {
-            MenuGUI.TenantGUI tenantGUI = new MenuGUI.TenantGUI(tenant, landlord);
+            TenantGUI tenantGUI = new TenantGUI(tenant, landlord);
             tenantGUI.setVisible(true);
         });
     }
-
 }

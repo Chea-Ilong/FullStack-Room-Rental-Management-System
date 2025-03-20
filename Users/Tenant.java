@@ -1,7 +1,6 @@
 package Users;
 
 import DataBase.BillDML;
-import DataBase.TenantDML;
 import Exceptions.RoomException;
 import Exceptions.TenantException;
 import Payment.Bill;
@@ -19,7 +18,7 @@ public class Tenant extends User {
     // ====================================================================================================
     private Room assignedRoom;
     private Map<LocalDate, Boolean> billPaymentStatus;
-    private static final double KHR_TO_USD_RATE = 4100.00;
+
 
     // Constructor
     // ====================================================================================================
@@ -50,49 +49,37 @@ public class Tenant extends User {
     // Bill Payment Methods
     // ====================================================================================================
 
-    // Helper method to check if bill is paid for a specific date
     public boolean isBillPaid(LocalDate date) {
-        // Get current year and month from the date
         YearMonth yearMonth = YearMonth.from(date);
-
-        // Check in database using BillDML
         BillDML billDML = new BillDML();
-
-        // Logic to check if bill is paid
         List<Bill> bills = billDML.getBillsByTenantId(this.getIdCard());
         for (Bill bill : bills) {
             if (YearMonth.from(bill.getBillDate()).equals(yearMonth)) {
                 return bill.isPaid();
             }
         }
-
-        // No bill found for this date
         return false;
     }
 
-    // Mark a bill as paid for a specific date
     public void markBillAsPaid(LocalDate date) {
-        // Normalize date to first day of month to track monthly payments
         LocalDate normalizedDate = LocalDate.of(date.getYear(), date.getMonth(), 1);
 
-        // Mark this month's bill as paid
         billPaymentStatus.put(normalizedDate, true);
         System.out.println("Bill payment for " + normalizedDate.getMonth() + " " +
                 normalizedDate.getYear() + " marked as paid.");
 
     }
 
-    // Check payment status for a specific month
-    public boolean checkBillPaymentStatus(int year, int month) {
-        LocalDate date = LocalDate.of(year, month, 1);
-        boolean paid = isBillPaid(date);
-
-        System.out.println("Bill payment for " + date.getMonth() + " " +
-                date.getYear() + " status: " +
-                (paid ? "PAID" : "UNPAID"));
-
-        return paid;
-    }
+//    public boolean checkBillPaymentStatus(int year, int month) {
+//        LocalDate date = LocalDate.of(year, month, 1);
+//        boolean paid = isBillPaid(date);
+//
+//        System.out.println("Bill payment for " + date.getMonth() + " " +
+//                date.getYear() + " status: " +
+//                (paid ? "PAID" : "UNPAID"));
+//
+//        return paid;
+//    }
 
     // ====================================================================================================
     // Vacating Room
@@ -115,33 +102,7 @@ public class Tenant extends User {
     public Room getAssignedRoom() {
         return assignedRoom;
     }
-//
-//    // Convert KHR to USD
-//    private double convertToUSD(double amount) {
-//        return amount / KHR_TO_USD_RATE;
-//    }
-//
-//    // Format amount in KHR
-//    private String formatKHR(double amount) {
-//        return String.format("%.0f KHR", amount);
-//    }
-//
-//    // Format amount in USD
-//    private String formatUSD(double amount) {
-//        return String.format("%.2f USD", amount);
-//    }
-//
-//    // Add this method to your Tenant class
-//    public void updateRoomInformation(Room updatedRoom) {
-//        if (this.assignedRoom != null &&
-//                this.assignedRoom.getRoomNumber().equals(updatedRoom.getRoomNumber())) {
-//            // It's the same room, just update the information
-//            this.assignedRoom = updatedRoom;
-//        } else {
-//            // It's a different room, would need formal assignment
-//            System.out.println("Cannot update room information - different room number.");
-//        }
-//    }
+
 
     // ====================================================================================================
     // Override toString
