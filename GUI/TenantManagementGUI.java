@@ -13,7 +13,6 @@ import DataBase.FloorDML;
 import DataBase.RoomDML;
 import Exceptions.RoomException;
 import Exceptions.TenantException;
-import Properties.Room;
 import Users.Landlord;
 import Users.Tenant;
 

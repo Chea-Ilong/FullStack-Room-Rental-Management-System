@@ -19,7 +19,7 @@ public class Tenant extends User {
     private Room assignedRoom;
     private Map<LocalDate, Boolean> billPaymentStatus;
 
-
+    // ====================================================================================================
     // Constructor
     // ====================================================================================================
     public Tenant(String name, String IdCard, String contact) {
@@ -30,8 +30,6 @@ public class Tenant extends User {
     // ====================================================================================================
     // Room Assignment
     // ====================================================================================================
-
-    // Assign a room to the tenant
     public void assignRoom(Room room) throws RoomException, TenantException {
         if (this.assignedRoom != null) {
             throw new TenantException("Error: Tenant is already assigned to Room " + assignedRoom.getRoomNumber() + ".");
@@ -48,7 +46,6 @@ public class Tenant extends User {
     // ====================================================================================================
     // Bill Payment Methods
     // ====================================================================================================
-
     public boolean isBillPaid(LocalDate date) {
         YearMonth yearMonth = YearMonth.from(date);
         BillDML billDML = new BillDML();
@@ -67,33 +64,6 @@ public class Tenant extends User {
         billPaymentStatus.put(normalizedDate, true);
         System.out.println("Bill payment for " + normalizedDate.getMonth() + " " +
                 normalizedDate.getYear() + " marked as paid.");
-
-    }
-
-//    public boolean checkBillPaymentStatus(int year, int month) {
-//        LocalDate date = LocalDate.of(year, month, 1);
-//        boolean paid = isBillPaid(date);
-//
-//        System.out.println("Bill payment for " + date.getMonth() + " " +
-//                date.getYear() + " status: " +
-//                (paid ? "PAID" : "UNPAID"));
-//
-//        return paid;
-//    }
-
-    // ====================================================================================================
-    // Vacating Room
-    // ====================================================================================================
-
-    // Vacate Room
-    public void vacateRoom() throws TenantException, RoomException {
-        if (assignedRoom == null) {
-            throw new TenantException("Error: Tenant is not assigned to any room.");
-        }
-
-        System.out.println(name + " is vacating Room " + assignedRoom.getRoomNumber());
-        assignedRoom.removeTenant();
-        this.assignedRoom = null;
     }
 
     // ====================================================================================================
@@ -102,7 +72,6 @@ public class Tenant extends User {
     public Room getAssignedRoom() {
         return assignedRoom;
     }
-
 
     // ====================================================================================================
     // Override toString
@@ -115,5 +84,4 @@ public class Tenant extends User {
         sb.append("Assigned Room: ").append(assignedRoom != null ? assignedRoom.getRoomNumber() : "None").append("\n");
         return sb.toString();
     }
-
 }

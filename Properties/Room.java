@@ -3,7 +3,7 @@ package Properties;
 import DataBase.RoomDML;
 import Users.Tenant;
 import Exceptions.RoomException;
-import java.time.LocalDate;
+
 
 public class Room {
 
@@ -16,8 +16,7 @@ public class Room {
     private int currentElectricCounter;
     private int currentWaterCounter;
     private double rent;
-    private int size; // Add as class field
-    private int floor; // Add as class field
+    private int floor;
 
     // ====================================================================================================
     // Constructor
@@ -56,24 +55,23 @@ public class Room {
     public int getCurrentWaterCounter() {
         return currentWaterCounter;
     }
+
     public double getRent() {
         return rent;
     }
 
-    public void setRent(double rent) {
-        this.rent = rent;
+    public int getFloor() {
+        return floor;
     }
+
+    public void setFloor(int floor) {
+        this.floor = floor;
+    }
+
     // ====================================================================================================
     // Utility Management
     // ====================================================================================================
 
-    // Reset utility counters
-    void resetUtilityUsage() {
-        currentElectricCounter = 0;
-        currentWaterCounter = 0;
-    }
-
-    // Update utility counters
     public void updateUsage(int newElectricCounter, int newWaterCounter) throws RoomException {
         if (!isOccupied) {
             throw new RoomException("Cannot update usage for a vacant room.");
@@ -88,19 +86,8 @@ public class Room {
             return;
         }
 
-        int electricCounterUsage = newElectricCounter - currentElectricCounter;
-        int waterCounterUsage = newWaterCounter - currentWaterCounter;
         currentElectricCounter = newElectricCounter;
         currentWaterCounter = newWaterCounter;
-    }
-
-    // Get utility usage for a specific period
-    public int getElectricUsage(int previousCounter) {
-        return currentElectricCounter - previousCounter;
-    }
-
-    public int getWaterUsage(int previousCounter) {
-        return currentWaterCounter - previousCounter;
     }
 
     // ====================================================================================================
@@ -115,15 +102,12 @@ public class Room {
         }
     }
 
-    // Add this method to your Room class
     public void setTenantDirectly(Tenant tenant) {
         this.tenant = tenant;
         this.isOccupied = true;
-        // Link the room back to the tenant
         try {
             tenant.assignRoom(this);
         } catch (Exception e) {
-            // This is a special case where we're bypassing normal checks
             System.out.println(" ");
         }
     }
@@ -141,16 +125,9 @@ public class Room {
         }
     }
 
-    public void markAsVacant() throws RoomException {
-        if (!isOccupied) {
-            throw new RoomException("Room " + roomNumber + " is already vacant.");
-        } else {
-            isOccupied = false;
-            resetUtilityUsage();
-            System.out.println("Room " + roomNumber + " is now vacant. Utility usage has been reset.");
-        }
-    }
-
+    // ====================================================================================================
+    // toString Method
+    // ====================================================================================================
     @Override
     public String toString() {
         return "Room{" +
@@ -161,24 +138,4 @@ public class Room {
                 ", currentWaterCounter=" + currentWaterCounter +
                 '}';
     }
-    public int getSize() {
-        return size;
-    }
-
-    public int getFloor() {
-        return floor;
-    }
-
-    // Add setters if needed
-    public void setSize(int size) {
-        this.size = size;
-    }
-
-    public void setFloor(int floor) {
-        this.floor = floor;
-    }
-
-
-
-
 }

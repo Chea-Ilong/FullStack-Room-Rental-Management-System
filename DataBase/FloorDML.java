@@ -8,6 +8,11 @@ import java.util.List;
 import java.util.Scanner;
 
 public class FloorDML {
+
+    // ====================================================================================================
+    // Floor Management Methods
+    // ====================================================================================================
+
     // Save a new floor to the database
     public boolean saveFloor(Floor floor, int buildingId) {
         Connection conn = null;
@@ -66,7 +71,8 @@ public class FloorDML {
             }
         }
     }
-    // In FloorDML class
+
+    // Check if a floor exists by building ID and floor number
     public boolean floorExistsByBuildingAndNumber(int buildingId, String floorNumber) {
         String query = "SELECT COUNT(*) FROM Floors WHERE building_id = ? AND floor_number = ?";
         try (Connection conn = DataBaseConnection.getConnection();
@@ -84,32 +90,11 @@ public class FloorDML {
         }
         return false;
     }
-    /**
-     * Returns a list of floor numbers for a specific building
-     * @param buildingId The ID of the building
-     * @return List<String> containing all floor numbers for the building
-     */
-    public List<String> getFloorNumbersByBuildingId(int buildingId) {
-        List<String> floorNumbers = new ArrayList<>();
 
-        String query = "SELECT floor_number FROM floors WHERE building_id = ?";
+    // ====================================================================================================
+    // Floor Retrieval Methods
+    // ====================================================================================================
 
-        try (Connection conn = DataBaseConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(query)) {
-
-            pstmt.setInt(1, buildingId);
-
-            try (ResultSet rs = pstmt.executeQuery()) {
-                while (rs.next()) {
-                    floorNumbers.add(rs.getString("floor_number"));
-                }
-            }
-        } catch (SQLException e) {
-            System.err.println("Error retrieving floor numbers: " + e.getMessage());
-        }
-
-        return floorNumbers;
-    }
     // Get floor ID by building ID and floor number
     public int getFloorIdByBuildingAndNumber(int buildingId, String floorNumber) {
         Connection conn = null;
@@ -232,6 +217,10 @@ public class FloorDML {
         }
     }
 
+    // ====================================================================================================
+    // Floor Update and Deletion Methods
+    // ====================================================================================================
+
     // Update floor information
     public boolean updateFloor(int floorId, Floor floor) {
         try (Connection conn = DataBaseConnection.getConnection();
@@ -318,43 +307,7 @@ public class FloorDML {
             }
         }
     }
-    public Floor loadFloor(int buildingId, String floorNumber) {
-        Connection conn = null;
-        PreparedStatement ps = null;
-        ResultSet rs = null;
 
-        try {
-            conn = DataBaseConnection.getConnection();
-            String query = "SELECT floor_id FROM Floors WHERE building_id = ? AND floor_number = ?";
-            ps = conn.prepareStatement(query);
-            ps.setInt(1, buildingId);
-            ps.setString(2, floorNumber);
-
-            rs = ps.executeQuery();
-            if (rs.next()) {
-                int floorId = rs.getInt("floor_id");
-                Floor floor = new Floor(floorNumber);
-
-                // Load rooms for this floor
-                loadRoomsForFloor(floor, floorId, conn);
-
-                return floor;
-            }
-        } catch (SQLException e) {
-            System.out.println("SQL Error loading floor: " + e.getMessage());
-            e.printStackTrace();
-        } finally {
-            try {
-                if (rs != null) rs.close();
-                if (ps != null) ps.close();
-                if (conn != null) conn.close();
-            } catch (SQLException e) {
-                System.out.println("Error closing resources: " + e.getMessage());
-            }
-        }
-
-        return null; // Return null if floor not found
-    }
     // Delete floor by building ID and floor number
     public boolean deleteFloorByBuildingAndNumber(int buildingId, String floorNumber) {
         int floorId = getFloorIdByBuildingAndNumber(buildingId, floorNumber);
@@ -363,5 +316,32 @@ public class FloorDML {
             return false;
         }
         return deleteFloor(floorId);
+    }
+
+    // ====================================================================================================
+    // Utility Methods
+    // ====================================================================================================
+
+    // Returns a list of floor numbers for a specific building
+    public List<String> getFloorNumbersByBuildingId(int buildingId) {
+        List<String> floorNumbers = new ArrayList<>();
+
+        String query = "SELECT floor_number FROM floors WHERE building_id = ?";
+
+        try (Connection conn = DataBaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(query)) {
+
+            pstmt.setInt(1, buildingId);
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    floorNumbers.add(rs.getString("floor_number"));
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving floor numbers: " + e.getMessage());
+        }
+
+        return floorNumbers;
     }
 }

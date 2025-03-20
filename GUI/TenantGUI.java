@@ -9,7 +9,6 @@ import DataBase.BillDML;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
@@ -90,32 +89,32 @@ public class TenantGUI extends JFrame {
         viewHistoryButton.addActionListener(e -> showBillHistory());
         logoutButton.addActionListener(e -> handleLogout());
     }
-    private void handleBillPaymentAndHistory() {
-        try {
-            // Create BillDML instance to access bill data
-            BillDML billDML = new BillDML();
-
-            // Check for current bill
-            Map<String, Object> currentBill = billDML.getCurrentBill(tenant.getIdCard());
-
-            if (currentBill != null && !currentBill.isEmpty()) {
-                // There is a current bill to pay
-                SwingUtilities.invokeLater(() -> {
-                    BillPaymentGUI billPaymentGUI = new BillPaymentGUI(tenant, landlord);
-                    billPaymentGUI.setVisible(true);
-                });
-            } else {
-                // No current bill, show bill history
-                showBillHistory();
-            }
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this,
-                    "Error accessing bill information: " + e.getMessage(),
-                    "Database Error",
-                    JOptionPane.ERROR_MESSAGE);
-            e.printStackTrace();
-        }
-    }
+////    private void handleBillPaymentAndHistory() {
+////        try {
+////            // Create BillDML instance to access bill data
+////            BillDML billDML = new BillDML();
+////
+////            // Check for current bill
+////            Map<String, Object> currentBill = billDML.getCurrentBill(tenant.getIdCard());
+////
+////            if (currentBill != null && !currentBill.isEmpty()) {
+////                // There is a current bill to pay
+////                SwingUtilities.invokeLater(() -> {
+////                    BillPaymentGUI billPaymentGUI = new BillPaymentGUI(tenant, landlord);
+////                    billPaymentGUI.setVisible(true);
+////                });
+////            } else {
+////                // No current bill, show bill history
+////                showBillHistory();
+////            }
+////        } catch (Exception e) {
+////            JOptionPane.showMessageDialog(this,
+////                    "Error accessing bill information: " + e.getMessage(),
+////                    "Database Error",
+////                    JOptionPane.ERROR_MESSAGE);
+////            e.printStackTrace();
+////        }
+////    }
     private void handleBillPayment() {
         try {
             // Create BillDML instance to access bill data
@@ -265,7 +264,6 @@ public class TenantGUI extends JFrame {
 
         if (confirm == JOptionPane.YES_OPTION) {
             dispose(); // Close this window
-            // Return to login screen
             SwingUtilities.invokeLater(() -> {
                 LoginGUI loginGUI = new LoginGUI();
                 loginGUI.setVisible(true);

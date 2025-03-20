@@ -17,8 +17,14 @@ import static Main.Menu.*;
 
 public class App {
     private static Tenant currentLoggedInTenant = null;
+    //    how do i make it that when in bill i add the electric and water usage and i also want the current water and electric counter to increment to the usage amount and that is the new current
+    //tenant update in terminal is not real time
+    //tenant remove work but show message that it is not removed
+    //GUI need when create bill the usage is added to the current counter and the new current counter is saved
 
-//    how do i make it that when in bill i add the electric and water usage and i also want the current water and electric counter to increment to the usage amount and that is the new current
+    // ====================================================================================================
+    // Main Method
+    // ====================================================================================================
     public static void main(String[] args) throws RoomException, TenantException {
         try (Connection connection = DataBaseConnection.getConnection()) {
             if (connection != null) {
@@ -58,7 +64,6 @@ public class App {
             System.out.println("Warning: No tenants found in database.");
         }
 
-        // Set up scanner and menu system
         Scanner scanner = new Scanner(System.in);
         boolean running = true;
 
@@ -68,7 +73,7 @@ public class App {
             if (loginResult == 1) {
                 landlordMenu(scanner, landlord);
             } else if (loginResult == 2) {
-                // Use the currentLoggedInTenant instead of tenants.get(0)
+
                 tenantMenu(scanner, currentLoggedInTenant, landlord);
             } else {
                 running = false;
@@ -79,7 +84,9 @@ public class App {
         System.out.println("\nExiting... Goodbye!\n");
     }
 
-    // Helper method to get the first landlord ID card from the database
+    // ====================================================================================================
+    // Getter and Helper Methods
+    // ====================================================================================================
     private static String getFirstLandlordIdCard() {
         String query = "SELECT u.IdCard FROM Users u JOIN Landlords l ON u.user_id = l.user_id WHERE u.role = 'Landlord' LIMIT 1";
 
@@ -98,6 +105,9 @@ public class App {
         return null;
     }
 
+    // ====================================================================================================
+    // Login Methods
+    // ====================================================================================================
     public static int login(Scanner scanner, Landlord landlord, List<Tenant> tenants) {
         while (true) {
             System.out.println("\n===== Welcome to House Rental System =====");
@@ -112,7 +122,6 @@ public class App {
 
             for (Tenant tenant : tenants) {
                 if (tenant.login(username, password)) {
-                    // Print once herex
                     System.out.println("\nLogin successful as Tenant: " + tenant.getName() + "!\n");
                     currentLoggedInTenant = tenant;
                     return 2;
@@ -122,8 +131,7 @@ public class App {
             TenantDML tenantDML = new TenantDML();
             Tenant databaseTenant = tenantDML.getTenantByCredentials(username, password);
             if (databaseTenant != null) {
-                // Remove the duplicate "Login successful for" line
-                System.out.println("\nLogin successful as Tenant: " + databaseTenant.getName() + "!\n");
+               System.out.println("\nLogin successful as Tenant: " + databaseTenant.getName() + "!\n");
                 tenants.add(databaseTenant);
                 currentLoggedInTenant = databaseTenant;
                 return 2;

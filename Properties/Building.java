@@ -24,7 +24,6 @@ public class Building {
     // ====================================================================================================
     // Add/Remove/Update Floors
     // ====================================================================================================
-    // Create: Add a floor to the building
     public void addFloor(Floor floor) {
         if (floor != null && !floors.contains(floor)) {
             floors.add(floor);
@@ -34,7 +33,6 @@ public class Building {
         }
     }
 
-    // Delete: Remove a floor from the building
     public void removeFloor(String floorNumber) {
         Floor floor = getFloorByNumber(floorNumber);
         if (floor != null) {
@@ -45,41 +43,27 @@ public class Building {
         }
     }
 
-    // Update: Update floor details (e.g., floor number)
-    public void updateFloor(String floorNumber, String newFloorNumber) {
-        Floor floor = getFloorByNumber(floorNumber);
-        if (floor != null) {
-            floor.setFloorNumber(newFloorNumber);
-            System.out.println("Floor " + floorNumber + " updated to Floor " + newFloorNumber + " in Building " + buildingName);
-        } else {
-            System.out.println("Floor not found in Building " + buildingName);
-        }
-    }
-
     // ====================================================================================================
     // Floor Lookup
     // ====================================================================================================
-    // Read: Get a floor by its floor number
     public Floor getFloorByNumber(String floorNumber) {
         for (Floor floor : floors) {
             if (floor.getFloorNumber().equals(floorNumber)) {
                 return floor;
             }
         }
-        return null; // Floor not found
+        return null;
     }
 
     // ====================================================================================================
     // Floor Display
     // ====================================================================================================
-    // Read: Display all floors in the building
     public void displayAllFloors() {
         System.out.println("\n===== All Floors in Building " + buildingName + " =====");
         if (floors.isEmpty()) {
             System.out.println("No floors available in Building " + buildingName);
             return;
         }
-
         for (Floor floor : floors) {
             System.out.println("Floor Number: " + floor.getFloorNumber());
             floor.displayAllRooms();
@@ -88,43 +72,30 @@ public class Building {
     }
 
     // ====================================================================================================
-    // Getters/Setters
+    // Getters and Setters
     // ====================================================================================================
-    // Getter for building name
     public String getBuildingName() {
         return buildingName;
     }
 
-    // Getter for floors
-    public List<Floor> getFloors() {
-        return floors;
-    }
-
-    // Setter for building name
     public void setBuildingName(String buildingName) {
         this.buildingName = buildingName;
     }
 
-    // Getter for address
+    public List<Floor> getFloors() {
+        return floors;
+    }
+
     public String getAddress() {
         return address;
     }
 
-    // Setter for address
     public void setAddress(String newAddress) {
         this.address = newAddress;
     }
 
-    // Method to get room by its room number across all floors
-    public Room getRoomByNumber(String roomNumber) {
-        for (Floor floor : floors) {
-            for (Room room : floor.getRooms()) {
-                if (room.getRoomNumber().equals(roomNumber)) {
-                    return room; // Return the room if the room number matches
-                }
-            }
-        }
-        return null; // Room not found
+    public String getName() {
+        return buildingName;
     }
 
     // ====================================================================================================
@@ -137,9 +108,5 @@ public class Building {
                 ", floors=" + floors +
                 ", address='" + address + '\'' +
                 '}';
-    }
-
-    public String getName() {
-        return buildingName;
     }
 }
