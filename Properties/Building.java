@@ -21,6 +21,10 @@ public class Building {
         this.address = address;
     }
 
+    public Building(String buildingName) {
+        this.buildingName = buildingName;
+    }
+
     // ====================================================================================================
     // Add/Remove/Update Floors
     // ====================================================================================================
