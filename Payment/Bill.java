@@ -6,16 +6,12 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
 public class Bill {
-    // ====================================================================================================
     // Constants
-    // ====================================================================================================
     public static final double KHR_TO_USD_RATE = 4100.00;
-    public static final double ELECTRIC_RATE = 620.00;
-    public static final double WATER_RATE = 2500.00;
+    private static final double ELECTRIC_RATE = 620.00;
+    private static final double WATER_RATE = 2500.00;
 
-    // ====================================================================================================
     // Fields
-    // ====================================================================================================
     private int billID;
     private Room room;
     private Tenant tenant;
@@ -32,9 +28,7 @@ public class Bill {
     private int waterUsage;
     private LocalDate paymentDate;
 
-    // ====================================================================================================
     // Constructor
-    // ====================================================================================================
     public Bill(Room room, String buildingName, String floorNumber,
                 double rentAmount, int electricUsage, int waterUsage) {
         if (room == null || buildingName == null || buildingName.isEmpty() ||
@@ -43,7 +37,7 @@ public class Bill {
         }
 
         this.room = room;
-        this.tenant = room.getTenant();
+        this.tenant = room.getTenant(); // Get tenant from room if exists
         this.buildingName = buildingName;
         this.floorNumber = floorNumber;
         this.billDate = LocalDate.now();
@@ -60,9 +54,7 @@ public class Bill {
         calculateBill(rentAmount, electricUsage, waterUsage);
     }
 
-    // ====================================================================================================
-    // Bill Calculation Methods
-    // ====================================================================================================
+    // Private method to calculate bill amounts
     private void calculateBill(double rentAmount, int electricUsage, int waterUsage) {
         this.rentAmount = rentAmount;
         this.electricAmount = electricUsage * ELECTRIC_RATE;
@@ -70,6 +62,7 @@ public class Bill {
         this.totalAmount = rentAmount + electricAmount + waterAmount;
     }
 
+    // Mark bill as paid
     public void markAsPaid(double paymentAmount) {
         if (isPaid) {
             throw new IllegalStateException("Bill is already paid");
@@ -83,17 +76,16 @@ public class Bill {
         this.paymentDate = LocalDate.now();
     }
 
+    // Calculate late fee if applicable
     public double calculateLateFee() {
         if (isPaid || !LocalDate.now().isAfter(dueDate)) {
             return 0;
         }
         long daysLate = LocalDate.now().toEpochDay() - dueDate.toEpochDay();
-        return totalAmount * 0.01 * daysLate;
+        return totalAmount * 0.01 * daysLate; // 1% per day late
     }
 
-    // ====================================================================================================
-    // Formatting and Display Methods
-    // ====================================================================================================
+    // String representation of the bill
     @Override
     public String toString() {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
@@ -145,6 +137,7 @@ public class Bill {
         return sb.toString();
     }
 
+    // Currency conversion and formatting methods
     private double convertToUSD(double amount) {
         return amount / KHR_TO_USD_RATE;
     }
@@ -157,9 +150,7 @@ public class Bill {
         return String.format("%.2fUSD", amount);
     }
 
-    // ====================================================================================================
     // Getters
-    // ====================================================================================================
     public Room getRoom() {
         return room;
     }
@@ -220,9 +211,7 @@ public class Bill {
         return paymentDate;
     }
 
-    // ====================================================================================================
     // Setters
-    // ====================================================================================================
     public void setBillID(int billID) {
         this.billID = billID;
     }
@@ -252,5 +241,20 @@ public class Bill {
 
     public void setFloorNumber(String floorNumber) {
         this.floorNumber = floorNumber;
+    }
+
+    public void setRentAmount(double rentAmount) {
+        this.rentAmount = rentAmount;
+        calculateBill(rentAmount, electricUsage, waterUsage);
+    }
+
+    public void setElectricUsage(int electricUsage) {
+        this.electricUsage = electricUsage;
+        calculateBill(rentAmount, electricUsage, waterUsage);
+    }
+
+    public void setWaterUsage(int waterUsage) {
+        this.waterUsage = waterUsage;
+        calculateBill(rentAmount, electricUsage, waterUsage);
     }
 }
