@@ -90,13 +90,13 @@ public class BillPaymentGUI extends JFrame {
 
         // Buttons panel
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton payButton = new JButton("Pay Selected Bill");
+        // JButton payButton = new JButton("Pay Selected Bill");  // Commented out
         JButton closeButton = new JButton("Close");
 
-        payButton.addActionListener(e -> paySelectedBill());
+        // payButton.addActionListener(e -> paySelectedBill());  // Commented out
         closeButton.addActionListener(e -> dispose());
 
-        buttonPanel.add(payButton);
+        // buttonPanel.add(payButton);  // Commented out
         buttonPanel.add(closeButton);
         mainPanel.add(buttonPanel, BorderLayout.SOUTH);
 

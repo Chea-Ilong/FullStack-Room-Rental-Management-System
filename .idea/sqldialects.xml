@@ -9,6 +9,7 @@
     <file url="file://$PROJECT_DIR$/DataBase/LandlordDML.java" dialect="GenericSQL" />
     <file url="file://$PROJECT_DIR$/DataBase/RoomDML.java" dialect="GenericSQL" />
     <file url="file://$PROJECT_DIR$/DataBase/TenantDML.java" dialect="GenericSQL" />
+    <file url="file://$PROJECT_DIR$/GUI/LoginGUI.java" dialect="GenericSQL" />
     <file url="file://$PROJECT_DIR$/Main/App.java" dialect="GenericSQL" />
     <file url="file://$PROJECT_DIR$/Main/Menu.java" dialect="GenericSQL" />
     <file url="file://$PROJECT_DIR$/Payment/BillRecord.java" dialect="GenericSQL" />

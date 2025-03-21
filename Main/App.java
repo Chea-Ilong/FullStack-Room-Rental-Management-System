@@ -21,7 +21,9 @@ public class App {
     //tenant update in terminal is not real time
     //tenant remove work but show message that it is not removed
     //GUI need when create bill the usage is added to the current counter and the new current counter is saved
-
+    //set utility rate
+    //add qr to tenant pay
+    //contact is the same need to add constraint
     // ====================================================================================================
     // Main Method
     // ====================================================================================================

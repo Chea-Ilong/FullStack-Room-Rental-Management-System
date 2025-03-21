@@ -58,21 +58,21 @@ public class TenantGUI extends JFrame {
         // Add main panel to frame
         add(mainPanel);
     }
-    // In the TenantGUI class, replace the current menu options with separate buttons
+
     private void setupMenuOptions(JPanel optionsPanel, GridBagConstraints gbc) {
-        // Pay Bill option
-        JButton payBillButton = new JButton("Pay Bill");
-        payBillButton.setFont(new Font("Arial", Font.PLAIN, 14));
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.gridwidth = 2;
-        optionsPanel.add(payBillButton, gbc);
+        // Pay Bill option (commented out)
+        // JButton payBillButton = new JButton("Pay Bill");
+        // payBillButton.setFont(new Font("Arial", Font.PLAIN, 14));
+        // gbc.gridx = 0;
+        // gbc.gridy = 0;
+        // gbc.gridwidth = 2;
+        // optionsPanel.add(payBillButton, gbc);
 
         // View History option
-        JButton viewHistoryButton = new JButton("View Payment History");
+        JButton viewHistoryButton = new JButton("View Payment ");
         viewHistoryButton.setFont(new Font("Arial", Font.PLAIN, 14));
         gbc.gridx = 0;
-        gbc.gridy = 1;
+        gbc.gridy = 0;  // Moved up to first position since Pay Bill is commented out
         gbc.gridwidth = 2;
         optionsPanel.add(viewHistoryButton, gbc);
 
@@ -80,41 +80,16 @@ public class TenantGUI extends JFrame {
         JButton logoutButton = new JButton("Logout");
         logoutButton.setFont(new Font("Arial", Font.PLAIN, 14));
         gbc.gridx = 0;
-        gbc.gridy = 2;
+        gbc.gridy = 1;  // Adjusted position
         gbc.gridwidth = 2;
         optionsPanel.add(logoutButton, gbc);
 
         // Add action listeners
-        payBillButton.addActionListener(e -> handleBillPayment());
+        // payBillButton.addActionListener(e -> handleBillPayment());  // Commented out
         viewHistoryButton.addActionListener(e -> showBillHistory());
         logoutButton.addActionListener(e -> handleLogout());
     }
-////    private void handleBillPaymentAndHistory() {
-////        try {
-////            // Create BillDML instance to access bill data
-////            BillDML billDML = new BillDML();
-////
-////            // Check for current bill
-////            Map<String, Object> currentBill = billDML.getCurrentBill(tenant.getIdCard());
-////
-////            if (currentBill != null && !currentBill.isEmpty()) {
-////                // There is a current bill to pay
-////                SwingUtilities.invokeLater(() -> {
-////                    BillPaymentGUI billPaymentGUI = new BillPaymentGUI(tenant, landlord);
-////                    billPaymentGUI.setVisible(true);
-////                });
-////            } else {
-////                // No current bill, show bill history
-////                showBillHistory();
-////            }
-////        } catch (Exception e) {
-////            JOptionPane.showMessageDialog(this,
-////                    "Error accessing bill information: " + e.getMessage(),
-////                    "Database Error",
-////                    JOptionPane.ERROR_MESSAGE);
-////            e.printStackTrace();
-////        }
-////    }
+
     private void handleBillPayment() {
         try {
             // Create BillDML instance to access bill data
@@ -144,6 +119,7 @@ public class TenantGUI extends JFrame {
             e.printStackTrace();
         }
     }
+
     private void showBillHistory() {
         try {
             // Fetch bill history using BillRecord class
