@@ -443,32 +443,4 @@ public class BillDML {
         }
     }
 
-    //New
-    public void createBillsTableIfNotExists() {
-        String createTableQuery = "CREATE TABLE IF NOT EXISTS Bills (" +
-                "bill_id INT AUTO_INCREMENT PRIMARY KEY, " +
-                "room_id INT NOT NULL, " +
-                "tenant_id VARCHAR(15), " +
-                "bill_date DATE NOT NULL, " +
-                "due_date DATE NOT NULL, " +
-                "rent_amount DOUBLE NOT NULL, " +
-                "electric_amount DOUBLE, " +
-                "water_amount DOUBLE, " +
-                "total_amount DOUBLE NOT NULL, " +
-                "is_paid BOOLEAN DEFAULT false, " +
-                "FOREIGN KEY (room_id) REFERENCES Rooms(room_id), " +
-                "FOREIGN KEY (tenant_id) REFERENCES Users(IdCard)" +
-                ");";
-
-        try (Connection conn = getConnection();
-             Statement stmt = conn.createStatement()) {
-
-            stmt.execute(createTableQuery);
-            System.out.println("Bills table created successfully (if it did not already exist).");
-
-        } catch (SQLException e) {
-            System.out.println("Error creating Bills table: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
 }
