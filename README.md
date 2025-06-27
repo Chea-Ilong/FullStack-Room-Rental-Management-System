@@ -109,6 +109,30 @@ FullStackRoomRentalManagementSystem/
 └── lib/                     
     └── mysql-connector-j-9.2.0.jar
 ```
+## System Architecture Overview
+
+```mermaid
+graph TB
+    A["Main Application Entry Point"] --> B["Authentication Layer"]
+    B --> C["User Role Determination"]
+    C --> D["Landlord GUI"]
+    C --> E["Tenant GUI"]
+    D --> F["Property Management"]
+    D --> G["Tenant Management"]
+    D --> H["Bill Management"]
+    E --> I["Room Viewing"]
+    E --> J["Bill Payment"]
+    F --> K["Database Layer"]
+    G --> K
+    H --> K
+    I --> K
+    J --> K
+    K --> L["MySQL Database"]
+    M["Exception Handling"] --> D
+    M --> E
+    M --> K
+```
+
 
 ## 🚀 Setup Instructions
 
