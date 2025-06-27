@@ -1,0 +1,110 @@
+-- Drop the existing database if it exists
+DROP DATABASE IF EXISTS house_rental_system;
+
+-- Create the database
+CREATE DATABASE house_rental_system;
+USE house_rental_system;
+
+-- Users Table
+CREATE TABLE IF NOT EXISTS Users (
+                                     user_id INT AUTO_INCREMENT PRIMARY KEY,
+                                     name VARCHAR(255) NOT NULL,
+                                     IdCard VARCHAR(255) NOT NULL UNIQUE,
+                                     contact VARCHAR(255),
+                                     role VARCHAR(50),
+                                     UNIQUE (name, IdCard)
+) ENGINE=InnoDB;
+
+-- Buildings Table
+CREATE TABLE IF NOT EXISTS Buildings (
+                                         building_id INT AUTO_INCREMENT PRIMARY KEY,
+                                         building_name VARCHAR(255) NOT NULL,
+                                         address VARCHAR(255)
+) ENGINE=InnoDB;
+
+-- Floors Table
+CREATE TABLE IF NOT EXISTS Floors (
+                                      floor_id INT AUTO_INCREMENT PRIMARY KEY,
+                                      building_id INT,
+                                      floor_number VARCHAR(50),
+                                      FOREIGN KEY (building_id) REFERENCES Buildings(building_id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- Rooms Table
+CREATE TABLE IF NOT EXISTS Rooms (
+                                     room_id INT AUTO_INCREMENT PRIMARY KEY,
+                                     floor_id INT,
+                                     room_number VARCHAR(50) NOT NULL,
+                                     current_electric_counter INT NOT NULL DEFAULT 0,
+                                     current_water_counter INT NOT NULL DEFAULT 0,
+                                     is_occupied BOOLEAN DEFAULT FALSE,
+                                     FOREIGN KEY (floor_id) REFERENCES Floors(floor_id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- Tenants Table
+CREATE TABLE IF NOT EXISTS Tenants (
+                                       tenant_id INT AUTO_INCREMENT PRIMARY KEY,
+                                       user_id INT,
+                                       assigned_room_id INT,
+                                       FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE,
+                                       FOREIGN KEY (assigned_room_id) REFERENCES Rooms(room_id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+-- Landlords Table
+CREATE TABLE IF NOT EXISTS Landlords (
+                                         landlord_id INT AUTO_INCREMENT PRIMARY KEY,
+                                         user_id INT,
+                                         landlord_pin VARCHAR(255) NOT NULL, -- Secure hashed PIN
+                                         FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- Bills Table to track different types of bills
+CREATE TABLE IF NOT EXISTS Bills (
+                                     bill_id INT AUTO_INCREMENT PRIMARY KEY,
+                                     room_id INT NOT NULL,
+                                     due_date DATE NOT NULL,
+                                     is_paid BOOLEAN DEFAULT FALSE,
+                                     bill_date DATE DEFAULT CURRENT_DATE,
+                                     electric_amount DOUBLE,
+                                     water_amount DOUBLE,
+                                     electric_usage INT,
+                                     water_usage INT,
+                                     building_name VARCHAR(100),
+                                     floor_number VARCHAR(20),
+                                     rent_amount DOUBLE,
+                                     total_amount DOUBLE,
+                                     tenant_id VARCHAR(255), -- Changed to VARCHAR to match Users.IdCard
+                                     FOREIGN KEY (room_id) REFERENCES Rooms(room_id) ON DELETE CASCADE,
+                                     FOREIGN KEY (tenant_id) REFERENCES Users(IdCard) ON DELETE SET NULL -- Reference Users table
+) ENGINE=InnoDB;
+
+
+-- Bill Records Table to track payment history
+CREATE TABLE IF NOT EXISTS BillRecords (
+                                           record_id INT AUTO_INCREMENT PRIMARY KEY,
+                                           bill_id INT NOT NULL,
+                                           tenant_id INT,
+                                           payment_amount DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+                                           payment_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+                                           landlord_id INT, -- Who received/recorded the payment
+                                           FOREIGN KEY (bill_id) REFERENCES Bills(bill_id) ON DELETE CASCADE,
+                                           FOREIGN KEY (tenant_id) REFERENCES Tenants(tenant_id) ON DELETE SET NULL,
+                                           FOREIGN KEY (landlord_id) REFERENCES Landlords(landlord_id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+-- Add indexes to improve query performance for frequently accessed columns
+CREATE INDEX idx_bills_room_id ON Bills(room_id);
+CREATE INDEX idx_bills_due_date ON Bills(due_date);
+CREATE INDEX idx_bill_records_bill_id ON BillRecords(bill_id);
+CREATE INDEX idx_bill_records_payment_date ON BillRecords(payment_date);
+
+
+-- Inserting test data into Users and Landlords tables
+INSERT INTO Users (name, IdCard, contact, role)
+VALUES ('long', '123', '01234567890', 'Landlord');
+
+-- Assume the PIN is hashed for security purposes
+INSERT INTO Landlords (user_id, landlord_pin)
+VALUES ((SELECT user_id FROM Users WHERE role = 'Landlord'), SHA2('1234', 256));  -- Replace 'SHA2' with the actual hash function if needed
+
+
